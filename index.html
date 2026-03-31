@@ -99,8 +99,8 @@
 
         .button-group {
             display: flex;
-            gap: 20px;
-            margin-bottom: 40px;
+            gap: 18px;
+            margin-bottom: 30px;
             flex-wrap: wrap;
         }
 
@@ -142,8 +142,8 @@
         .result-area {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 16px;
-            padding: 30px;
-            margin-top: 30px;
+            padding: 25px;
+            margin-top: 25px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             display: none;
         }
@@ -162,8 +162,8 @@
             display: flex;
             align-items: center;
             gap: 20px;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
+            margin-bottom: 25px;
+            padding-bottom: 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -192,12 +192,13 @@
 
         /* 变卦样式 */
         .change-gua-section {
-            margin-top: 30px;
-            padding: 25px;
+            margin-top: 25px;
+            padding: 22px;
             background: rgba(247, 37, 133, 0.05);
             border-radius: 12px;
             border: 1px solid rgba(247, 37, 133, 0.2);
             animation: slideIn 0.6s ease;
+            margin-bottom: 25px;
         }
 
         @keyframes slideIn {
@@ -428,7 +429,7 @@
         }
 
         .yao-list {
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .yao-item {
@@ -441,10 +442,11 @@
 
         .analysis-list {
             background: rgba(78, 205, 196, 0.1);
-            padding: 25px;
+            padding: 22px;
             border-radius: 12px;
             border: 1px solid rgba(78, 205, 196, 0.2);
             font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            margin-bottom: 25px;
         }
 
         .analysis-item {
@@ -574,57 +576,271 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 20px;
-            }
-            
-            h1 {
-                font-size: 2.5rem;
-            }
-            
-            .hexagram-name {
-                font-size: 1.8rem;
-            }
-            
-            .hexagram-title {
-                font-size: 1.2rem;
-            }
-            
-            .analysis-item {
-                font-size: 1.05em;
-                line-height: 1.7;
-                padding-left: 20px;
-            }
-            
-            .yao-text {
-                font-size: 1.05em;
-                line-height: 1.7;
-                padding-left: 12px;
-            }
-            
-            .change-details p {
-                font-size: 1.05em;
-                line-height: 1.7;
-            }
-            
-            .change-analysis {
-                font-size: 1.05em;
-                line-height: 1.7;
                 padding: 15px;
             }
             
-            .no-change-section {
-                font-size: 1.05em;
-                line-height: 1.7;
-                padding: 20px;
+            h1 {
+                font-size: 2.2rem;
+                margin-bottom: 10px;
             }
             
-            .history-panel {
-                width: 100%;
-                right: -100%;
+            .subtitle {
+                font-size: 1rem;
+                margin-bottom: 20px;
+            }
+            
+            .question-area {
+                margin-bottom: 20px;
+            }
+            
+            .question-area textarea {
+                height: 80px;
+                font-size: 1rem;
+                padding: 12px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 25px;
             }
             
             button {
                 min-width: 100%;
+                padding: 14px;
+                font-size: 1.1rem;
+                border-radius: 10px;
+            }
+            
+            /* 卦象头部优化 */
+            .hexagram-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+            }
+            
+            .symbol {
+                font-size: 3.5rem;
+                order: -1;
+            }
+            
+            .hexagram-name {
+                font-size: 1.6rem;
+                margin-bottom: 5px;
+            }
+            
+            .hexagram-title {
+                font-size: 1.1rem;
+            }
+            
+            /* 爻辞列表优化 */
+            .yao-list {
+                margin-bottom: 20px;
+            }
+            
+            .yao-list h3 {
+                font-size: 1.3rem;
+                margin-bottom: 12px;
+            }
+            
+            .yao-item {
+                padding: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .yao-header {
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-bottom: 6px;
+            }
+            
+            .yao-name {
+                min-width: 55px;
+                font-size: 1.1em;
+            }
+            
+            .yao-type {
+                font-size: 0.8em;
+                padding: 2px 6px;
+                min-width: 45px;
+            }
+            
+            .change-indicator {
+                font-size: 0.75em;
+                padding: 2px 6px;
+            }
+            
+            .yao-text {
+                font-size: 1em;
+                line-height: 1.6;
+                padding-left: 10px;
+                margin-top: 5px;
+            }
+            
+            /* 卦象分析优化 */
+            .analysis-list {
+                padding: 18px;
+                margin-bottom: 20px;
+            }
+            
+            .analysis-list h3 {
+                font-size: 1.3rem;
+                margin-bottom: 12px;
+            }
+            
+            .analysis-item {
+                font-size: 1em;
+                line-height: 1.6;
+                padding-left: 18px;
+                margin-bottom: 12px;
+            }
+            
+            /* 变卦分析优化 */
+            .change-gua-section {
+                padding: 18px;
+                margin-bottom: 20px;
+            }
+            
+            .change-gua-section h3 {
+                font-size: 1.3rem;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+            }
+            
+            .change-comparison {
+                flex-direction: column;
+                gap: 20px;
+                margin: 15px 0;
+            }
+            
+            .original-gua, .changed-gua {
+                min-width: auto;
+                width: 100%;
+                padding: 15px;
+            }
+            
+            .gua-symbol {
+                font-size: 2.5em;
+                margin: 8px 0;
+            }
+            
+            .gua-name {
+                font-size: 1.3em;
+            }
+            
+            .gua-title {
+                font-size: 0.95em;
+            }
+            
+            .change-arrow {
+                font-size: 2em;
+                transform: rotate(90deg);
+                margin: 5px 0;
+            }
+            
+            .change-details {
+                padding: 15px;
+                margin-top: 15px;
+            }
+            
+            .change-details p {
+                font-size: 1em;
+                line-height: 1.6;
+                margin: 8px 0;
+            }
+            
+            .change-analysis {
+                padding: 12px;
+                margin-top: 15px;
+                font-size: 1em;
+                line-height: 1.6;
+            }
+            
+            /* 技术信息优化 */
+            .result-area > div:last-child {
+                padding: 12px;
+                font-size: 0.85em;
+                margin-top: 15px;
+            }
+            
+            /* 页脚优化 */
+            footer {
+                margin-top: 25px;
+                padding-top: 15px;
+                font-size: 0.8rem;
+            }
+            
+            footer p {
+                margin: 5px 0;
+            }
+            
+            /* 历史面板优化 */
+            .history-panel {
+                width: 100%;
+                right: -100%;
+                padding: 20px;
+            }
+            
+            .history-header {
+                padding: 15px;
+            }
+            
+            .history-title {
+                font-size: 1.5rem;
+            }
+            
+            .history-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .history-question {
+                font-size: 0.95em;
+                margin-bottom: 5px;
+            }
+            
+            .history-hexagram {
+                font-size: 1.1em;
+            }
+            
+            /* 加载动画优化 */
+            .loading {
+                padding: 30px;
+                font-size: 1.1em;
+            }
+        }
+        
+        /* 超小屏幕额外优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 12px;
+            }
+            
+            h1 {
+                font-size: 1.9rem;
+            }
+            
+            .symbol {
+                font-size: 3rem;
+            }
+            
+            .hexagram-name {
+                font-size: 1.4rem;
+            }
+            
+            .yao-item {
+                padding: 10px;
+            }
+            
+            .analysis-list, .change-gua-section {
+                padding: 15px;
+            }
+            
+            button {
+                padding: 12px;
+                font-size: 1rem;
             }
         }
         
