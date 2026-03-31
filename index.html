@@ -461,7 +461,7 @@
         }
 
         .analysis-item::before {
-            content: '✦';
+            content: '•';
             position: absolute;
             left: 0;
             color: #4ecdc4;
@@ -481,16 +481,17 @@
             background: linear-gradient(45deg, #f72585, #b5179e);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
-            font-size: 1em;
+            font-size: 0.9em;
             cursor: pointer;
             transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(247, 37, 133, 0.3);
+            gap: 6px;
+            box-shadow: 0 3px 10px rgba(247, 37, 133, 0.3);
+            margin: 10px 0;
         }
 
         .share-btn:hover {
@@ -759,8 +760,8 @@
             }
             
             .share-btn {
-                padding: 12px 24px;
-                font-size: 1.1em;
+                padding: 10px 20px;
+                font-size: 1em;
                 min-width: 100%;
             }
             
@@ -1349,11 +1350,6 @@
                     <div class="hexagram-info">
                         <div class="hexagram-name">${foundGua[0]}</div>
                         <div class="hexagram-title">${foundGua[1]}</div>
-                        <div class="share-buttons">
-                            <button class="share-btn" onclick="shareAsImage()" title="生成分享图片">
-                                📷 生成分享图
-                            </button>
-                        </div>
                     </div>
                 </div>
                 ${question ? `<p style="margin-bottom:20px;color:#a0a0a0;font-style:italic;">"${question}"</p>` : ''}
@@ -1366,6 +1362,11 @@
                     ${analysisHtml}
                 </div>
                 ${changeHtml}
+                <div class="share-buttons" style="margin-top: 20px; text-align: center;">
+                    <button class="share-btn" onclick="shareAsImage()" title="生成分享图片">
+                        生成分享图
+                    </button>
+                </div>
                 <div style="margin-top:20px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;color:#888;">
                     <strong>卦象索引:</strong> ${index} (二进制: ${fullBinary}, 上卦: ${upperBinary}, 下卦: ${lowerBinary})
                     ${changeGuaData.hasChange ? `<br><strong>变卦索引:</strong> ${changeGuaData.changeIndex} (二进制: ${changeGuaData.changeBinary})` : ''}
@@ -1536,11 +1537,6 @@
                     <div class="hexagram-info">
                         <div class="hexagram-name">${foundGua[0]}</div>
                         <div class="hexagram-title">${foundGua[1]}</div>
-                        <div class="share-buttons">
-                            <button class="share-btn" onclick="shareAsImage()" title="生成分享图片">
-                                📷 生成分享图
-                            </button>
-                        </div>
                     </div>
                 </div>
                 ${item.question ? `<p style="margin-bottom:20px;color:#a0a0a0;font-style:italic;">"${item.question}"</p>` : ''}
@@ -1555,6 +1551,11 @@
                     ${analysisHtml}
                 </div>
                 ${changeHtml}
+                <div class="share-buttons" style="margin-top: 20px; text-align: center;">
+                    <button class="share-btn" onclick="shareAsImage()" title="生成分享图片">
+                        生成分享图
+                    </button>
+                </div>
                 <div style="margin-top:20px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;color:#888;">
                     <strong>卦象索引:</strong> ${item.index}
                     ${item.hasChange ? `<br><strong>变卦索引:</strong> ${item.changeIndex}` : ''}
@@ -1591,17 +1592,23 @@
             }
             
             // 从结果区域提取数据
-            const hexagramName = resultArea.querySelector('.hexagram-name')?.textContent || '';
-            const hexagramTitle = resultArea.querySelector('.hexagram-title')?.textContent || '';
-            const hexagramSymbol = resultArea.querySelector('.symbol')?.textContent || '';
+            const hexagramNameElem = resultArea.querySelector('.hexagram-name');
+            const hexagramTitleElem = resultArea.querySelector('.hexagram-title');
+            const hexagramSymbolElem = resultArea.querySelector('.symbol');
+            
+            const hexagramName = hexagramNameElem ? hexagramNameElem.textContent : '';
+            const hexagramTitle = hexagramTitleElem ? hexagramTitleElem.textContent : '';
+            const hexagramSymbol = hexagramSymbolElem ? hexagramSymbolElem.textContent : '';
             const question = document.getElementById('question').value.trim();
             
             // 获取分析内容
             const analysisItems = resultArea.querySelectorAll('.analysis-item');
             let analysis = '';
             analysisItems.forEach(item => {
-                const title = item.querySelector('.analysis-title')?.textContent || '';
-                const content = item.querySelector('.analysis-content')?.textContent || '';
+                const titleElem = item.querySelector('.analysis-title');
+                const contentElem = item.querySelector('.analysis-content');
+                const title = titleElem ? titleElem.textContent : '';
+                const content = contentElem ? contentElem.textContent : '';
                 if (title && content) {
                     analysis += `${title}: ${content}\n`;
                 }
@@ -1706,7 +1713,7 @@
                             margin-bottom: 10px;
                             text-shadow: 0 2px 10px rgba(78, 205, 196, 0.3);
                         ">
-                            ⚖️ 赛博算卦
+                            赛博算卦
                         </div>
                         <div style="
                             font-size: 16px;
@@ -1785,7 +1792,6 @@
                                 align-items: center;
                                 gap: 10px;
                             ">
-                                <span style="font-size: 24px;">📝</span>
                                 <span>所问之事</span>
                             </div>
                             <div style="
@@ -1813,7 +1819,6 @@
                             align-items: center;
                             gap: 10px;
                         ">
-                            <span style="font-size: 28px;">✨</span>
                             <span>核心启示</span>
                         </div>
                         <div style="
@@ -1857,7 +1862,6 @@
                                 align-items: center;
                                 gap: 10px;
                             ">
-                                <span style="font-size: 28px;">🔄</span>
                                 <span>变卦提示</span>
                             </div>
                             <div style="
@@ -1885,7 +1889,7 @@
                             margin-bottom: 10px;
                             letter-spacing: 1px;
                         ">
-                            ⚡ 科技赋能传统智慧 · 算法解译天地玄机
+                            科技赋能传统智慧 · 算法解译天地玄机
                         </div>
                         <div style="
                             font-size: 12px;
@@ -1931,7 +1935,7 @@
             }
             
             // 显示加载状态
-            preview.innerHTML = '<div style="padding:40px;text-align:center;color:#666;font-size:18px;">✨ 正在生成精美分享卡片...</div>';
+            preview.innerHTML = '<div style="padding:40px;text-align:center;color:#666;font-size:18px;">正在生成精美分享卡片...</div>';
             shareContainer.classList.add('show');
             
             try {
@@ -1981,9 +1985,9 @@
                             border: 3px solid #fff;
                         ">
                         <div style="margin-top:20px;font-size:14px;color:#666;">
-                            <div>📐 图片尺寸: ${canvas.width} × ${canvas.height} 像素</div>
-                            <div>🎨 主题: ${currentGuaData.name.includes('乾') || currentGuaData.name.includes('震') ? '青蓝主题' : '金红主题'}</div>
-                            <div>📅 生成时间: ${new Date().toLocaleTimeString()}</div>
+                            <div>图片尺寸: ${canvas.width} × ${canvas.height} 像素</div>
+                            <div>主题: ${currentGuaData.name.includes('乾') || currentGuaData.name.includes('震') ? '青蓝主题' : '金红主题'}</div>
+                            <div>生成时间: ${new Date().toLocaleTimeString()}</div>
                         </div>
                     </div>
                 `;
@@ -1998,10 +2002,10 @@
                 if (styleActions) {
                     styleActions.innerHTML = `
                         <button class="share-action-btn" style="background:#4ecdc4;" onclick="regenerateWithStyle('classic')">
-                            🎨 经典风格
+                            经典风格
                         </button>
                         <button class="share-action-btn" style="background:#ffd166;color:#333;" onclick="regenerateWithStyle('golden')">
-                            ✨ 金色主题
+                            金色主题
                         </button>
                     `;
                 }
@@ -2010,7 +2014,7 @@
                 console.error('生成图片失败:', error);
                 preview.innerHTML = `
                     <div style="padding:30px;text-align:center;color:#dc3545;">
-                        <p style="font-size:24px;">❌ 生成图片失败</p>
+                        <p style="font-size:24px;">生成图片失败</p>
                         <p style="font-size:16px;margin-top:15px;">${error.message}</p>
                         <button onclick="shareAsImage()" style="
                             margin-top:20px;
@@ -2091,7 +2095,7 @@
     <!-- 分享图片容器 -->
     <div id="shareImageContainer" class="share-image-container">
         <div class="share-image-content">
-            <h3 style="color:#333;margin-bottom:15px;">🎨 精美分享卡片</h3>
+            <h3 style="color:#333;margin-bottom:15px;">精美分享卡片</h3>
             <div style="color:#666;font-size:14px;margin-bottom:15px;text-align:center;">
                 专为社交媒体设计的精美卦象卡片
             </div>
@@ -2107,19 +2111,19 @@
             <!-- 操作按钮 -->
             <div class="share-image-actions">
                 <button id="shareDownloadBtn" class="share-action-btn share-download-btn">
-                    ⬇️ 下载高清图
+                    下载高清图
                 </button>
                 <button id="shareCopyBtn" class="share-action-btn share-copy-btn">
-                    📋 复制图片
+                    复制图片
                 </button>
                 <button id="shareCloseBtn" class="share-action-btn share-close-btn">
-                    ❌ 关闭预览
+                    关闭预览
                 </button>
             </div>
             
             <!-- 使用提示 -->
             <div style="margin-top:20px;padding:15px;background:#f8f9fa;border-radius:10px;font-size:13px;color:#666;">
-                <div style="color:#4361ee;margin-bottom:8px;font-weight:bold;">💡 使用提示：</div>
+                <div style="color:#4361ee;margin-bottom:8px;font-weight:bold;">使用提示：</div>
                 <div>• 图片为高清设计，适合微信、微博等社交媒体分享</div>
                 <div>• 点击"复制图片"可直接粘贴到聊天窗口</div>
                 <div>• 下载的图片为PNG格式，支持透明背景</div>
