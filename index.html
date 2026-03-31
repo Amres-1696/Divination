@@ -58,7 +58,7 @@
 
         h1 {
             font-size: 3.5em;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            background: linear-gradient(45deg, #4ecdc4);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -137,52 +137,7 @@
             box-shadow: 0 12px 25px rgba(255, 107, 107, 0.4);
         }
 
-        .coin-area {
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
-        }
 
-        .coin {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border: 3px solid #ffd166;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .coin::after {
-            content: attr(data-side);
-            position: relative;
-            z-index: 1;
-            color: #ffd166;
-            font-size: 35px;
-        }
-
-        .coin.tossing {
-            animation: coinToss 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
-        @keyframes coinToss {
-            0%   { transform: translateY(0) rotate(0deg) scale(1); }
-            20%  { transform: translateY(-120%) rotate(180deg) scale(1.1); }
-            40%  { transform: translateY(-160%) rotate(540deg) scale(1.15); }
-            60%  { transform: translateY(-120%) rotate(900deg) scale(1.1); }
-            80%  { transform: translateY(-40%) rotate(1080deg) scale(1.02); }
-            100% { transform: translateY(0) rotate(1260deg) scale(1); }
-        }
-
-        .coin-area.tossing .coin:nth-child(1) { animation-delay: 0ms; }
-        .coin-area.tossing .coin:nth-child(2) { animation-delay: 80ms; }
-        .coin-area.tossing .coin:nth-child(3) { animation-delay: 160ms; }
 
         .result-area {
             background: rgba(255, 255, 255, 0.05);
@@ -225,12 +180,251 @@
             font-size: 2.2rem;
             color: #4ecdc4;
             margin-bottom: 10px;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
         }
 
         .hexagram-title {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            color: #b0b0b0;
+            font-style: italic;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+        }
+
+        /* 变卦样式 */
+        .change-gua-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(247, 37, 133, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(247, 37, 133, 0.2);
+            animation: slideIn 0.6s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .change-comparison {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .original-gua, .changed-gua {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 180px;
+            transition: transform 0.3s;
+        }
+
+        .original-gua {
+            background: rgba(78, 205, 196, 0.1);
+            border: 2px solid #4ecdc4;
+        }
+
+        .changed-gua {
+            background: rgba(247, 37, 133, 0.1);
+            border: 2px solid #f72585;
+        }
+
+        .original-gua:hover, .changed-gua:hover {
+            transform: translateY(-5px);
+        }
+
+        .gua-label {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .original-gua .gua-label {
+            color: #4ecdc4;
+        }
+
+        .changed-gua .gua-label {
+            color: #f72585;
+        }
+
+        .gua-symbol {
+            font-size: 3em;
+            margin: 10px 0;
+        }
+
+        .original-gua .gua-symbol {
+            color: #4ecdc4;
+        }
+
+        .changed-gua .gua-symbol {
+            color: #f72585;
+        }
+
+        .gua-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .gua-title {
+            font-size: 1em;
             color: #a0a0a0;
             font-style: italic;
+        }
+
+        .change-arrow {
+            font-size: 2.5em;
+            color: #ffd166;
+            animation: pulse 2s infinite;
+        }
+
+        .change-details {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 209, 102, 0.2);
+        }
+
+        .change-details p {
+            margin: 12px 0;
+            line-height: 1.8;
+            color: #f0f0f0;
+            font-size: 1.1em;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+        }
+
+        .change-details strong {
+            color: #ffd166;
+            font-weight: bold;
+        }
+
+        .change-analysis {
+            margin-top: 20px;
+            padding: 18px;
+            background: rgba(255, 209, 102, 0.1);
+            border-radius: 10px;
+            border-left: 5px solid #ffd166;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #f8f8f8;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+        }
+
+        .no-change-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: rgba(78, 205, 196, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(78, 205, 196, 0.2);
+            text-align: center;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #f0f0f0;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+        }
+
+        /* 爻辞样式 */
+        .yao-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .yao-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(78, 205, 196, 0.3);
+        }
+
+        .changing-yao {
+            background: rgba(247, 37, 133, 0.08) !important;
+            border: 2px solid rgba(247, 37, 133, 0.4) !important;
+            animation: pulseChange 2s infinite;
+        }
+
+        @keyframes pulseChange {
+            0%, 100% { border-color: rgba(247, 37, 133, 0.4); }
+            50% { border-color: rgba(247, 37, 133, 0.8); }
+        }
+
+        .yao-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+
+        .yao-name {
+            font-weight: bold;
+            color: #4ecdc4;
+            min-width: 70px;
+            font-size: 1.2em;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+        }
+
+        .changing-yao .yao-name {
+            color: #f72585;
+            font-size: 1.2em;
+        }
+
+        .yao-type {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffd166;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .change-indicator {
+            background: #f72585;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .change-icon {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .yao-text {
+            color: #f0f0f0;
+            line-height: 1.8;
+            padding-left: 15px;
+            border-left: 4px solid rgba(78, 205, 196, 0.4);
+            font-size: 1.1em;
+            margin-top: 8px;
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            text-align: justify;
+        }
+
+        .changing-yao .yao-text {
+            border-left-color: rgba(247, 37, 133, 0.6);
+            color: #fff;
+        }
+
+        /* 历史记录变卦指示器 */
+        .history-change-indicator {
+            display: inline-block;
+            background: #f72585;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            margin-left: 8px;
+            vertical-align: middle;
         }
 
         .yao-list {
@@ -247,15 +441,20 @@
 
         .analysis-list {
             background: rgba(78, 205, 196, 0.1);
-            padding: 20px;
+            padding: 25px;
             border-radius: 12px;
             border: 1px solid rgba(78, 205, 196, 0.2);
+            font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
         }
 
         .analysis-item {
-            margin-bottom: 15px;
-            padding-left: 20px;
+            margin-bottom: 20px;
+            padding-left: 25px;
             position: relative;
+            font-size: 1.15em;
+            line-height: 1.8;
+            color: #f0f0f0;
+            text-align: justify;
         }
 
         .analysis-item::before {
@@ -263,6 +462,8 @@
             position: absolute;
             left: 0;
             color: #4ecdc4;
+            font-size: 1.2em;
+            top: 0.2em;
         }
 
         .history-panel {
@@ -380,29 +581,41 @@
                 font-size: 2.5rem;
             }
             
-            .coin-area {
-                gap: 20px;
+            .hexagram-name {
+                font-size: 1.8rem;
             }
             
-            .coin {
-                width: 80px;
-                height: 80px;
-                font-size: 2rem;
-                border-width: 2px;
+            .hexagram-title {
+                font-size: 1.2rem;
             }
             
-            /* 移动端专用动画 */
-            @keyframes coinTossMobile {
-                0%   { transform: translateY(0) rotate(0deg) scale(1); }
-                20%  { transform: translateY(-150%) rotate(180deg) scale(1.1); }
-                40%  { transform: translateY(-200%) rotate(540deg) scale(1.15); }
-                60%  { transform: translateY(-150%) rotate(900deg) scale(1.1); }
-                80%  { transform: translateY(-50%) rotate(1080deg) scale(1.02); }
-                100% { transform: translateY(0) rotate(1260deg) scale(1); }
+            .analysis-item {
+                font-size: 1.05em;
+                line-height: 1.7;
+                padding-left: 20px;
             }
             
-            .coin.tossing {
-                animation: coinTossMobile 1.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            .yao-text {
+                font-size: 1.05em;
+                line-height: 1.7;
+                padding-left: 12px;
+            }
+            
+            .change-details p {
+                font-size: 1.05em;
+                line-height: 1.7;
+            }
+            
+            .change-analysis {
+                font-size: 1.05em;
+                line-height: 1.7;
+                padding: 15px;
+            }
+            
+            .no-change-section {
+                font-size: 1.05em;
+                line-height: 1.7;
+                padding: 20px;
             }
             
             .history-panel {
@@ -413,6 +626,20 @@
             button {
                 min-width: 100%;
             }
+        }
+        
+        /* 加载样式 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #4ecdc4;
+            font-size: 1.2em;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
         }
     </style>
 </head>
@@ -430,12 +657,6 @@
         <div class="button-group">
             <button id="divineBtn" onclick="divine()">开始占卜</button>
             <button class="secondary" id="historyBtn" onclick="toggleHistory()">查看历史</button>
-        </div>
-
-        <div class="coin-area">
-            <div class="coin" id="coin1" data-side=""></div>
-            <div class="coin" id="coin2" data-side=""></div>
-            <div class="coin" id="coin3" data-side=""></div>
         </div>
 
         <div class="result-area" id="resultArea">
@@ -544,40 +765,79 @@
             '110': '☴', '010': '☵', '100': '☶', '000': '☷'
         };
         
-        // 硬币抛掷模拟
-        let tossingInterval;
+        // 生成爻线（正确的周易算法）
+        function generateHexagram() {
+            // 直接生成6条爻线
+            const hexagramLines = [];
+            for (let i = 0; i < 6; i++) {
+                // 模拟抛掷3枚硬币的结果
+                const coin1 = Math.random() > 0.5 ? 1 : 0; // 正面=1，反面=0
+                const coin2 = Math.random() > 0.5 ? 1 : 0;
+                const coin3 = Math.random() > 0.5 ? 1 : 0;
+                const sum = coin1 + coin2 + coin3;
+                
+                // 根据正面数量确定爻线：
+                // 3正面 = 9（老阳，变爻）
+                // 2正面 = 8（少阴，不变）
+                // 1正面 = 7（少阳，不变）
+                // 0正面 = 6（老阴，变爻）
+                if (sum === 3) {
+                    hexagramLines.push(9); // 老阳，会变
+                } else if (sum === 2) {
+                    hexagramLines.push(8); // 少阴，不变
+                } else if (sum === 1) {
+                    hexagramLines.push(7); // 少阳，不变
+                } else { // sum === 0
+                    hexagramLines.push(6); // 老阴，会变
+                }
+            }
+            return hexagramLines;
+        }
         
-        // 抛掷3枚硬币一次
-        function tossThreeCoins() {
-            const coins = document.querySelectorAll('.coin');
-            const coinArea = document.querySelector('.coin-area');
+        // 计算变卦
+        function calculateChangeGua(hexagramLines, originalIndex) {
+            // 检查是否有变爻（老阳9或老阴6）
+            const changingYaos = [];
+            const changeBinaryLines = [];
             
-            // 重置硬币状态
-            coins.forEach(coin => {
-                coin.classList.remove('tossing');
-                coin.dataset.side = '○';
-            });
+            for (let i = 0; i < hexagramLines.length; i++) {
+                const line = hexagramLines[i];
+                if (line === 9) { // 老阳(9) → 变阴
+                    changingYaos.push(i);
+                    changeBinaryLines.push('0'); // 阳变阴
+                } else if (line === 6) { // 老阴(6) → 变阳
+                    changingYaos.push(i);
+                    changeBinaryLines.push('1'); // 阴变阳
+                } else if (line === 7) { // 少阳(7) → 不变，阳爻
+                    changeBinaryLines.push('1'); // 阳爻
+                } else if (line === 8) { // 少阴(8) → 不变，阴爻
+                    changeBinaryLines.push('0'); // 阴爻
+                }
+            }
             
-            // 开始抛掷动画
-            coinArea.classList.add('tossing');
-            tossingInterval = setInterval(() => {
-                coins.forEach(coin => {
-                    coin.dataset.side = Math.random() > 0.5 ? '○' : '●';
-                });
-            }, 100);
+            // 如果没有变爻，则返回原卦
+            if (changingYaos.length === 0) {
+                return {
+                    hasChange: false,
+                    changeIndex: originalIndex,
+                    changingYaos: [],
+                    changeGua: GUA[originalIndex]
+                };
+            }
             
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    clearInterval(tossingInterval);
-                    const finalResults = [];
-                    coins.forEach(coin => {
-                        const isHeads = Math.random() > 0.5;
-                        coin.dataset.side = isHeads ? '○' : '●';
-                        finalResults.push(isHeads ? 1 : 0);
-                    });
-                    resolve(finalResults);
-                }, 1500);
-            });
+            // 计算变卦的二进制
+            const lowerBinary = changeBinaryLines.slice(0, 3).join('');
+            const upperBinary = changeBinaryLines.slice(3, 6).join('');
+            const fullBinary = upperBinary + lowerBinary;
+            const changeIndex = parseInt(fullBinary, 2);
+            
+            return {
+                hasChange: true,
+                changeIndex: changeIndex,
+                changingYaos: changingYaos,
+                changeGua: GUA[changeIndex],
+                changeBinary: fullBinary
+            };
         }
         
         // 正确的占卜逻辑
@@ -588,25 +848,17 @@
             
             // 禁用按钮
             divineBtn.disabled = true;
-            divineBtn.textContent = '占卜中...';
+            divineBtn.textContent = '生成卦象...';
             
-            // 抛掷硬币6次，每次3枚
-            const hexagramLines = [];
+            // 显示简短的加载效果
+            resultArea.innerHTML = '<div class="loading">正在生成卦象...</div>';
+            resultArea.classList.add('show');
             
-            for (let i = 0; i < 6; i++) {
-                const results = await tossThreeCoins();
-                const count = results.reduce((a, b) => a + b, 0);
-                
-                // 统计每3枚中正面数：≥2正面得7（老阳），<2得8（老阴）
-                if (count >= 2) {
-                    hexagramLines.push(7); // 老阳
-                } else {
-                    hexagramLines.push(8); // 老阴
-                }
-                
-                // 等待一下
-                await new Promise(r => setTimeout(r, 300));
-            }
+            // 短暂延迟，让用户看到状态变化
+            await new Promise(r => setTimeout(r, 200));
+            
+            // 生成卦象
+            const hexagramLines = generateHexagram();
             
             // 6次结果组成6位2进制，上卦=bits3-5，下卦=bits0-2
             const binaryLines = hexagramLines.map(n => n === 7 ? '1' : '0');
@@ -620,23 +872,112 @@
             // 获取对应的卦象
             const foundGua = GUA[index];
             
+            // 计算变卦
+            const changeGuaData = calculateChangeGua(hexagramLines, index);
+            
             // 显示结果
             divineBtn.textContent = '占卜完成!';
             divineBtn.disabled = false;
             
-            // 构建爻辞显示
+            // 构建爻辞显示（高亮变爻）
             const yaoNames = ['初九', '九二', '九三', '九四', '九五', '上九', '初六', '六二', '六三', '六四', '六五', '上六'];
             const yaoHtml = hexagramLines.map((line, idx) => {
-                const isYang = line === 7;
+                // 判断爻的类型
+                let isYang = false;
+                let yaoType = '';
+                let changeIcon = '';
+                
+                if (line === 9) { // 老阳
+                    isYang = true;
+                    yaoType = '老阳';
+                    changeIcon = '⚊';
+                } else if (line === 7) { // 少阳
+                    isYang = true;
+                    yaoType = '少阳';
+                    changeIcon = '⚊';
+                } else if (line === 8) { // 少阴
+                    isYang = false;
+                    yaoType = '少阴';
+                    changeIcon = '⚋';
+                } else if (line === 6) { // 老阴
+                    isYang = false;
+                    yaoType = '老阴';
+                    changeIcon = '⚋';
+                }
+                
                 const yaoName = isYang ? yaoNames[idx] : yaoNames[idx + 6];
-                const changeIcon = line === 7 ? '○' : '●';
                 const yaoText = foundGua[3].split('|')[idx] || foundGua[3];
-                return `<div class="yao-item">${yaoName}：${yaoText} <span style="color:#ffd166">${changeIcon}</span></div>`;
+                const isChanging = changeGuaData.changingYaos.includes(idx);
+                
+                if (isChanging) {
+                    // 变爻高亮显示
+                    const changeDirection = line === 9 ? '⚊→⚋' : '⚋→⚊';
+                    const changeNote = line === 9 ? '老阳(9)变阴' : '老阴(6)变阳';
+                    
+                    return `
+                        <div class="yao-item changing-yao">
+                            <div class="yao-header">
+                                <span class="yao-name">${yaoName}</span>
+                                <span class="yao-type">${yaoType}</span>
+                                <span class="change-indicator">变爻</span>
+                                <span class="change-icon" style="color:#f72585">${changeDirection}</span>
+                            </div>
+                            <div class="yao-text">${yaoText}</div>
+                            <div class="change-note" style="color:#ffd166;font-size:0.9em;margin-top:5px;">
+                                ${changeNote}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 普通爻
+                    return `
+                        <div class="yao-item">
+                            <div class="yao-header">
+                                <span class="yao-name">${yaoName}</span>
+                                <span class="yao-type">${yaoType}</span>
+                                <span class="change-icon" style="color:#4ecdc4">${changeIcon}</span>
+                            </div>
+                            <div class="yao-text">${yaoText}</div>
+                        </div>
+                    `;
+                }
             }).join('');
             
             const analysisHtml = foundGua[4].split('。').filter(a => a.trim()).map(a => 
                 `<div class="analysis-item">${a.trim()}。</div>`
             ).join('');
+            
+            // 构建变卦显示（只在有变卦时显示）
+            const changeHtml = changeGuaData.hasChange ? `
+                <div class="change-gua-section">
+                    <h3 style="color:#f72585;margin-bottom:15px;border-bottom:2px solid rgba(247,37,133,0.3);padding-bottom:10px;">
+                        🔄 变卦分析
+                    </h3>
+                    <div class="change-comparison">
+                        <div class="original-gua">
+                            <div class="gua-label">本卦</div>
+                            <div class="gua-symbol">${foundGua[2]}</div>
+                            <div class="gua-name">${foundGua[0]}</div>
+                            <div class="gua-title">${foundGua[1]}</div>
+                        </div>
+                        <div class="change-arrow">→</div>
+                        <div class="changed-gua">
+                            <div class="gua-label">变卦</div>
+                            <div class="gua-symbol">${changeGuaData.changeGua[2]}</div>
+                            <div class="gua-name">${changeGuaData.changeGua[0]}</div>
+                            <div class="gua-title">${changeGuaData.changeGua[1]}</div>
+                        </div>
+                    </div>
+                    <div class="change-details">
+                        <p><strong>变爻位置：</strong>第${changeGuaData.changingYaos.map(pos => ['初','二','三','四','五','上'][pos]).join('、')}爻</p>
+                        <p><strong>变爻数量：</strong>${changeGuaData.changingYaos.length}爻</p>
+                        <p><strong>变卦解释：</strong>${changeGuaData.changeGua[4]}</p>
+                        <div class="change-analysis">
+                            <p><strong>综合分析：</strong>本卦显示当前状态，变卦预示发展趋势。${changeGuaData.changingYaos.length}爻变化提示需要关注相应方面的调整。</p>
+                        </div>
+                    </div>
+                </div>
+            ` : ''; // 无变卦时不显示任何内容
             
             resultArea.innerHTML = `
                 <div class="hexagram-header">
@@ -655,14 +996,16 @@
                     <h3 style="color:#4ecdc4;margin-bottom:15px;">卦象分析</h3>
                     ${analysisHtml}
                 </div>
+                ${changeHtml}
                 <div style="margin-top:20px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;color:#888;">
                     <strong>卦象索引:</strong> ${index} (二进制: ${fullBinary}, 上卦: ${upperBinary}, 下卦: ${lowerBinary})
+                    ${changeGuaData.hasChange ? `<br><strong>变卦索引:</strong> ${changeGuaData.changeIndex} (二进制: ${changeGuaData.changeBinary})` : ''}
                 </div>
             `;
             resultArea.classList.add('show');
             
             // 保存到历史记录
-            saveToHistory(question, foundGua, index);
+            saveToHistory(question, foundGua, index, hexagramLines, changeGuaData);
             
             // 重置按钮
             setTimeout(() => {
@@ -670,7 +1013,7 @@
             }, 2000);
         }
         
-        function saveToHistory(question, guaData, index) {
+        function saveToHistory(question, guaData, index, hexagramLines, changeGuaData) {
             let history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
             history.unshift({
                 question: question || '心中所念',
@@ -678,6 +1021,10 @@
                 symbol: guaData[2],
                 title: guaData[1],
                 index: index,
+                hexagramLines: hexagramLines, // 保存爻线数据
+                changeIndex: changeGuaData.changeIndex,
+                hasChange: changeGuaData.hasChange,
+                changingYaos: changeGuaData.changingYaos,
                 date: new Date().toLocaleString('zh-CN')
             });
             history = history.slice(0, 50); // 只保留最近50条
@@ -696,7 +1043,10 @@
             historyList.innerHTML = history.map((item, idx) => `
                 <div class="history-item" onclick="loadHistoryItem(${idx})">
                     <div class="history-question">${item.question}</div>
-                    <div class="history-hexagram">${item.symbol} ${item.gua}</div>
+                    <div class="history-hexagram">
+                        ${item.symbol} ${item.gua}
+                        ${item.hasChange ? '<span class="history-change-indicator">变卦</span>' : ''}
+                    </div>
                     <div style="font-size:0.8em;color:#666;margin-top:5px;">${item.date}</div>
                 </div>
             `).join('');
@@ -715,6 +1065,102 @@
                 `<div class="analysis-item">${a.trim()}。</div>`
             ).join('');
             
+            // 构建爻辞显示（如果历史记录中有爻线数据）
+            let yaoHtml = '';
+            if (item.hexagramLines && item.hexagramLines.length === 6) {
+                const yaoNames = ['初九', '九二', '九三', '九四', '九五', '上九', '初六', '六二', '六三', '六四', '六五', '上六'];
+                yaoHtml = item.hexagramLines.map((line, idx) => {
+                    // 判断爻的类型
+                    let isYang = false;
+                    let yaoType = '';
+                    let changeIcon = '';
+                    
+                    if (line === 9) { // 老阳
+                        isYang = true;
+                        yaoType = '老阳';
+                        changeIcon = '⚊';
+                    } else if (line === 7) { // 少阳
+                        isYang = true;
+                        yaoType = '少阳';
+                        changeIcon = '⚊';
+                    } else if (line === 8) { // 少阴
+                        isYang = false;
+                        yaoType = '少阴';
+                        changeIcon = '⚋';
+                    } else if (line === 6) { // 老阴
+                        isYang = false;
+                        yaoType = '老阴';
+                        changeIcon = '⚋';
+                    }
+                    
+                    const yaoName = isYang ? yaoNames[idx] : yaoNames[idx + 6];
+                    const yaoText = foundGua[3].split('|')[idx] || foundGua[3];
+                    const isChanging = item.changingYaos && item.changingYaos.includes(idx);
+                    
+                    if (isChanging) {
+                        const changeDirection = line === 9 ? '⚊→⚋' : '⚋→⚊';
+                        return `
+                            <div class="yao-item changing-yao">
+                                <div class="yao-header">
+                                    <span class="yao-name">${yaoName}</span>
+                                    <span class="yao-type">${yaoType}</span>
+                                    <span class="change-indicator">变爻</span>
+                                    <span class="change-icon" style="color:#f72585">${changeDirection}</span>
+                                </div>
+                                <div class="yao-text">${yaoText}</div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="yao-item">
+                                <div class="yao-header">
+                                    <span class="yao-name">${yaoName}</span>
+                                    <span class="yao-type">${yaoType}</span>
+                                    <span class="change-icon" style="color:#4ecdc4">${changeIcon}</span>
+                                </div>
+                                <div class="yao-text">${yaoText}</div>
+                            </div>
+                        `;
+                    }
+                }).join('');
+            }
+            
+            // 构建变卦显示（只在有变卦时显示）
+            let changeHtml = '';
+            if (item.hasChange && item.changeIndex !== undefined) {
+                const changeGua = GUA[item.changeIndex];
+                if (changeGua) {
+                    changeHtml = `
+                        <div class="change-gua-section">
+                            <h3 style="color:#f72585;margin-bottom:15px;border-bottom:2px solid rgba(247,37,133,0.3);padding-bottom:10px;">
+                                🔄 变卦分析
+                            </h3>
+                            <div class="change-comparison">
+                                <div class="original-gua">
+                                    <div class="gua-label">本卦</div>
+                                    <div class="gua-symbol">${foundGua[2]}</div>
+                                    <div class="gua-name">${foundGua[0]}</div>
+                                    <div class="gua-title">${foundGua[1]}</div>
+                                </div>
+                                <div class="change-arrow">→</div>
+                                <div class="changed-gua">
+                                    <div class="gua-label">变卦</div>
+                                    <div class="gua-symbol">${changeGua[2]}</div>
+                                    <div class="gua-name">${changeGua[0]}</div>
+                                    <div class="gua-title">${changeGua[1]}</div>
+                                </div>
+                            </div>
+                            <div class="change-details">
+                                <p><strong>变爻位置：</strong>第${item.changingYaos.map(pos => ['初','二','三','四','五','上'][pos]).join('、')}爻</p>
+                                <p><strong>变爻数量：</strong>${item.changingYaos.length}爻</p>
+                                <p><strong>变卦解释：</strong>${changeGua[4]}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            // 无变卦时不显示任何内容
+            
             resultArea.innerHTML = `
                 <div class="hexagram-header">
                     <div class="symbol">${foundGua[2]}</div>
@@ -724,12 +1170,20 @@
                     </div>
                 </div>
                 ${item.question ? `<p style="margin-bottom:20px;color:#a0a0a0;font-style:italic;">"${item.question}"</p>` : ''}
+                ${yaoHtml ? `
+                    <div class="yao-list">
+                        <h3 style="color:#4ecdc4;margin-bottom:15px;">六爻解读</h3>
+                        ${yaoHtml}
+                    </div>
+                ` : ''}
                 <div class="analysis-list">
                     <h3 style="color:#4ecdc4;margin-bottom:15px;">卦象分析</h3>
                     ${analysisHtml}
                 </div>
+                ${changeHtml}
                 <div style="margin-top:20px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;color:#888;">
                     <strong>卦象索引:</strong> ${item.index}
+                    ${item.hasChange ? `<br><strong>变卦索引:</strong> ${item.changeIndex}` : ''}
                 </div>
             `;
             resultArea.classList.add('show');
