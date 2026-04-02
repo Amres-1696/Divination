@@ -178,7 +178,7 @@
         }
 
         .hexagram-name {
-            font-size: 2.2rem;
+            font-size: 2.4rem;
             color: #4ecdc4;
             margin-bottom: 10px;
             font-family: 'Ma Shan Zheng', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
@@ -475,6 +475,9 @@
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            justify-content: center;
+            padding-left: 60px;
+            padding-right: 60px;
         }
 
         .share-btn {
@@ -488,7 +491,9 @@
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
+            text-align: center;
             align-items: center;
+            justify-content: center;
             gap: 6px;
             box-shadow: 0 3px 10px rgba(247, 37, 133, 0.3);
             margin: 10px 0;
@@ -572,14 +577,14 @@
         }
 
         .share-download-btn {
-            background: linear-gradient(135deg, #e8c36a, #d4a843);
-            color: #0a0a12;
+            background: linear-gradient(135deg, #4ecdc4, #45b7d1);
+            color: #ffffff;
             font-weight: bold;
         }
 
         .share-copy-btn {
-            background: rgba(92,224,210,0.15);
-            color: #5ce0d2;
+            background: linear-gradient(#ff6b6b, #ff8e53);
+            color: #ffffff;
             border: 1px solid rgba(92,224,210,0.3);
         }
 
@@ -753,7 +758,7 @@
             }
             
             .hexagram-name {
-                font-size: 1.6rem;
+                font-size: 2.8rem;
                 margin-bottom: 5px;
             }
             
@@ -984,7 +989,7 @@
             }
             
             .hexagram-name {
-                font-size: 1.4rem;
+                font-size: 2.8rem;
             }
             
             .yao-item {
@@ -1094,8 +1099,8 @@
             top: 50%; left: 50%;
             transform: translateX(-50%);
             margin-top: 55px;
-            color: #e8c36a;
-            font-size: 18px;
+            color: #ffcb51;
+            font-size: 30px;
             white-space: nowrap;
             opacity: 0;
             transition: opacity 0.5s;
@@ -2029,7 +2034,7 @@
         function downloadShareImage(imageUrl) {
             const link = document.createElement('a');
             link.href = imageUrl;
-            link.download = `赛博算卦_${new Date().getTime()}.png`;
+            link.download = `天衍_${new Date().getTime()}.png`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
