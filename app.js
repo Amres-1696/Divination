@@ -541,7 +541,51 @@ function renderDailyGua() {
             '<span class="daily-divider">·</span>' +
             '<span class="daily-motto">' + motto + '</span>' +
         '</div>';
-    el.onclick = function() {};
+    el.onclick = function() { showGuaDetail(getDailyGua()); };
+}
+
+// ========== 卦象详解弹窗 ==========
+function showGuaDetail(gua) {
+    var old = document.querySelector('.detail-overlay');
+    if (old) old.remove();
+
+    var yaos = gua[3].split('|');
+    var yaoHtml = yaos.map(function(y) {
+        var i = y.indexOf('：');
+        var pos = i > 0 ? y.substring(0, i) : '';
+        var txt = i > 0 ? y.substring(i + 1) : y;
+        return '<div class="detail-yao"><span class="detail-yao-name">' + pos + '</span>' + txt + '</div>';
+    }).join('');
+
+    var analysis = gua[4].split('。').filter(function(s) { return s.trim(); }).map(function(s) {
+        return '<p>' + s.trim() + '。</p>';
+    }).join('');
+
+    var upper = getTrigramName(gua[2][0]);
+    var lower = getTrigramName(gua[2][1]);
+
+    var overlay = document.createElement('div');
+    overlay.className = 'detail-overlay';
+    overlay.innerHTML =
+        '<div class="detail-box">' +
+            '<div class="detail-head">' +
+                '<div class="detail-symbol">' + gua[2] + '</div>' +
+                '<div class="detail-info"><h2>' + gua[0] + '</h2><div class="detail-sub">' + gua[1] + '</div></div>' +
+                '<button class="detail-close" id="detailCloseBtn">&times;</button>' +
+            '</div>' +
+            '<div class="detail-meta">上卦 ' + upper + ' · 下卦 ' + lower + '</div>' +
+            '<div class="detail-section"><h3>爻辞</h3>' + yaoHtml + '</div>' +
+            '<div class="detail-section"><h3>卦象解读</h3><div class="detail-analysis">' + analysis + '</div></div>' +
+        '</div>';
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+    overlay.querySelector('#detailCloseBtn').addEventListener('click', function() { overlay.remove(); });
+    requestAnimationFrame(function() { overlay.classList.add('show'); });
+}
+
+function getTrigramName(sym) {
+    var map = {'☰':'乾(天)','☱':'兑(泽)','☲':'离(火)','☳':'震(雷)','☴':'巽(风)','☵':'坎(水)','☶':'艮(山)','☷':'坤(地)'};
+    return map[sym] || sym;
 }
 
 // ========== 初始化 ==========
