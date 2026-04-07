@@ -1,0 +1,860 @@
+/* ========== 古韵水墨风 · 天衍 ========== */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=ZCOOL+XiaoWei&display=swap');
+
+:root {
+    --ink: #2c2c2c;
+    --cinnabar: #b33a3a;
+    --gold: #c9a96e;
+    --gold-dim: rgba(201,169,110,0.15);
+    --paper: #f5f0e8;
+    --paper-dark: #e8e0d4;
+    --text: #3a3a3a;
+    --text-dim: #888;
+    --border: rgba(0,0,0,0.08);
+    --serif: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+    --display: 'ZCOOL XiaoWei', 'KaiTi', 'STKaiti', serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--serif);
+    background: var(--paper);
+    color: var(--text);
+    min-height: 100vh;
+    /* 宣纸纹理 */
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(201,169,110,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 30%, rgba(179,58,58,0.03) 0%, transparent 50%),
+        url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+.container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+}
+
+/* ========== 页头 ========== */
+
+header {
+    text-align: center;
+    padding: 40px 0 30px;
+    position: relative;
+}
+
+.title-vertical {
+    writing-mode: vertical-rl;
+    display: inline-block;
+    font-family: var(--display);
+    font-size: 3.2rem;
+    letter-spacing: 0.2em;
+    color: var(--ink);
+    position: relative;
+    padding: 0 16px;
+}
+
+.title-vertical::before,
+.title-vertical::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.title-vertical::before { top: -8px; }
+.title-vertical::after { bottom: -8px; }
+
+.subtitle {
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+}
+
+/* 印章装饰 */
+.seal {
+    display: inline-block;
+    border: 2px solid var(--cinnabar);
+    color: var(--cinnabar);
+    font-family: var(--display);
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    margin-top: 12px;
+    letter-spacing: 2px;
+    transform: rotate(-3deg);
+    opacity: 0.7;
+}
+
+/* ========== 输入区域 ========== */
+
+.question-area {
+    margin: 30px 0;
+    position: relative;
+}
+
+.question-area input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--cinnabar);
+    padding: 12px 4px;
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.question-area input::placeholder {
+    color: #bbb;
+    font-style: italic;
+}
+
+.question-area input:focus {
+    border-bottom-color: var(--gold);
+}
+
+.question-label {
+    position: absolute;
+    top: -18px;
+    left: 0;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+}
+
+/* ========== 按钮 ========== */
+
+.btn-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 30px;
+}
+
+.btn-divine {
+    flex: 1;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 14px 0;
+    font-family: var(--display);
+    font-size: 1.15rem;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-divine:hover {
+    background: var(--cinnabar);
+}
+
+.btn-divine:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-divine::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.btn-divine:hover::after { opacity: 1; }
+
+.btn-history {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 14px 20px;
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-history:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+/* ========== 毛笔书写动画区 ========== */
+
+.ink-stage {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.ink-stage canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ink-status {
+    position: absolute;
+    bottom: 10px;
+    left: 0; right: 0;
+    z-index: 2;
+    font-family: var(--display);
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.5s, font-size 0.3s, color 0.3s;
+    text-align: center;
+}
+.ink-status.show { opacity: 1; }
+
+/* ========== 结果区域 ========== */
+
+#resultArea {
+    display: none;
+    transition: opacity 0.5s ease;
+}
+#resultArea.show { display: block; }
+
+.card {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.card h3 {
+    font-family: var(--display);
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 2px;
+}
+
+/* 卦象头部 */
+.result-header {
+    text-align: center;
+    padding: 30px 24px;
+}
+
+.hex-symbol {
+    font-size: 4rem;
+    line-height: 1;
+    color: var(--ink);
+    margin-bottom: 12px;
+}
+
+.hex-name {
+    font-family: var(--display);
+    font-size: 2rem;
+    letter-spacing: 4px;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+
+.hex-name.clickable {
+    cursor: pointer;
+    transition: color 0.2s;
+    text-decoration: underline;
+    text-decoration-color: rgba(201,169,110,0.3);
+    text-underline-offset: 4px;
+}
+.hex-name.clickable:hover {
+    color: var(--cinnabar);
+    text-decoration-color: var(--cinnabar);
+}
+
+.hex-title {
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+}
+
+.hex-question {
+    margin-top: 16px;
+    color: var(--text-dim);
+    font-style: italic;
+    font-size: 0.95rem;
+}
+
+.share-row {
+    margin-top: 16px;
+}
+
+.btn-share {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 8px 20px;
+    font-family: var(--serif);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+.btn-share:hover {
+    background: var(--gold);
+    color: #fff;
+}
+
+/* ========== 爻线 ========== */
+
+.yao-list { display: flex; flex-direction: column; gap: 8px; }
+
+.yao-item {
+    padding: 12px 16px;
+    border-left: 3px solid transparent;
+    transition: all 0.3s;
+}
+.yao-item:hover { background: rgba(0,0,0,0.02); }
+.yao-item.changing {
+    border-left-color: var(--cinnabar);
+    background: rgba(179,58,58,0.04);
+}
+
+.yao-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+
+.yao-line {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.yao-line span {
+    display: block;
+    height: 4px;
+    background: var(--ink);
+    border-radius: 1px;
+}
+
+.yao-line.yang span { width: 36px; }
+.yao-line.yin span { width: 15px; }
+
+.changing .yao-line span { background: var(--cinnabar); }
+
+.yao-name {
+    font-family: var(--display);
+    font-size: 1rem;
+    color: var(--ink);
+    min-width: 36px;
+}
+.changing .yao-name { color: var(--cinnabar); }
+
+.yao-badge {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 1px;
+}
+.yao-badge.type {
+    background: var(--gold-dim);
+    color: var(--gold);
+}
+.yao-badge.change {
+    background: rgba(179,58,58,0.1);
+    color: var(--cinnabar);
+}
+
+.yao-text {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text);
+    padding-left: 42px;
+    font-family: var(--serif);
+}
+.changing .yao-text { color: var(--cinnabar); }
+
+/* ========== 卦象分析 ========== */
+
+.analysis-list { display: flex; flex-direction: column; gap: 12px; }
+
+.analysis-item {
+    padding-left: 16px;
+    border-left: 2px solid var(--gold);
+    line-height: 1.8;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+/* ========== 变卦 ========== */
+
+.change-section h3 {
+    color: var(--cinnabar) !important;
+    border-bottom-color: rgba(179,58,58,0.15) !important;
+}
+
+.change-comparison {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+}
+
+.gua-box {
+    text-align: center;
+    padding: 16px 24px;
+    min-width: 120px;
+}
+
+.gua-box .gua-label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.gua-box .gua-symbol {
+    font-size: 2.5rem;
+    color: var(--ink);
+    margin-bottom: 6px;
+}
+
+.gua-box .gua-name {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    color: var(--ink);
+}
+
+.gua-box.changed .gua-symbol,
+.gua-box.changed .gua-name { color: var(--cinnabar); }
+
+.change-arrow {
+    font-size: 1.5rem;
+    color: var(--text-dim);
+}
+
+.change-details {
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(179,58,58,0.03);
+    border: 1px solid rgba(179,58,58,0.1);
+}
+
+.change-details p {
+    line-height: 1.8;
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+    color: var(--text);
+}
+
+.change-details b { color: var(--cinnabar); }
+
+/* ========== 历史面板 ========== */
+
+.history-panel {
+    position: fixed;
+    top: 0; right: -420px;
+    width: 400px; height: 100vh;
+    background: var(--paper);
+    border-left: 1px solid var(--border);
+    padding: 30px;
+    overflow-y: auto;
+    transition: right 0.4s ease;
+    z-index: 1000;
+    box-shadow: -8px 0 30px rgba(0,0,0,0.08);
+}
+.history-panel.show { right: 0; }
+
+.history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-head h3 {
+    font-family: var(--display);
+    font-size: 1.3rem;
+    color: var(--ink);
+    letter-spacing: 2px;
+}
+
+.btn-close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.btn-close:hover { border-color: var(--cinnabar); color: var(--cinnabar); }
+
+.history-item {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.history-item:hover { background: rgba(0,0,0,0.02); }
+
+.history-q {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-gua {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    color: var(--ink);
+}
+
+.history-tag {
+    display: inline-block;
+    background: rgba(179,58,58,0.1);
+    color: var(--cinnabar);
+    font-size: 0.7rem;
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.history-date {
+    font-size: 0.75rem;
+    color: #bbb;
+    margin-top: 4px;
+}
+
+.history-empty {
+    text-align: center;
+    color: #ccc;
+    padding: 40px 0;
+    font-size: 0.9rem;
+}
+
+.btn-clear {
+    width: 100%;
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid rgba(179,58,58,0.2);
+    color: var(--cinnabar);
+    padding: 10px;
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.btn-clear:hover { background: rgba(179,58,58,0.05); }
+
+/* ========== 分享弹窗 ========== */
+
+.share-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+}
+.share-overlay.show { display: flex; }
+
+.share-box {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    padding: 24px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+}
+
+.share-box h3 {
+    font-family: var(--display);
+    color: var(--ink);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+}
+
+.share-preview {
+    margin: 12px 0;
+    border: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: 55vh;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.share-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.share-actions button {
+    padding: 10px 24px;
+    border: none;
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-download {
+    background: var(--ink);
+    color: var(--paper);
+}
+.btn-download:hover { background: var(--cinnabar); }
+
+.btn-copy {
+    background: var(--gold);
+    color: #fff;
+}
+.btn-copy:hover { opacity: 0.85; }
+
+.btn-close-share {
+    background: transparent;
+    border: 1px solid var(--border) !important;
+    color: var(--text-dim);
+}
+.btn-close-share:hover { border-color: var(--ink) !important; }
+
+/* ========== 页脚 ========== */
+
+footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: #bbb;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+footer p { margin: 4px 0; }
+
+/* ========== 响应式 ========== */
+
+@media (max-width: 768px) {
+    .container { padding: 20px 16px 40px; }
+    .title-vertical { font-size: 2.6rem; }
+    .btn-group { flex-direction: column; }
+    .btn-divine, .btn-history { width: 100%; }
+    .hex-symbol { font-size: 3rem; }
+    .hex-name { font-size: 1.6rem; }
+    .card { padding: 18px; }
+    .yao-text { padding-left: 0; margin-top: 6px; }
+    .change-comparison { flex-direction: column; gap: 12px; }
+    .change-arrow { transform: rotate(90deg); }
+    .history-panel { width: 100%; right: -100%; }
+    .share-box { max-width: 92%; }
+    .share-actions { flex-direction: column; }
+    .share-actions button { width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .title-vertical { font-size: 2.2rem; }
+    .hex-symbol { font-size: 2.5rem; }
+    .hex-name { font-size: 1.4rem; }
+    .card { padding: 14px; }
+    .gua-box { padding: 12px 16px; }
+    .gua-box .gua-symbol { font-size: 2rem; }
+}
+
+/* ========== 每日一卦 ========== */
+
+.daily-gua {
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: rgba(201,169,110,0.06);
+    border: 1px solid rgba(201,169,110,0.15);
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.daily-gua:hover { background: rgba(201,169,110,0.1); }
+
+.daily-label {
+    font-size: 0.75rem;
+    color: var(--gold);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+}
+
+.daily-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.daily-symbol {
+    font-size: 1.6rem;
+    color: var(--ink);
+}
+
+.daily-name {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    color: var(--ink);
+}
+
+.daily-divider {
+    color: var(--gold);
+    opacity: 0.4;
+}
+
+.daily-motto {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* ========== 卦象详解弹窗 ========== */
+
+.detail-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 3000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(3px);
+}
+.detail-overlay.show { opacity: 1; }
+
+.detail-box {
+    background: var(--paper);
+    border: 1px solid var(--border);
+    max-width: 600px;
+    width: 100%;
+    padding: 30px;
+    transform: translateY(20px);
+    transition: transform 0.3s;
+}
+.detail-overlay.show .detail-box { transform: translateY(0); }
+
+.detail-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-symbol {
+    font-size: 2.8rem;
+    color: var(--ink);
+}
+
+.detail-info h2 {
+    font-family: var(--display);
+    font-size: 1.6rem;
+    letter-spacing: 3px;
+    color: var(--ink);
+    margin: 0;
+}
+
+.detail-sub {
+    font-size: 0.9rem;
+    color: var(--gold);
+    margin-top: 4px;
+}
+
+.detail-close {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.detail-close:hover { border-color: var(--cinnabar); color: var(--cinnabar); }
+
+.detail-meta {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section h3 {
+    font-family: var(--display);
+    font-size: 1rem;
+    color: var(--ink);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 2px;
+}
+
+.detail-yao {
+    padding: 8px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.05);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+}
+.detail-yao:last-child { border-bottom: none; }
+
+.detail-yao-name {
+    font-family: var(--display);
+    color: var(--gold);
+    margin-right: 8px;
+    font-size: 0.85rem;
+}
+
+.detail-analysis p {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--text);
+    margin-bottom: 8px;
+    padding-left: 14px;
+    border-left: 2px solid var(--gold);
+}
+
+@media (max-width: 768px) {
+    .daily-content { gap: 8px; }
+    .daily-symbol { font-size: 1.3rem; }
+    .detail-box { padding: 20px; }
+    .detail-symbol { font-size: 2.2rem; }
+    .detail-info h2 { font-size: 1.3rem; }
+}
