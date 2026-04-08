@@ -94,7 +94,7 @@ function calculateChangeGua(hexLines, origBin) {
         else cb.push(l===7?'1':'0');
     }
     if(!cy.length) return {hasChange:false,changeBinary:origBin,changingYaos:[],changeGua:lookupGua(origBin)};
-    const full=cb.slice(3,6).join('')+cb.slice(0,3).join('');
+    const full=cb.slice(3,6).reverse().join('')+cb.slice(0,3).reverse().join('');
     return {hasChange:true,changeBinary:full,changingYaos:cy,changeGua:lookupGua(full)};
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -417,7 +417,7 @@ async function divine() {
     const anim = new BrushAnimation(cv);
     anim.start();
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-    const fullBin = bits.slice(3,6).join('') + bits.slice(0,3).join('');
+    const fullBin = bits.slice(3,6).reverse().join('') + bits.slice(0,3).reverse().join('');
     const gua = lookupGua(fullBin);
     const change = calculateChangeGua(hexLines, fullBin);
     const statusEl = document.getElementById('inkStatus');
@@ -548,16 +548,15 @@ function loadHistoryItem(index) {
     const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
     const item = history[index];
     if (!item) return;
-    const gua = item.binary ? lookupGua(item.binary) : (GUA.find(g => g[2] === item.symbol) || GUA[0]);
+    // 优先通过卦象符号查找（兼容旧数据）
+    const gua = GUA.find(g => g[2] === item.symbol) || (item.binary ? lookupGua(item.binary) : null) || GUA[0];
     if (!gua) return;
-    const change = {
-        hasChange: item.hasChange,
-        changeBinary: item.changeBinary,
-        changingYaos: item.changingYaos || [],
-        changeGua: item.changeBinary ? lookupGua(item.changeBinary) : null
-    };
     if (item.hexagramLines && item.hexagramLines.length === 6) {
-        renderResult(gua, item.hexagramLines, change, item.question, item.binary);
+        // 从爻线重新计算二进制（兼容旧数据的错误binary）
+        const bits = item.hexagramLines.map(n => (n === 7 || n === 9) ? '1' : '0');
+        const correctBin = bits.slice(3,6).reverse().join('') + bits.slice(0,3).reverse().join('');
+        const change = calculateChangeGua(item.hexagramLines, correctBin);
+        renderResult(gua, item.hexagramLines, change, item.question, correctBin);
     } else {
         const resultArea = document.getElementById('resultArea');
         const analysisHtml = gua[4].split('。').filter(s=>s.trim()).map(s=>

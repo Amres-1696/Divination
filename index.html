@@ -20,8 +20,8 @@
 
         <!-- 起卦模式切换 -->
         <div class="mode-switch">
-            <button class="mode-btn active" id="modeRandom" onclick="switchMode('random')">随机起卦</button>
-            <button class="mode-btn" id="modeBazi" onclick="switchMode('bazi')">生辰起卦</button>
+            <button type="button" class="mode-btn active" id="modeRandom" onclick="switchMode('random')">随机起卦</button>
+            <button type="button" class="mode-btn" id="modeBazi" onclick="switchMode('bazi')">生辰起卦</button>
         </div>
 
         <!-- 生辰八字输入区 -->
@@ -29,11 +29,11 @@
             <div class="bazi-label">出生时辰</div>
             <div class="bazi-inputs">
                 <div class="bazi-field">
-                    <label>年</label>
+                    <label for="baziYear">年</label>
                     <input type="number" id="baziYear" min="1900" max="2100" placeholder="如 1990">
                 </div>
                 <div class="bazi-field">
-                    <label>月</label>
+                    <label for="baziMonth">月</label>
                     <select id="baziMonth">
                         <option value="">月</option>
                         <option value="1">正月</option><option value="2">二月</option>
@@ -45,11 +45,11 @@
                     </select>
                 </div>
                 <div class="bazi-field">
-                    <label>日</label>
+                    <label for="baziDay">日</label>
                     <input type="number" id="baziDay" min="1" max="31" placeholder="日">
                 </div>
                 <div class="bazi-field">
-                    <label>时辰</label>
+                    <label for="baziShichen">时辰</label>
                     <select id="baziShichen">
                         <option value="">选择</option>
                         <option value="0">子时 (23-1)</option>
@@ -75,8 +75,8 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-divine" id="divineBtn" onclick="divine()">起卦</button>
-            <button class="btn-history" onclick="toggleHistory()">历史</button>
+            <button type="button" class="btn-divine" id="divineBtn" onclick="divine()">起卦</button>
+            <button type="button" class="btn-history" onclick="toggleHistory()">历史</button>
         </div>
 
         <div id="resultArea"></div>
@@ -91,10 +91,10 @@
     <div class="history-panel" id="historyPanel">
         <div class="history-head">
             <h3>占卜历史</h3>
-            <button class="btn-close" onclick="toggleHistory()">关闭</button>
+            <button type="button" class="btn-close" onclick="toggleHistory()">关闭</button>
         </div>
         <div id="historyList"></div>
-        <button class="btn-clear" onclick="clearHistory()">清空历史</button>
+        <button type="button" class="btn-clear" onclick="clearHistory()">清空历史</button>
     </div>
 
     <!-- 分享弹窗 -->
@@ -103,9 +103,9 @@
             <h3>分享卡片</h3>
             <div class="share-preview" id="shareImagePreview">生成中…</div>
             <div class="share-actions">
-                <button class="btn-download" id="shareDownloadBtn">下载图片</button>
-                <button class="btn-copy" id="shareCopyBtn">复制图片</button>
-                <button class="btn-close-share" onclick="closeShare()">关闭</button>
+                <button type="button" class="btn-download" id="shareDownloadBtn">下载图片</button>
+                <button type="button" class="btn-copy" id="shareCopyBtn">复制图片</button>
+                <button type="button" class="btn-close-share" onclick="closeShare()">关闭</button>
             </div>
         </div>
     </div>
