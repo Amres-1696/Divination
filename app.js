@@ -1,3 +1,13 @@
+// ========== 起卦模式 ==========
+var currentMode = 'random';
+
+function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('modeRandom').classList.toggle('active', mode === 'random');
+    document.getElementById('modeBazi').classList.toggle('active', mode === 'bazi');
+    document.getElementById('baziArea').classList.toggle('show', mode === 'bazi');
+}
+
 // ========== 卦象生成 ==========
 function generateHexagram() {
     const lines = [];
@@ -7,6 +17,74 @@ function generateHexagram() {
     }
     return lines;
 }
+
+// 确定性哈希函数（FNV-1a）
+function hashStr(str) {
+    var h = 0x811c9dc5;
+    for (var i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 0x01000193);
+    }
+    h ^= h >>> 16;
+    h = Math.imul(h, 0x45d9f3b);
+    h ^= h >>> 16;
+    return h >>> 0;
+}
+
+// 基于生辰的确定性起卦
+function generateHexagramFromBazi(year, month, day, shichen, question) {
+    var seed = year + '-' + month + '-' + day + '-' + shichen + ':' + (question || '');
+    var lines = [];
+    for (var i = 0; i < 6; i++) {
+        var h = hashStr(seed + '#' + i);
+        // 映射到 6/7/8/9，概率近似三枚铜钱：7和8各3/8，9和6各1/8
+        var v = h % 8;
+        if (v === 0) lines.push(6);       // 老阴 1/8
+        else if (v <= 3) lines.push(7);   // 少阳 3/8
+        else if (v <= 6) lines.push(8);   // 少阴 3/8
+        else lines.push(9);               // 老阳 1/8
+    }
+    return lines;
+}
+
+function getBaziInput() {
+    var y = document.getElementById('baziYear').value.trim();
+    var m = document.getElementById('baziMonth').value;
+    var d = document.getElementById('baziDay').value.trim();
+    var s = document.getElementById('baziShichen').value;
+    if (!y || !m || !d || s === '') {
+        alert('请填写完整的出生年月日时辰');
+        return null;
+    }
+    var year = parseInt(y);
+    if (year < 1900 || year > 2100) {
+        alert('请输入有效的出生年份（1900-2100）');
+        return null;
+    }
+    var day = parseInt(d);
+    if (day < 1 || day > 31) {
+        alert('请输入有效的日期（1-31）');
+        return null;
+    }
+    // 保存生辰数据
+    try {
+        localStorage.setItem('tianyan_bazi', JSON.stringify({ year: year, month: parseInt(m), day: day, shichen: parseInt(s) }));
+    } catch(e) {}
+    return { year: year, month: parseInt(m), day: day, shichen: parseInt(s) };
+}
+
+function loadBaziInput() {
+    try {
+        var saved = localStorage.getItem('tianyan_bazi');
+        if (!saved) return;
+        var data = JSON.parse(saved);
+        if (data.year) document.getElementById('baziYear').value = data.year;
+        if (data.month) document.getElementById('baziMonth').value = data.month;
+        if (data.day) document.getElementById('baziDay').value = data.day;
+        if (data.shichen !== undefined && data.shichen !== '') document.getElementById('baziShichen').value = data.shichen;
+    } catch(e) {}
+}
+
 function calculateChangeGua(hexLines, origBin) {
     const cy=[], cb=[];
     for (let i=0;i<hexLines.length;i++) {
@@ -319,13 +397,25 @@ async function divine() {
     const question = document.getElementById('question').value.trim();
     const resultArea = document.getElementById('resultArea');
     const btn = document.getElementById('divineBtn');
+
+    // 生辰模式校验
+    var baziData = null;
+    var hexLines;
+    if (currentMode === 'bazi') {
+        baziData = getBaziInput();
+        if (!baziData) return;
+        hexLines = generateHexagramFromBazi(baziData.year, baziData.month, baziData.day, baziData.shichen, question);
+    } else {
+        hexLines = generateHexagram();
+    }
+
     btn.disabled = true; btn.textContent = '卦象演算中…';
     resultArea.innerHTML = '<div class="ink-stage"><canvas id="inkCanvas"></canvas><div class="ink-status" id="inkStatus"></div></div>';
     resultArea.classList.add('show');
+    resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
     const cv = document.getElementById('inkCanvas');
     const anim = new BrushAnimation(cv);
     anim.start();
-    const hexLines = generateHexagram();
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
     const fullBin = bits.slice(3,6).join('') + bits.slice(0,3).join('');
     const gua = lookupGua(fullBin);
@@ -534,7 +624,10 @@ function renderDailyGua() {
     const gua = getDailyGua();
     const motto = getDailyMotto();
     el.innerHTML =
-        '<div class="daily-label">今日卦象</div>' +
+        '<div class="daily-header">' +
+            '<div class="daily-label">今日卦象</div>' +
+            '<button class="daily-share-btn" id="dailyShareBtn" onclick="event.stopPropagation();shareDailyGua();">分享</button>' +
+        '</div>' +
         '<div class="daily-content">' +
             '<span class="daily-symbol">' + gua[2] + '</span>' +
             '<span class="daily-name">' + gua[0] + '</span>' +
@@ -542,6 +635,68 @@ function renderDailyGua() {
             '<span class="daily-motto">' + motto + '</span>' +
         '</div>';
     el.onclick = function() { showGuaDetail(getDailyGua()); };
+}
+
+// 每日一卦分享卡片
+function createDailyShareCard() {
+    var gua = getDailyGua();
+    var motto = getDailyMotto();
+    var dateStr = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+    var weekDay = ['日','一','二','三','四','五','六'][new Date().getDay()];
+
+    var analysis = gua[4].split('。').filter(function(s){ return s.trim(); }).map(function(s){
+        return '<div style="margin-bottom:8px;padding-left:12px;border-left:2px solid #c9a96e;font-size:13px;line-height:1.7;color:#3a3a3a;">' + s.trim() + '。</div>';
+    }).join('');
+
+    return '<div id="shareCard" style="width:480px;background:#f5f0e8;color:#2c2c2c;padding:32px 28px;font-family:serif;position:relative;">' +
+        '<div style="text-align:center;margin-bottom:6px;font-size:12px;color:#999;letter-spacing:6px;">天 衍</div>' +
+        '<div style="text-align:center;margin:8px 0 4px;"><span style="display:inline-block;padding:4px 18px;border:1px solid #c9a96e;color:#c9a96e;font-size:12px;letter-spacing:4px;">每 日 一 卦</span></div>' +
+        '<div style="text-align:center;font-size:13px;color:#999;margin-bottom:12px;">' + dateStr + ' 星期' + weekDay + '</div>' +
+        '<div style="text-align:center;padding:20px 0;">' +
+            '<div style="font-size:72px;line-height:1;color:#2c2c2c;">' + gua[2] + '</div>' +
+            '<div style="font-size:28px;margin-top:12px;letter-spacing:4px;">' + gua[0] + '</div>' +
+            '<div style="font-size:15px;color:#c9a96e;margin-top:6px;">' + gua[1] + '</div>' +
+        '</div>' +
+        '<div style="text-align:center;margin:12px 0 18px;font-size:16px;color:#666;letter-spacing:2px;font-style:italic;">「' + motto + '」</div>' +
+        '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:0 0 16px;"></div>' +
+        '<div style="padding:14px;background:rgba(0,0,0,0.03);border-radius:8px;">' + analysis + '</div>' +
+        '<div style="margin-top:20px;display:flex;justify-content:space-between;font-size:11px;color:#aaa;">' +
+            '<span>' + dateStr + '</span><span>天衍 · 每日一卦</span>' +
+        '</div>' +
+    '</div>';
+}
+
+async function shareDailyGua() {
+    var container = document.getElementById('shareImageContainer');
+    var preview = document.getElementById('shareImagePreview');
+    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
+    container.classList.add('show');
+    try {
+        var tmp = document.createElement('div');
+        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:540px;';
+        tmp.innerHTML = createDailyShareCard();
+        document.body.appendChild(tmp);
+        await sleep(300);
+        var card = tmp.querySelector('#shareCard');
+        var canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
+        document.body.removeChild(tmp);
+        var url = canvas.toDataURL('image/png', 1.0);
+        preview.innerHTML = '<img src="' + url + '" alt="每日一卦" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
+        document.getElementById('shareDownloadBtn').onclick = function() {
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '天衍_每日一卦_' + Date.now() + '.png';
+            a.click();
+        };
+        document.getElementById('shareCopyBtn').onclick = async function() {
+            try {
+                canvas.toBlob(async function(blob) {
+                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                    alert('已复制到剪贴板');
+                });
+            } catch(e) { alert('复制失败，请下载图片'); }
+        };
+    } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
 }
 
 // ========== 卦象详解弹窗 ==========
@@ -576,11 +731,77 @@ function showGuaDetail(gua) {
             '<div class="detail-meta">上卦 ' + upper + ' · 下卦 ' + lower + '</div>' +
             '<div class="detail-section"><h3>爻辞</h3>' + yaoHtml + '</div>' +
             '<div class="detail-section"><h3>卦象解读</h3><div class="detail-analysis">' + analysis + '</div></div>' +
+            '<div class="detail-footer"><button class="detail-share-btn" id="detailShareBtn">分享此卦</button></div>' +
         '</div>';
     overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
     overlay.querySelector('#detailCloseBtn').addEventListener('click', function() { overlay.remove(); });
+    overlay.querySelector('#detailShareBtn').addEventListener('click', function() {
+        overlay.remove();
+        shareGuaDetail(gua);
+    });
     requestAnimationFrame(function() { overlay.classList.add('show'); });
+}
+
+// 详解弹窗分享卡片（与每日一卦分享卡片统一样式）
+function createDetailShareCard(gua) {
+    var dateStr = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
+    var weekDay = ['日','一','二','三','四','五','六'][new Date().getDay()];
+    var motto = getDailyMotto();
+
+    var analysis = gua[4].split('。').filter(function(s){ return s.trim(); }).map(function(s){
+        return '<div style="margin-bottom:8px;padding-left:12px;border-left:2px solid #c9a96e;font-size:13px;line-height:1.7;color:#3a3a3a;">' + s.trim() + '。</div>';
+    }).join('');
+
+    return '<div id="shareCard" style="width:480px;background:#f5f0e8;color:#2c2c2c;padding:32px 28px;font-family:serif;position:relative;">' +
+        '<div style="text-align:center;margin-bottom:6px;font-size:12px;color:#999;letter-spacing:6px;">天 衍</div>' +
+        '<div style="text-align:center;margin:8px 0 4px;"><span style="display:inline-block;padding:4px 18px;border:1px solid #c9a96e;color:#c9a96e;font-size:12px;letter-spacing:4px;">每 日 一 卦</span></div>' +
+        '<div style="text-align:center;font-size:13px;color:#999;margin-bottom:12px;">' + dateStr + ' 星期' + weekDay + '</div>' +
+        '<div style="text-align:center;padding:20px 0;">' +
+            '<div style="font-size:72px;line-height:1;color:#2c2c2c;">' + gua[2] + '</div>' +
+            '<div style="font-size:28px;margin-top:12px;letter-spacing:4px;">' + gua[0] + '</div>' +
+            '<div style="font-size:15px;color:#c9a96e;margin-top:6px;">' + gua[1] + '</div>' +
+        '</div>' +
+        '<div style="text-align:center;margin:12px 0 18px;font-size:16px;color:#666;letter-spacing:2px;font-style:italic;">「' + motto + '」</div>' +
+        '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:0 0 16px;"></div>' +
+        '<div style="padding:14px;background:rgba(0,0,0,0.03);border-radius:8px;">' + analysis + '</div>' +
+        '<div style="margin-top:20px;display:flex;justify-content:space-between;font-size:11px;color:#aaa;">' +
+            '<span>' + dateStr + '</span><span>天衍 · 每日一卦</span>' +
+        '</div>' +
+    '</div>';
+}
+
+async function shareGuaDetail(gua) {
+    var container = document.getElementById('shareImageContainer');
+    var preview = document.getElementById('shareImagePreview');
+    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
+    container.classList.add('show');
+    try {
+        var tmp = document.createElement('div');
+        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:540px;text-align:center;';
+        tmp.innerHTML = createDetailShareCard(gua);
+        document.body.appendChild(tmp);
+        await sleep(300);
+        var card = tmp.querySelector('#shareCard');
+        var canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
+        document.body.removeChild(tmp);
+        var url = canvas.toDataURL('image/png', 1.0);
+        preview.innerHTML = '<img src="' + url + '" alt="卦象详解" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
+        document.getElementById('shareDownloadBtn').onclick = function() {
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '天衍_' + gua[0] + '_' + Date.now() + '.png';
+            a.click();
+        };
+        document.getElementById('shareCopyBtn').onclick = async function() {
+            try {
+                canvas.toBlob(async function(blob) {
+                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                    alert('已复制到剪贴板');
+                });
+            } catch(e) { alert('复制失败，请下载图片'); }
+        };
+    } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
 }
 
 function getTrigramName(sym) {
@@ -592,6 +813,7 @@ function getTrigramName(sym) {
 document.addEventListener('DOMContentLoaded', function() {
     loadHistory();
     renderDailyGua();
+    loadBaziInput();
     var sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', function(e) { if (e.target === sc) closeShare(); });
 });
