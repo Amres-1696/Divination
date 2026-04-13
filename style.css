@@ -414,6 +414,51 @@ header {
     font-size: 0.95rem;
 }
 
+/* 吉凶速判标签 */
+.fortune-tag {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 4px 20px;
+    font-family: var(--display);
+    font-size: 1rem;
+    letter-spacing: 4px;
+    border: 1px solid;
+}
+.fortune-great {
+    color: #b8860b;
+    border-color: #b8860b;
+    background: rgba(184,134,11,0.06);
+}
+.fortune-good {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: var(--gold-dim);
+}
+.fortune-neutral {
+    color: var(--text-dim);
+    border-color: var(--border);
+    background: rgba(0,0,0,0.02);
+}
+.fortune-caution {
+    color: #c97a2e;
+    border-color: #c97a2e;
+    background: rgba(201,122,46,0.06);
+}
+.fortune-bad {
+    color: var(--cinnabar);
+    border-color: var(--cinnabar);
+    background: rgba(179,58,58,0.06);
+}
+.fortune-tag.small {
+    font-size: 0.75rem;
+    padding: 0;
+    margin-top: 0;
+    letter-spacing: 2px;
+    vertical-align: middle;
+    border: none;
+    background: none;
+}
+
 .share-row {
     margin-top: 16px;
 }

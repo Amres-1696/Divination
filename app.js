@@ -1,3 +1,14 @@
+// ========== 吉凶速判 ==========
+function judgeFortuneLevel(guaCi) {
+    // 根据卦辞关键词判断吉凶等级
+    if (/大吉|元亨利贞|元亨/.test(guaCi)) return { level: '大吉', cls: 'fortune-great' };
+    if (/吉|亨|利/.test(guaCi)) return { level: '吉', cls: 'fortune-good' };
+    if (/无咎|悔亡/.test(guaCi)) return { level: '无咎', cls: 'fortune-neutral' };
+    if (/厉|艰|小亨|悔|吝/.test(guaCi)) return { level: '需慎', cls: 'fortune-caution' };
+    if (/凶|不利|否|险/.test(guaCi)) return { level: '凶', cls: 'fortune-bad' };
+    return { level: '中平', cls: 'fortune-neutral' };
+}
+
 // ========== 起卦模式 ==========
 var currentMode = 'random';
 
@@ -31,9 +42,11 @@ function hashStr(str) {
     return h >>> 0;
 }
 
-// 基于生辰的确定性起卦
+// 基于生辰的确定性起卦（加入当前日期时间避免同一问题永远相同结果）
 function generateHexagramFromBazi(year, month, day, shichen, question) {
-    var seed = year + '-' + month + '-' + day + '-' + shichen + ':' + (question || '');
+    var now = new Date();
+    var nowStr = now.getFullYear() + '' + (now.getMonth()+1) + '' + now.getDate();
+    var seed = year + '-' + month + '-' + day + '-' + shichen + ':' + (question || '') + '@' + nowStr;
     var lines = [];
     for (var i = 0; i < 6; i++) {
         var h = hashStr(seed + '#' + i);
@@ -487,6 +500,7 @@ function renderResult(gua, hexLines, change, question, fullBin) {
     resultArea.innerHTML =
         '<section class="card result-header"><div class="hex-symbol">' + gua[2] + '</div>' +
         '<div class="hex-info"><h2 class="hex-name">' + gua[0] + '</h2><div class="hex-title">' + gua[1] + '</div></div>' +
+        '<div class="fortune-tag ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</div>' +
         (question ? '<p class="hex-question">「' + question + '」</p>' : '') +
         '<div class="share-row"><button class="btn-share" onclick="shareAsImage()">生成分享图</button></div></section>' +
         '<section class="card"><h3>六爻解读</h3><div class="yao-list">' + yaoHtml + '</div></section>' +
@@ -630,6 +644,7 @@ function renderDailyGua() {
         '<div class="daily-content">' +
             '<span class="daily-symbol">' + gua[2] + '</span>' +
             '<span class="daily-name">' + gua[0] + '</span>' +
+            '<span class="fortune-tag small ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</span>' +
             '<span class="daily-divider">·</span>' +
             '<span class="daily-motto">' + motto + '</span>' +
         '</div>';
@@ -724,7 +739,8 @@ function showGuaDetail(gua) {
         '<div class="detail-box">' +
             '<div class="detail-head">' +
                 '<div class="detail-symbol">' + gua[2] + '</div>' +
-                '<div class="detail-info"><h2>' + gua[0] + '</h2><div class="detail-sub">' + gua[1] + '</div></div>' +
+                '<div class="detail-info"><h2>' + gua[0] + '</h2><div class="detail-sub">' + gua[1] + '</div>' +
+                '<div class="fortune-tag small ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</div></div>' +
                 '<button class="detail-close" id="detailCloseBtn">&times;</button>' +
             '</div>' +
             '<div class="detail-meta">上卦 ' + upper + ' · 下卦 ' + lower + '</div>' +
@@ -815,4 +831,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadBaziInput();
     var sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', function(e) { if (e.target === sc) closeShare(); });
+    // 回车快捷键起卦
+    document.getElementById('question').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !document.getElementById('divineBtn').disabled) divine();
+    });
 });
