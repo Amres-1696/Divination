@@ -268,6 +268,97 @@ class BrushAnimation {
     }
 }
 
+// ========== 分享工具函数 ==========
+
+// data URL 转 Blob
+function dataURLtoBlob(dataURL) {
+    var parts = dataURL.split(',');
+    var mime = parts[0].match(/:(.*?);/)[1];
+    var raw = atob(parts[1]);
+    var arr = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return new Blob([arr], { type: mime });
+}
+
+// 通用：绑定分享弹窗的按钮事件
+function bindShareButtons(canvas, fileName) {
+    var blob = null;
+    var blobUrl = null;
+
+    function getBlob() {
+        if (blob) return Promise.resolve(blob);
+        return new Promise(function(resolve) {
+            canvas.toBlob(function(b) { blob = b; resolve(b); }, 'image/png');
+        });
+    }
+
+    // 下载按钮
+    document.getElementById('shareDownloadBtn').onclick = async function() {
+        var b = await getBlob();
+        // 优先用 Web Share API 的文件下载（兼容性最好）
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        blobUrl = URL.createObjectURL(b);
+        var a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+        }, 500);
+        // 安卓 fallback：如果 download 属性不生效，提示长按保存
+        showShareTip('若下载无反应，请长按上方图片保存');
+    };
+
+    // 复制按钮
+    document.getElementById('shareCopyBtn').onclick = async function() {
+        var b = await getBlob();
+        // 先尝试 Clipboard API
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+            try {
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]);
+                alert('已复制到剪贴板');
+                return;
+            } catch(e) { /* fallback below */ }
+        }
+        // fallback：提示长按保存
+        showShareTip('当前浏览器不支持复制图片，请长按上方图片保存');
+    };
+
+    // 原生分享按钮（Web Share API）
+    var nativeBtn = document.getElementById('shareNativeBtn');
+    if (navigator.share && navigator.canShare) {
+        nativeBtn.style.display = '';
+        nativeBtn.onclick = async function() {
+            var b = await getBlob();
+            var file = new File([b], fileName, { type: 'image/png' });
+            var shareData = { files: [file], title: '天衍 · 周易占卜' };
+            if (navigator.canShare(shareData)) {
+                try {
+                    await navigator.share(shareData);
+                } catch(e) {
+                    if (e.name !== 'AbortError') showShareTip('分享失败，请长按图片保存');
+                }
+            } else {
+                // 不支持文件分享，退回纯文本分享
+                try { await navigator.share({ title: '天衍 · 周易占卜', text: '来自天衍的卦象分享' }); } catch(e) {}
+                showShareTip('当前浏览器不支持图片分享，请长按图片保存');
+            }
+        };
+    } else {
+        nativeBtn.style.display = 'none';
+    }
+}
+
+function showShareTip(msg) {
+    var tip = document.getElementById('shareTip');
+    if (!tip) return;
+    tip.textContent = msg;
+    tip.style.display = '';
+    setTimeout(function() { tip.style.display = 'none'; }, 5000);
+}
+
 // ========== 分享功能 ==========
 
 function getCurrentGuaData() {
@@ -371,6 +462,7 @@ async function shareAsImage() {
     const data = getCurrentGuaData();
     if (!data) { alert('请先占卜'); return; }
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
+    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
     container.classList.add('show');
     try {
         const tmp = document.createElement('div');
@@ -383,20 +475,7 @@ async function shareAsImage() {
         document.body.removeChild(tmp);
         const url = canvas.toDataURL('image/png', 1.0);
         preview.innerHTML = '<img src="' + url + '" alt="分享图" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        document.getElementById('shareDownloadBtn').onclick = () => {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '天衍_' + Date.now() + '.png';
-            a.click();
-        };
-        document.getElementById('shareCopyBtn').onclick = async () => {
-            try {
-                canvas.toBlob(async blob => {
-                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-                    alert('已复制到剪贴板');
-                });
-            } catch(e) { alert('复制失败，请下载图片'); }
-        };
+        bindShareButtons(canvas, '天衍_' + Date.now() + '.png');
     } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
 }
 
@@ -684,6 +763,7 @@ async function shareDailyGua() {
     var container = document.getElementById('shareImageContainer');
     var preview = document.getElementById('shareImagePreview');
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
+    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
     container.classList.add('show');
     try {
         var tmp = document.createElement('div');
@@ -696,20 +776,7 @@ async function shareDailyGua() {
         document.body.removeChild(tmp);
         var url = canvas.toDataURL('image/png', 1.0);
         preview.innerHTML = '<img src="' + url + '" alt="每日一卦" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        document.getElementById('shareDownloadBtn').onclick = function() {
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = '天衍_每日一卦_' + Date.now() + '.png';
-            a.click();
-        };
-        document.getElementById('shareCopyBtn').onclick = async function() {
-            try {
-                canvas.toBlob(async function(blob) {
-                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-                    alert('已复制到剪贴板');
-                });
-            } catch(e) { alert('复制失败，请下载图片'); }
-        };
+        bindShareButtons(canvas, '天衍_每日一卦_' + Date.now() + '.png');
     } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
 }
 
@@ -790,6 +857,7 @@ async function shareGuaDetail(gua) {
     var container = document.getElementById('shareImageContainer');
     var preview = document.getElementById('shareImagePreview');
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
+    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
     container.classList.add('show');
     try {
         var tmp = document.createElement('div');
@@ -802,20 +870,7 @@ async function shareGuaDetail(gua) {
         document.body.removeChild(tmp);
         var url = canvas.toDataURL('image/png', 1.0);
         preview.innerHTML = '<img src="' + url + '" alt="卦象详解" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        document.getElementById('shareDownloadBtn').onclick = function() {
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = '天衍_' + gua[0] + '_' + Date.now() + '.png';
-            a.click();
-        };
-        document.getElementById('shareCopyBtn').onclick = async function() {
-            try {
-                canvas.toBlob(async function(blob) {
-                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-                    alert('已复制到剪贴板');
-                });
-            } catch(e) { alert('复制失败，请下载图片'); }
-        };
+        bindShareButtons(canvas, '天衍_' + gua[0] + '_' + Date.now() + '.png');
     } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
 }
 

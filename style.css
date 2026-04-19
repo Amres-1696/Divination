@@ -812,6 +812,24 @@ header {
 }
 .btn-close-share:hover { border-color: var(--ink) !important; }
 
+.btn-native-share {
+    background: #07c160;
+    color: #fff;
+}
+.btn-native-share:hover { opacity: 0.85; }
+
+.share-tip {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--cinnabar);
+    animation: tipFade 5s ease forwards;
+}
+@keyframes tipFade {
+    0%, 80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
 /* ========== 页脚 ========== */
 
 footer {
