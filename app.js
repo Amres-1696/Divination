@@ -1,25 +1,4 @@
-// ========== 吉凶速判 ==========
-function judgeFortuneLevel(guaCi) {
-    // 根据卦辞关键词判断吉凶等级
-    if (/大吉|元亨利贞|元亨/.test(guaCi)) return { level: '大吉', cls: 'fortune-great' };
-    if (/吉|亨|利/.test(guaCi)) return { level: '吉', cls: 'fortune-good' };
-    if (/无咎|悔亡/.test(guaCi)) return { level: '无咎', cls: 'fortune-neutral' };
-    if (/厉|艰|小亨|悔|吝/.test(guaCi)) return { level: '需慎', cls: 'fortune-caution' };
-    if (/凶|不利|否|险/.test(guaCi)) return { level: '凶', cls: 'fortune-bad' };
-    return { level: '中平', cls: 'fortune-neutral' };
-}
-
-// ========== 起卦模式 ==========
-var currentMode = 'random';
-
-function switchMode(mode) {
-    currentMode = mode;
-    document.getElementById('modeRandom').classList.toggle('active', mode === 'random');
-    document.getElementById('modeBazi').classList.toggle('active', mode === 'bazi');
-    document.getElementById('baziArea').classList.toggle('show', mode === 'bazi');
-}
-
-// ========== 卦象生成 ==========
+// ========== 核心算法（保留，不得修改逻辑）==========
 function generateHexagram() {
     const lines = [];
     for (let i = 0; i < 6; i++) {
@@ -28,76 +7,6 @@ function generateHexagram() {
     }
     return lines;
 }
-
-// 确定性哈希函数（FNV-1a）
-function hashStr(str) {
-    var h = 0x811c9dc5;
-    for (var i = 0; i < str.length; i++) {
-        h ^= str.charCodeAt(i);
-        h = Math.imul(h, 0x01000193);
-    }
-    h ^= h >>> 16;
-    h = Math.imul(h, 0x45d9f3b);
-    h ^= h >>> 16;
-    return h >>> 0;
-}
-
-// 基于生辰的确定性起卦（加入当前日期时间避免同一问题永远相同结果）
-function generateHexagramFromBazi(year, month, day, shichen, question) {
-    var now = new Date();
-    var nowStr = now.getFullYear() + '' + (now.getMonth()+1) + '' + now.getDate();
-    var seed = year + '-' + month + '-' + day + '-' + shichen + ':' + (question || '') + '@' + nowStr;
-    var lines = [];
-    for (var i = 0; i < 6; i++) {
-        var h = hashStr(seed + '#' + i);
-        // 映射到 6/7/8/9，概率近似三枚铜钱：7和8各3/8，9和6各1/8
-        var v = h % 8;
-        if (v === 0) lines.push(6);       // 老阴 1/8
-        else if (v <= 3) lines.push(7);   // 少阳 3/8
-        else if (v <= 6) lines.push(8);   // 少阴 3/8
-        else lines.push(9);               // 老阳 1/8
-    }
-    return lines;
-}
-
-function getBaziInput() {
-    var y = document.getElementById('baziYear').value.trim();
-    var m = document.getElementById('baziMonth').value;
-    var d = document.getElementById('baziDay').value.trim();
-    var s = document.getElementById('baziShichen').value;
-    if (!y || !m || !d || s === '') {
-        alert('请填写完整的出生年月日时辰');
-        return null;
-    }
-    var year = parseInt(y);
-    if (year < 1900 || year > 2100) {
-        alert('请输入有效的出生年份（1900-2100）');
-        return null;
-    }
-    var day = parseInt(d);
-    if (day < 1 || day > 31) {
-        alert('请输入有效的日期（1-31）');
-        return null;
-    }
-    // 保存生辰数据
-    try {
-        localStorage.setItem('tianyan_bazi', JSON.stringify({ year: year, month: parseInt(m), day: day, shichen: parseInt(s) }));
-    } catch(e) {}
-    return { year: year, month: parseInt(m), day: day, shichen: parseInt(s) };
-}
-
-function loadBaziInput() {
-    try {
-        var saved = localStorage.getItem('tianyan_bazi');
-        if (!saved) return;
-        var data = JSON.parse(saved);
-        if (data.year) document.getElementById('baziYear').value = data.year;
-        if (data.month) document.getElementById('baziMonth').value = data.month;
-        if (data.day) document.getElementById('baziDay').value = data.day;
-        if (data.shichen !== undefined && data.shichen !== '') document.getElementById('baziShichen').value = data.shichen;
-    } catch(e) {}
-}
-
 function calculateChangeGua(hexLines, origBin) {
     const cy=[], cb=[];
     for (let i=0;i<hexLines.length;i++) {
@@ -107,263 +16,425 @@ function calculateChangeGua(hexLines, origBin) {
         else cb.push(l===7?'1':'0');
     }
     if(!cy.length) return {hasChange:false,changeBinary:origBin,changingYaos:[],changeGua:lookupGua(origBin)};
-    const full=cb.slice(3,6).reverse().join('')+cb.slice(0,3).reverse().join('');
+    const full=cb.slice(3,6).join('')+cb.slice(0,3).join('');
     return {hasChange:true,changeBinary:full,changingYaos:cy,changeGua:lookupGua(full)};
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
-class BrushAnimation {
-    constructor(cv) {
-        this.cv = cv; this.ctx = cv.getContext('2d');
-        this.yaoLines = []; this.sparks = [];
-        this.running = false; this.resize();
+// ========== 工具 ==========
+function toRoman(n) {
+    const ones = ['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ'];
+    const tens = ['','Ⅹ','ⅩⅩ','ⅩⅩⅩ','ⅩⅬ','Ⅼ','ⅬⅩ','ⅬⅩⅩ','ⅬⅩⅩⅩ','ⅩⅭ'];
+    return tens[Math.floor(n/10)] + ones[n%10];
+}
+function guaIndex(gua) {
+    const i = GUA.indexOf(gua);
+    return i >= 0 ? i + 1 : 1;
+}
+function isRareGua(bin) {
+    return bin === '111111' || bin === '000000';
+}
+function getVerdict(gua) {
+    const full = gua[1] + '|' + gua[4];
+    const hasXiong = /凶|困顿|艰难|险陷|剥落|闭塞|衰退|不利|受阻|背离|极端/.test(full);
+    const hasJi = /元亨|大吉|大有|元吉|亨利|收获|光明|顺利|喜悦|上升|丰盛|大壮/.test(full);
+    if (hasXiong && !hasJi) return 'xiong';
+    if (hasJi && !hasXiong) return 'ji';
+    return 'ping';
+}
+function binToHexLines(bin) {
+    const hex = [];
+    for (let i = 0; i < 6; i++) hex.push(bin[5-i] === '1' ? 7 : 8);
+    return hex;
+}
+
+// ========== 卡牌工厂 ==========
+function buildMandalaSvg() {
+    const petals = [];
+    for (let i = 0; i < 8; i++) {
+        petals.push(`<path transform="rotate(${i*45})" d="M 0 -40 Q 8 -22 0 -6 Q -8 -22 0 -40 Z" />`);
+    }
+    return `<svg class="card-back-mandala" viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg">
+<g fill="none" stroke="#c9a96e" stroke-width="0.6" opacity="0.9">
+<circle r="42"/><circle r="30"/><circle r="18"/>
+<g opacity="0.75">${petals.join('')}</g>
+<polygon points="0,-16 14,8 -14,8" opacity="0.55"/>
+<polygon points="0,16 -14,-8 14,-8" opacity="0.55"/>
+<circle r="2.5" fill="#c9a96e"/>
+</g></svg>`;
+}
+
+function buildYaoArtSvg(hexLines, changingYaos) {
+    changingYaos = changingYaos || [];
+    const w = 60, h = 80, lineH = 2.4, gap = 8;
+    const rowH = lineH + gap;
+    const startY = (h - (6*rowH - gap)) / 2;
+    const cx = w/2, halfW = 22;
+    const parts = [];
+    for (let i = 0; i < 6; i++) {
+        const drawIdx = 5 - i;
+        const y = startY + drawIdx * rowH + lineH/2;
+        const line = hexLines[i];
+        const isYang = (line === 7 || line === 9);
+        const isChanging = changingYaos.includes(i);
+        const cls = 'yao-svg-line' + (isChanging ? ' changing' : '');
+        if (isYang) {
+            parts.push(`<line class="${cls}" x1="${cx-halfW}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
+        } else {
+            parts.push(`<line class="${cls}" x1="${cx-halfW}" y1="${y}" x2="${cx-5}" y2="${y}" />`);
+            parts.push(`<line class="${cls}" x1="${cx+5}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
+        }
+    }
+    return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">${parts.join('')}</svg>`;
+}
+
+function makeArcanaCard(gua, opts) {
+    opts = opts || {};
+    const large = !!opts.large;
+    const rare = !!opts.rare;
+    const hexLines = opts.hexLines || binToHexLines(TRIGRAM_TO_BINARY[gua[2][0]] + TRIGRAM_TO_BINARY[gua[2][1]]);
+    const changingYaos = opts.changingYaos || [];
+    const idx = guaIndex(gua);
+    const roman = toRoman(idx);
+    const upper = gua[2][0], lower = gua[2][1];
+
+    const card = document.createElement('div');
+    card.className = 'arcana-card' + (large ? ' large' : '') + (rare ? ' rare-gilded' : '');
+    card.innerHTML = `
+<div class="card-face back">
+    <div class="card-back-art">${buildMandalaSvg()}</div>
+    <div class="card-gold-band"></div>
+</div>
+<div class="card-face front">
+    <div class="card-frame-deco"></div>
+    <div class="card-roman">${roman}</div>
+    <div class="card-trigram-watermark"><span>${upper}</span><span>${lower}</span></div>
+    <div class="card-art">${buildYaoArtSvg(hexLines, changingYaos)}</div>
+    <div class="card-name-strip">${gua[0]}</div>
+    <div class="card-gold-band"></div>
+</div>`;
+    return card;
+}
+
+// ========== 浮尘粒子 ==========
+class DustParticles {
+    constructor(canvas) {
+        this.cv = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.particles = [];
+        this.running = false;
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
     }
     resize() {
-        const r = devicePixelRatio || 1;
-        const rect = this.cv.parentElement.getBoundingClientRect();
-        this.w = rect.width; this.h = 240;
-        this.cv.width = this.w * r; this.cv.height = this.h * r;
-        this.cv.style.width = this.w + 'px'; this.cv.style.height = this.h + 'px';
+        const r = window.devicePixelRatio || 1;
+        this.w = window.innerWidth;
+        this.h = window.innerHeight;
+        this.cv.width = this.w * r;
+        this.cv.height = this.h * r;
+        this.cv.style.width = this.w + 'px';
+        this.cv.style.height = this.h + 'px';
+        this.ctx.setTransform(1,0,0,1,0,0);
         this.ctx.scale(r, r);
     }
-
-    // 添加一条毛笔爻线
-    addYaoLine(isYang, index) {
-        const cx = this.w / 2;
-        const totalH = 5 * 20; // 6线5间距
-        const baseY = 30 + index * 20; // 从顶部30px开始，留底部给卦名
-        const halfW = Math.min(70, this.w * 0.14);
-        // 生成笔画采样点 — 模拟毛笔行笔
-        const steps = 32;
-        const pts = [];
-        for (let i = 0; i <= steps; i++) {
-            const t = i / steps;
-            // 笔压曲线：落笔按→提笔轻→收笔顿
-            let pressure;
-            if (t < 0.08) pressure = 5 + (0.08 - t) / 0.08 * 3;        // 起笔顿
-            else if (t < 0.15) pressure = 5 - (t - 0.08) / 0.07 * 1.5; // 提笔
-            else if (t > 0.88) pressure = 3.5 + (t - 0.88) / 0.12 * 4; // 收笔顿
-            else pressure = 3.5 + Math.sin(t * Math.PI * 0.8) * 0.5;    // 行笔平稳
-            // 手写微抖
-            const wobble = (Math.random() - 0.5) * 0.8;
-            pts.push({ t, pressure, wobble });
-        }
-
-        if (isYang) {
-            this.yaoLines.push({ isYang: true, cx, y: baseY, halfW, pts, progress: 0, opacity: 0 });
-        } else {
-            this.yaoLines.push({ isYang: false, cx, y: baseY, halfW, gap: 8, pts, progress: 0, opacity: 0 });
-        }
-    }
-
-    addSparks(x, y, count) {
-        for (let i = 0; i < count; i++) {
-            const a = Math.random() * Math.PI * 2;
-            const sp = 0.2 + Math.random() * 0.8;
-            this.sparks.push({
-                x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.2,
-                life: 1, decay: 0.01 + Math.random() * 0.02,
-                sz: 0.6 + Math.random() * 1.2
+    spawn(n) {
+        for (let i = 0; i < n; i++) {
+            this.particles.push({
+                x: Math.random() * this.w,
+                y: this.h + Math.random() * 40,
+                vx: (Math.random()-0.5) * 0.15,
+                vy: -0.15 - Math.random() * 0.35,
+                r: 0.6 + Math.random() * 1.6,
+                life: 1,
+                decay: 0.0006 + Math.random() * 0.0014,
+                hue: 38 + Math.random() * 18
             });
         }
     }
-
-    update() {
+    tick() {
+        if (!this.running) return;
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.w, this.h);
-
-        // ---- 毛笔爻线 ----
-        for (const yao of this.yaoLines) {
-            yao.progress = Math.min(1, yao.progress + 0.018);
-            yao.opacity = Math.min(1, yao.opacity + 0.05);
-
-            if (yao.isYang) {
-                this._brushStroke(ctx, yao, -yao.halfW, yao.halfW, yao.progress, yao.opacity);
-            } else {
-                // 阴爻：先左段，progress 0~0.45 画左，0.5~1 画右
-                if (yao.progress <= 0.5) {
-                    const sub = yao.progress / 0.5;
-                    this._brushStroke(ctx, yao, -yao.halfW, -yao.gap, sub, yao.opacity);
-                } else {
-                    this._brushStroke(ctx, yao, -yao.halfW, -yao.gap, 1, yao.opacity);
-                    const sub = (yao.progress - 0.5) / 0.5;
-                    this._brushStroke(ctx, yao, yao.gap, yao.halfW, sub, yao.opacity);
-                }
-            }
-        }
-
-        // ---- 墨点飞溅 ----
-        for (let i = this.sparks.length - 1; i >= 0; i--) {
-            const p = this.sparks[i];
-            p.x += p.vx; p.y += p.vy; p.vy += 0.01;
-            p.vx *= 0.99; p.life -= p.decay;
-            if (p.life <= 0) { this.sparks.splice(i, 1); continue; }
-            ctx.globalAlpha = p.life * 0.5;
-            ctx.fillStyle = '#2c2c2c';
+        if (this.particles.length < 10 && Math.random() < 0.06) this.spawn(1);
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx += (Math.random() - 0.5) * 0.02;
+            p.life -= p.decay;
+            if (p.life <= 0 || p.y < -30) { this.particles.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life * 0.55;
+            ctx.fillStyle = `hsl(${p.hue}, 65%, 76%)`;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, p.sz * p.life, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
             ctx.fill();
         }
         ctx.globalAlpha = 1;
+        requestAnimationFrame(() => this.tick());
     }
-
-    // 核心：毛笔笔画渲染
-    _brushStroke(ctx, yao, startOff, endOff, progress, opacity) {
-        const pts = yao.pts;
-        const drawTo = Math.floor(progress * pts.length);
-        if (drawTo < 2) return;
-
-        const totalW = endOff - startOff;
-        ctx.globalAlpha = opacity;
-
-        // 逐段画，每段宽度不同 → 产生笔触粗细变化
-        for (let i = 1; i < drawTo && i < pts.length; i++) {
-            const p0 = pts[i - 1], p1 = pts[i];
-            const x0 = yao.cx + startOff + p0.t * totalW;
-            const x1 = yao.cx + startOff + p1.t * totalW;
-            const y0 = yao.y + p0.wobble;
-            const y1 = yao.y + p1.wobble;
-            const w = (p0.pressure + p1.pressure) / 2;
-
-            ctx.strokeStyle = '#2c2c2c';
-            ctx.lineWidth = w;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.beginPath();
-            ctx.moveTo(x0, y0);
-            ctx.lineTo(x1, y1);
-            ctx.stroke();
-        }
-
-        // 起笔墨迹（厚重的落笔痕）
-        if (drawTo > 3) {
-            const startX = yao.cx + startOff;
-            ctx.fillStyle = 'rgba(44,44,44,0.4)';
-            ctx.beginPath();
-            ctx.ellipse(startX + 1, yao.y, 3.5, 2.5, 0.1, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // 收笔墨迹
-        if (progress > 0.95) {
-            const endX = yao.cx + endOff;
-            ctx.fillStyle = 'rgba(44,44,44,0.25)';
-            ctx.beginPath();
-            ctx.ellipse(endX - 1, yao.y + 0.5, 3, 2, -0.1, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.globalAlpha = 1;
-    }
-
     start() {
+        if (this.running) return;
         this.running = true;
-        const lp = () => { if (!this.running) return; this.update(); requestAnimationFrame(lp); };
-        lp();
+        this.spawn(8);
+        this.tick();
     }
-    stop() {
-        this.running = false;
-        this.yaoLines = []; this.sparks = [];
-        this.ctx.clearRect(0, 0, this.w, this.h);
-    }
+    stop() { this.running = false; }
 }
 
-// ========== 分享工具函数 ==========
-
-// data URL 转 Blob
-function dataURLtoBlob(dataURL) {
-    var parts = dataURL.split(',');
-    var mime = parts[0].match(/:(.*?);/)[1];
-    var raw = atob(parts[1]);
-    var arr = new Uint8Array(raw.length);
-    for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-    return new Blob([arr], { type: mime });
-}
-
-// 通用：绑定分享弹窗的按钮事件
-function bindShareButtons(canvas, fileName) {
-    var blob = null;
-    var blobUrl = null;
-
-    function getBlob() {
-        if (blob) return Promise.resolve(blob);
-        return new Promise(function(resolve) {
-            canvas.toBlob(function(b) { blob = b; resolve(b); }, 'image/png');
-        });
+// ========== 仪式控制器（六乐章） ==========
+class ArcanaRitual {
+    constructor(stage, finalGua, hexLines, change) {
+        this.stage = stage;
+        this.finalGua = finalGua;
+        this.hexLines = hexLines;
+        this.change = change;
+        this.cards = [];
     }
-
-    // 下载按钮
-    document.getElementById('shareDownloadBtn').onclick = async function() {
-        var b = await getBlob();
-        // 优先用 Web Share API 的文件下载（兼容性最好）
-        if (blobUrl) URL.revokeObjectURL(blobUrl);
-        blobUrl = URL.createObjectURL(b);
-        var a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function() {
-            document.body.removeChild(a);
-        }, 500);
-        // 安卓 fallback：如果 download 属性不生效，提示长按保存
-        showShareTip('若下载无反应，请长按上方图片保存');
-    };
-
-    // 复制按钮
-    document.getElementById('shareCopyBtn').onclick = async function() {
-        var b = await getBlob();
-        // 先尝试 Clipboard API
-        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-            try {
-                await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]);
-                alert('已复制到剪贴板');
-                return;
-            } catch(e) { /* fallback below */ }
+    async run() {
+        this.buildStage();
+        await this.actAwaken();
+        await this.actRiffle();
+        await this.actFan();
+        await this.actRise();
+        await this.actFlip();
+        await this.actProclaim();
+    }
+    buildStage() {
+        this.stage.innerHTML = `
+<div class="ritual-status" id="ritualStatus"></div>
+<div class="deck-area" id="deckArea"></div>`;
+        this.statusEl = this.stage.querySelector('#ritualStatus');
+        this.deckEl = this.stage.querySelector('#deckArea');
+    }
+    setStatus(roman, cn) {
+        this.statusEl.innerHTML = `${roman}<span class="ritual-status-sub">${cn}</span>`;
+        this.statusEl.classList.add('show');
+    }
+    async actAwaken() {
+        this.setStatus('Ⅰ · AWAKENING', '展 台 燃 烛');
+        await sleep(900);
+    }
+    async actRiffle() {
+        this.setStatus('Ⅱ · RIFFLE', '洗 牌');
+        const pool = this.pickDeckPool(16);
+        for (let i = 0; i < 16; i++) {
+            const card = makeArcanaCard(pool[i], { large: false });
+            card.style.transform = `translate3d(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px, ${-i*0.5}px) rotate(${(Math.random()-0.5)*4}deg)`;
+            card.style.zIndex = String(i);
+            this.deckEl.appendChild(card);
+            this.cards.push(card);
         }
-        // fallback：提示长按保存
-        showShareTip('当前浏览器不支持复制图片，请长按上方图片保存');
-    };
-
-    // 原生分享按钮（Web Share API）
-    var nativeBtn = document.getElementById('shareNativeBtn');
-    if (navigator.share && navigator.canShare) {
-        nativeBtn.style.display = '';
-        nativeBtn.onclick = async function() {
-            var b = await getBlob();
-            var file = new File([b], fileName, { type: 'image/png' });
-            var shareData = { files: [file], title: '天衍 · 周易占卜' };
-            if (navigator.canShare(shareData)) {
-                try {
-                    await navigator.share(shareData);
-                } catch(e) {
-                    if (e.name !== 'AbortError') showShareTip('分享失败，请长按图片保存');
-                }
-            } else {
-                // 不支持文件分享，退回纯文本分享
-                try { await navigator.share({ title: '天衍 · 周易占卜', text: '来自天衍的卦象分享' }); } catch(e) {}
-                showShareTip('当前浏览器不支持图片分享，请长按图片保存');
-            }
-        };
-    } else {
-        nativeBtn.style.display = 'none';
+        await sleep(200);
+        this.cards.forEach((c, i) => {
+            setTimeout(() => {
+                const side = i % 2 === 0 ? -1 : 1;
+                c.style.transition = 'transform 0.45s cubic-bezier(0.4,0,0.2,1)';
+                c.style.transform = `translate3d(${side*42}px, ${(Math.random()-0.5)*10}px, ${i*1.5}px) rotate(${side*5}deg)`;
+            }, i * 22);
+        });
+        await sleep(560);
+        this.cards.forEach((c, i) => {
+            setTimeout(() => {
+                c.style.transform = `translate3d(${(Math.random()-0.5)*4}px, ${(Math.random()-0.5)*4}px, ${-i*0.4}px) rotate(${(Math.random()-0.5)*3}deg)`;
+            }, i * 12);
+        });
+        await sleep(450);
+    }
+    async actFan() {
+        this.setStatus('Ⅲ · FAN', '扇 形 摊 开');
+        const n = this.cards.length;
+        const radius = 200;
+        const arc = 150;
+        this.cards.forEach((c, i) => {
+            const t = n === 1 ? 0.5 : i / (n - 1);
+            const angle = -arc/2 + t * arc;
+            const rad = angle * Math.PI / 180;
+            const x = Math.sin(rad) * radius;
+            const y = -Math.cos(rad) * radius * 0.2 + 30;
+            setTimeout(() => {
+                c.style.transition = 'transform 0.85s cubic-bezier(0.4,0,0.2,1), opacity 0.6s ease, filter 0.6s ease';
+                c.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle*0.6}deg)`;
+                c.classList.add('awake');
+            }, i * 48);
+        });
+        await sleep(1300);
+    }
+    async actRise() {
+        this.setStatus('Ⅳ · ASCENSION', '浮 升 抽 牌');
+        const mid = Math.floor(this.cards.length / 2);
+        const chosen = this.cards[mid];
+        this.cards.forEach((c, i) => {
+            if (i === mid) return;
+            c.style.transition = 'transform 1s ease, opacity 1s ease, filter 0.8s ease';
+            c.style.opacity = '0.22';
+            c.classList.remove('awake');
+        });
+        await sleep(350);
+        const bin = TRIGRAM_TO_BINARY[this.finalGua[2][0]] + TRIGRAM_TO_BINARY[this.finalGua[2][1]];
+        const finalCard = makeArcanaCard(this.finalGua, {
+            large: false,
+            hexLines: this.hexLines,
+            changingYaos: this.change.changingYaos,
+            rare: isRareGua(bin)
+        });
+        chosen.innerHTML = finalCard.innerHTML;
+        chosen.className = finalCard.className + ' active';
+        chosen.style.transition = 'transform 1.1s cubic-bezier(0.3, 0, 0.2, 1), filter 0.8s ease';
+        chosen.style.transform = 'translate3d(0, -30px, 120px) rotate(0deg) scale(1.55)';
+        chosen.style.zIndex = '50';
+        this.chosenCard = chosen;
+        await sleep(800);
+    }
+    async actFlip() {
+        this.setStatus('Ⅴ · REVELATION', '翻 开 显 影');
+        this.chosenCard.classList.add('flipped');
+        this.chosenCard.classList.remove('active');
+        this.chosenCard.classList.add('peak');
+        await sleep(1300);
+    }
+    async actProclaim() {
+        this.setStatus('Ⅵ · PROCLAMATION', '昭 示 归 寂');
+        await sleep(600);
+        this.cards.forEach((c, i) => {
+            if (c === this.chosenCard) return;
+            c.style.transition = 'transform 0.8s ease, opacity 0.8s ease';
+            c.style.opacity = '0';
+            c.style.transform = `translate3d(${(Math.random()-0.5)*40}px, 60px, -200px) rotate(${(Math.random()-0.5)*20}deg)`;
+        });
+        await sleep(500);
+        this.chosenCard.style.transition = 'transform 0.7s ease, opacity 0.7s ease';
+        this.chosenCard.style.opacity = '0';
+        this.chosenCard.style.transform = 'translate3d(0, -60px, 200px) scale(1.7)';
+        this.statusEl.style.transition = 'opacity 0.6s ease';
+        this.statusEl.style.opacity = '0';
+        await sleep(700);
+    }
+    pickDeckPool(n) {
+        const pool = [];
+        const used = new Set();
+        for (let i = 0; i < n; i++) {
+            let idx, tries = 0;
+            do {
+                idx = Math.floor(Math.random() * 64);
+                tries++;
+            } while (used.has(idx) && tries < 24);
+            used.add(idx);
+            pool.push(GUA[idx]);
+        }
+        return pool;
     }
 }
 
-function showShareTip(msg) {
-    var tip = document.getElementById('shareTip');
-    if (!tip) return;
-    tip.textContent = msg;
-    tip.style.display = '';
-    setTimeout(function() { tip.style.display = 'none'; }, 5000);
+// ========== 占卜主流程 ==========
+async function divine() {
+    const question = document.getElementById('question').value.trim();
+    const resultArea = document.getElementById('resultArea');
+    const btn = document.getElementById('divineBtn');
+    const btnText = btn.querySelector('.btn-text');
+    const originalText = btnText ? btnText.textContent : '起 卦';
+    btn.disabled = true;
+    if (btnText) btnText.textContent = '演 卦';
+
+    resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
+
+    const stage = document.getElementById('ritualStage');
+    const hexLines = generateHexagram();
+    const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
+    const fullBin = bits.slice(3, 6).join('') + bits.slice(0, 3).join('');
+    const gua = lookupGua(fullBin);
+    const change = calculateChangeGua(hexLines, fullBin);
+
+    const ritual = new ArcanaRitual(stage, gua, hexLines, change);
+    await ritual.run();
+
+    renderResult(gua, hexLines, change, question, fullBin);
+    saveToHistory(question, gua, fullBin, hexLines, change);
+
+    btn.disabled = false;
+    if (btnText) btnText.textContent = originalText;
 }
 
-// ========== 分享功能 ==========
+// ========== 结果渲染 ==========
+function renderResult(gua, hexLines, change, question, fullBin) {
+    const resultArea = document.getElementById('resultArea');
+    const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
+    const roman = toRoman(guaIndex(gua));
+    const verdict = getVerdict(gua);
+    const verdictText = { ji:'吉', xiong:'凶', ping:'平' };
 
+    const yaoHtml = hexLines.map((line, i) => {
+        const isYang = (line === 9 || line === 7);
+        const yaoType = line===9?'老阳':line===7?'少阳':line===8?'少阴':'老阴';
+        const yaoName = isYang ? yaoNames[i] : yaoNames[i+6];
+        const yaoText = gua[3].split('|')[i] || '';
+        const isChanging = change.changingYaos.includes(i);
+        const lineVis = isYang
+            ? '<span class="yao-line yang"><span></span></span>'
+            : '<span class="yao-line yin"><span></span><span></span></span>';
+        const changeBadge = isChanging ? '<span class="yao-badge change">变</span>' : '';
+        return `<div class="yao-item${isChanging?' changing':''}">
+<div class="yao-header">${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-badge type">${yaoType}</span>${changeBadge}</div>
+<div class="yao-text">${yaoText}</div></div>`;
+    }).join('');
+
+    const analysisHtml = gua[4].split('。').filter(s=>s.trim()).map(s =>
+        `<div class="analysis-item">${s.trim()}。</div>`
+    ).join('');
+
+    let changeHtml = '';
+    if (change.hasChange) {
+        const pos = change.changingYaos.map(p => ['初','二','三','四','五','上'][p]);
+        changeHtml = `<section class="card change-section"><h3>变 · 卦 · 演 化</h3>
+<div class="change-comparison">
+<div class="gua-box"><div class="gua-label">BEN · 本</div><div class="gua-symbol">${gua[2]}</div><div class="gua-name">${gua[0]}</div></div>
+<div class="change-arrow">⟶</div>
+<div class="gua-box changed"><div class="gua-label">BIAN · 变</div><div class="gua-symbol">${change.changeGua[2]}</div><div class="gua-name">${change.changeGua[0]}</div></div>
+</div>
+<div class="change-details"><p>变爻位置：第 ${pos.join('、')} 爻</p><p>${change.changeGua[4]}</p></div></section>`;
+    }
+
+    resultArea.innerHTML = `
+<section class="card result-header">
+    <div class="chosen-card-wrap" id="chosenCardWrap"></div>
+    <div class="hex-roman">${roman}</div>
+    <h2 class="hex-name hex-name-art">${gua[0]}</h2>
+    <div class="hex-title">${gua[1]}</div>
+    <div class="hex-symbol" style="display:none;">${gua[2]}</div>
+    ${question ? `<p class="hex-question">「${question}」</p>` : ''}
+    <div class="verdict-seal ${verdict}">${verdictText[verdict]}</div>
+    <div class="share-row"><button class="btn-share" onclick="shareAsImage()">✦ 生 成 分 享 图</button></div>
+</section>
+<section class="card"><h3>六 爻 之 辞</h3><div class="yao-list">${yaoHtml}</div></section>
+<section class="card"><h3>卦 象 奥 义</h3><div class="analysis-list">${analysisHtml}</div></section>
+${changeHtml}`;
+
+    const wrap = resultArea.querySelector('#chosenCardWrap');
+    const bigCard = makeArcanaCard(gua, {
+        large: true,
+        hexLines,
+        changingYaos: change.changingYaos,
+        rare: isRareGua(fullBin)
+    });
+    bigCard.classList.add('flipped');
+    wrap.appendChild(bigCard);
+
+    const cards = resultArea.querySelectorAll('.card');
+    cards.forEach((el, i) => {
+        el.style.opacity='0'; el.style.transform='translateY(20px)';
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
+            el.style.opacity='1'; el.style.transform='translateY(0)';
+        }, 200 + i*180);
+    });
+    setTimeout(() => {
+        resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 500);
+}
+
+// ========== 分享卡 ==========
 function getCurrentGuaData() {
     const r = document.getElementById('resultArea');
-    if (!r || !r.classList.contains('show')) return null;
+    if (!r) return null;
     const nameEl = r.querySelector('.hex-name');
     const titleEl = r.querySelector('.hex-title');
     const symbolEl = r.querySelector('.hex-symbol');
@@ -378,17 +449,16 @@ function getCurrentGuaData() {
         if (n && t) changingYaoTexts.push(n.textContent + '：' + t.textContent);
     });
     const hasChange = !!r.querySelector('.change-section');
-    let cgName = '', cgSymbol = '', cgExplain = '', changePos = '';
+    let cgName='', cgSymbol='', cgExplain='', changePos='';
     if (hasChange) {
         const cg = r.querySelector('.gua-box.changed');
         if (cg) {
-            cgName = (cg.querySelector('.gua-name') || {}).textContent || '';
-            cgSymbol = (cg.querySelector('.gua-symbol') || {}).textContent || '';
+            cgName = (cg.querySelector('.gua-name')||{}).textContent || '';
+            cgSymbol = (cg.querySelector('.gua-symbol')||{}).textContent || '';
         }
         const details = r.querySelector('.change-details');
         if (details) {
-            const ps = details.querySelectorAll('p');
-            ps.forEach(p => {
+            details.querySelectorAll('p').forEach(p => {
                 const txt = p.textContent.trim();
                 if (txt.startsWith('变爻位置')) changePos = txt;
                 else if (txt.length > 10) cgExplain = txt;
@@ -406,52 +476,57 @@ function getCurrentGuaData() {
 
 function createShareCard(d) {
     if (!d) return '';
+    const guaEntry = GUA.find(g => g[0] === d.name);
+    const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
+
     const analysis = d.analysisList.map(t =>
-        '<div style="margin-bottom:10px;padding-left:14px;border-left:2px solid #c9a96e;font-size:14px;line-height:1.7;color:#3a3a3a;">' + t + '</div>'
+        '<div style="margin-bottom:10px;padding-left:14px;border-left:2px solid #c9a96e;font-size:14px;line-height:1.8;color:#1a1412;font-family:serif;">' + t + '</div>'
     ).join('');
 
-    // 变爻提示
     const yaoBlock = d.changingYaoTexts.length > 0 ?
-        '<div style="margin-top:16px;padding:14px;background:rgba(179,58,58,0.04);border:1px solid rgba(179,58,58,0.1);border-radius:4px;">' +
-            '<div style="font-size:13px;color:#b33a3a;margin-bottom:8px;font-weight:bold;">变爻提示</div>' +
+        '<div style="margin-top:16px;padding:14px;background:rgba(168,72,72,0.06);border:1px solid rgba(168,72,72,0.2);border-radius:4px;">' +
+            '<div style="font-size:12px;color:#a84848;margin-bottom:8px;font-weight:bold;letter-spacing:3px;">变 爻 提 示</div>' +
             d.changingYaoTexts.map(t =>
-                '<div style="font-size:13px;line-height:1.7;color:#666;margin-bottom:4px;">' + t + '</div>'
+                '<div style="font-size:13px;line-height:1.7;color:#1a1412;margin-bottom:4px;">' + t + '</div>'
             ).join('') +
         '</div>' : '';
 
-    // 变卦分析
     const changeBlock = d.hasChange ?
-        '<div style="margin-top:16px;padding:16px;background:rgba(179,58,58,0.04);border:1px solid rgba(179,58,58,0.1);border-radius:4px;">' +
-            '<div style="font-size:13px;color:#b33a3a;font-weight:bold;margin-bottom:12px;">变卦分析</div>' +
-            '<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:12px;">' +
-                '<div style="text-align:center;">' +
-                    '<div style="font-size:28px;color:#2c2c2c;">' + d.symbol + '</div>' +
-                    '<div style="font-size:12px;color:#888;margin-top:4px;">' + d.name + '</div>' +
+        '<div style="margin-top:16px;padding:18px;background:rgba(168,72,72,0.06);border:1px solid rgba(168,72,72,0.2);border-radius:4px;">' +
+            '<div style="font-size:12px;color:#a84848;font-weight:bold;margin-bottom:12px;letter-spacing:3px;text-align:center;">变 卦 演 化</div>' +
+            '<div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:12px;">' +
+                '<div style="text-align:center;padding:10px 14px;border:1px solid #8a6d3a;border-radius:3px;">' +
+                    '<div style="font-size:28px;color:#1a1412;">' + d.symbol + '</div>' +
+                    '<div style="font-size:12px;color:#8a6d3a;margin-top:4px;letter-spacing:2px;">' + d.name + '</div>' +
                 '</div>' +
-                '<div style="font-size:16px;color:#ccc;">→</div>' +
-                '<div style="text-align:center;">' +
-                    '<div style="font-size:28px;color:#b33a3a;">' + d.cgSymbol + '</div>' +
-                    '<div style="font-size:12px;color:#b33a3a;margin-top:4px;">' + d.cgName + '</div>' +
+                '<div style="font-size:18px;color:#8a6d3a;">⟶</div>' +
+                '<div style="text-align:center;padding:10px 14px;border:1px solid #a84848;border-radius:3px;background:rgba(168,72,72,0.06);">' +
+                    '<div style="font-size:28px;color:#a84848;">' + d.cgSymbol + '</div>' +
+                    '<div style="font-size:12px;color:#a84848;margin-top:4px;letter-spacing:2px;">' + d.cgName + '</div>' +
                 '</div>' +
             '</div>' +
-            (d.changePos ? '<div style="font-size:12px;color:#888;text-align:center;margin-bottom:8px;">' + d.changePos + '</div>' : '') +
-            (d.cgExplain ? '<div style="font-size:13px;line-height:1.7;color:#3a3a3a;">' + d.cgExplain + '</div>' : '') +
+            (d.changePos ? '<div style="font-size:12px;color:#8a6d3a;text-align:center;margin-bottom:8px;letter-spacing:2px;">' + d.changePos + '</div>' : '') +
+            (d.cgExplain ? '<div style="font-size:13px;line-height:1.8;color:#1a1412;">' + d.cgExplain + '</div>' : '') +
         '</div>' : '';
 
-    return '<div id="shareCard" style="width:480px;background:#f5f0e8;color:#2c2c2c;padding:32px 28px;font-family:serif;position:relative;">' +
-        '<div style="text-align:center;margin-bottom:6px;font-size:12px;color:#999;letter-spacing:6px;">天 衍</div>' +
-        '<div style="text-align:center;padding:20px 0;">' +
-            '<div style="font-size:64px;line-height:1;color:#2c2c2c;">' + d.symbol + '</div>' +
-            '<div style="font-size:28px;margin-top:10px;letter-spacing:4px;">' + d.name + '</div>' +
-            '<div style="font-size:16px;color:#c9a96e;margin-top:6px;">' + d.title + '</div>' +
-        '</div>' +
+    return '<div id="shareCard" style="width:500px;background:linear-gradient(180deg,#e8dcc0 0%,#d9c99f 100%);color:#1a1412;padding:36px 32px;font-family:\'Noto Serif SC\',serif;position:relative;border:1px solid #c9a96e;box-shadow:inset 0 0 0 6px rgba(232,220,192,0.4),inset 0 0 0 7px rgba(201,169,110,0.35);">' +
+        '<div style="position:absolute;inset:12px;border:1px solid rgba(138,109,58,0.25);pointer-events:none;"></div>' +
+        '<div style="text-align:center;font-family:\'Cinzel\',serif;font-size:11px;color:#8a6d3a;letter-spacing:6px;margin-bottom:4px;">EASTERN · ARCANA</div>' +
+        '<div style="text-align:center;font-size:14px;color:#8a6d3a;letter-spacing:10px;padding-left:10px;">天 衍</div>' +
         '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:16px 0;"></div>' +
-        (d.question ? '<div style="text-align:center;margin-bottom:16px;font-size:14px;color:#888;">所问：' + d.question + '</div>' : '') +
-        '<div style="padding:16px;background:rgba(0,0,0,0.03);border-radius:8px;">' + analysis + '</div>' +
+        '<div style="text-align:center;padding:16px 0;">' +
+            (roman ? '<div style="font-family:\'Cinzel\',serif;font-size:16px;color:#8a6d3a;letter-spacing:6px;margin-bottom:8px;">' + roman + '</div>' : '') +
+            '<div style="font-size:56px;line-height:1;color:#1a1412;letter-spacing:4px;">' + d.symbol + '</div>' +
+            '<div style="font-size:26px;margin-top:14px;letter-spacing:8px;color:#1a1412;padding-left:8px;">' + d.name + '</div>' +
+            '<div style="font-size:15px;color:#8a6d3a;margin-top:8px;letter-spacing:3px;">' + d.title + '</div>' +
+        '</div>' +
+        '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:12px 0 18px;"></div>' +
+        (d.question ? '<div style="text-align:center;margin-bottom:16px;font-size:14px;color:#4a1628;letter-spacing:2px;padding:8px 12px;border-top:1px dashed rgba(138,109,58,0.3);border-bottom:1px dashed rgba(138,109,58,0.3);">所 问 · ' + d.question + '</div>' : '') +
+        '<div style="padding:16px 18px;background:rgba(255,255,255,0.3);border-radius:3px;">' + analysis + '</div>' +
         yaoBlock +
         changeBlock +
-        '<div style="margin-top:20px;display:flex;justify-content:space-between;font-size:11px;color:#aaa;">' +
-            '<span>' + d.date + '</span><span>天衍 · 周易六十四卦</span>' +
+        '<div style="margin-top:24px;padding-top:14px;border-top:1px solid rgba(138,109,58,0.3);display:flex;justify-content:space-between;font-size:11px;color:#8a6d3a;letter-spacing:1px;">' +
+            '<span>' + d.date + '</span><span>天 衍 · EASTERN ARCANA</span>' +
         '</div>' +
     '</div>';
 }
@@ -461,12 +536,11 @@ async function shareAsImage() {
     const preview = document.getElementById('shareImagePreview');
     const data = getCurrentGuaData();
     if (!data) { alert('请先占卜'); return; }
-    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
-    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
+    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#8a6d3a;">生成中…</div>';
     container.classList.add('show');
     try {
         const tmp = document.createElement('div');
-        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:540px;';
+        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:560px;';
         tmp.innerHTML = createShareCard(data);
         document.body.appendChild(tmp);
         await sleep(300);
@@ -474,130 +548,31 @@ async function shareAsImage() {
         const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
         document.body.removeChild(tmp);
         const url = canvas.toDataURL('image/png', 1.0);
-        preview.innerHTML = '<img src="' + url + '" alt="分享图" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        bindShareButtons(canvas, '天衍_' + Date.now() + '.png');
-    } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
+        preview.innerHTML = '<img src="' + url + '" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">';
+        document.getElementById('shareDownloadBtn').onclick = () => {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '天衍_Arcana_' + Date.now() + '.png';
+            a.click();
+        };
+        document.getElementById('shareCopyBtn').onclick = () => {
+            try {
+                canvas.toBlob(async blob => {
+                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+                    alert('已复制到剪贴板');
+                });
+            } catch(e) { alert('复制失败，请下载图片'); }
+        };
+    } catch(e) {
+        preview.innerHTML = '<div style="padding:20px;color:#a84848;">生成失败</div>';
+    }
 }
 
 function closeShare() {
     document.getElementById('shareImageContainer').classList.remove('show');
 }
 
-
-// ========== 占卜主流程 ==========
-async function divine() {
-    const question = document.getElementById('question').value.trim();
-    const resultArea = document.getElementById('resultArea');
-    const btn = document.getElementById('divineBtn');
-
-    // 生辰模式校验
-    var baziData = null;
-    var hexLines;
-    if (currentMode === 'bazi') {
-        baziData = getBaziInput();
-        if (!baziData) return;
-        hexLines = generateHexagramFromBazi(baziData.year, baziData.month, baziData.day, baziData.shichen, question);
-    } else {
-        hexLines = generateHexagram();
-    }
-
-    btn.disabled = true; btn.textContent = '卦象演算中…';
-    resultArea.innerHTML = '<div class="ink-stage"><canvas id="inkCanvas"></canvas><div class="ink-status" id="inkStatus"></div></div>';
-    resultArea.classList.add('show');
-    resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const cv = document.getElementById('inkCanvas');
-    const anim = new BrushAnimation(cv);
-    anim.start();
-    const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-    const fullBin = bits.slice(3,6).reverse().join('') + bits.slice(0,3).reverse().join('');
-    const gua = lookupGua(fullBin);
-    const change = calculateChangeGua(hexLines, fullBin);
-    const statusEl = document.getElementById('inkStatus');
-    statusEl.textContent = '卦象生成中…';
-    statusEl.classList.add('show');
-    await sleep(600);
-    const yaoLabels = ['初爻','二爻','三爻','四爻','五爻','上爻'];
-    for (let i = 0; i < 6; i++) {
-        const isYang = (hexLines[i] === 7 || hexLines[i] === 9);
-        statusEl.textContent = yaoLabels[i] + ' · ' + (isYang ? '阳' : '阴');
-        anim.addYaoLine(isYang, i);
-        anim.addSparks(anim.w / 2, 30 + i * 20, 6);
-        await sleep(700);
-    }
-    await sleep(400);
-    statusEl.textContent = gua[2] + '  ' + gua[0];
-    statusEl.style.fontSize = '1.5em';
-    statusEl.style.color = '#b33a3a';
-    await sleep(1800);
-    resultArea.style.transition = 'opacity 0.5s';
-    resultArea.style.opacity = '0';
-    await sleep(500);
-    anim.stop();
-    renderResult(gua, hexLines, change, question, fullBin);
-    resultArea.style.opacity = '1';
-    saveToHistory(question, gua, fullBin, hexLines, change);
-    btn.disabled = false; btn.textContent = '起卦';
-}
-// ========== 渲染结果 ==========
-function renderResult(gua, hexLines, change, question, fullBin) {
-    const resultArea = document.getElementById('resultArea');
-    const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
-
-    const yaoHtml = hexLines.map((line, idx) => {
-        const isYang = (line===9||line===7);
-        const yaoType = line===9?'老阳':line===7?'少阳':line===8?'少阴':'老阴';
-        const yaoName = isYang ? yaoNames[idx] : yaoNames[idx+6];
-        const yaoText = gua[3].split('|')[idx]||'';
-        const isChanging = change.changingYaos.includes(idx);
-        const lineVis = isYang
-            ? '<span class="yao-line yang"><span></span></span>'
-            : '<span class="yao-line yin"><span></span><span></span></span>';
-        const changeBadge = isChanging ? '<span class="yao-badge change">变爻</span>' : '';
-        return '<div class="yao-item'+(isChanging?' changing':'')+'">' +
-            '<div class="yao-header">'+lineVis+
-            '<span class="yao-name">'+yaoName+'</span>'+
-            '<span class="yao-badge type">'+yaoType+'</span>'+changeBadge+'</div>'+
-            '<div class="yao-text">'+yaoText+'</div></div>';
-    }).join('');
-
-    const analysisHtml = gua[4].split('。').filter(s=>s.trim()).map(s=>
-        '<div class="analysis-item">'+s.trim()+'。</div>'
-    ).join('');
-
-    let changeHtml = '';
-    if (change.hasChange) {
-        const pos = change.changingYaos.map(p=>['初','二','三','四','五','上'][p]);
-        changeHtml = '<section class="card change-section"><h3>变卦分析</h3>'+
-            '<div class="change-comparison">'+
-            '<div class="gua-box"><div class="gua-label">本卦</div><div class="gua-symbol">'+gua[2]+'</div><div class="gua-name">'+gua[0]+'</div></div>'+
-            '<div class="change-arrow">⟶</div>'+
-            '<div class="gua-box changed"><div class="gua-label">变卦</div><div class="gua-symbol">'+change.changeGua[2]+'</div><div class="gua-name">'+change.changeGua[0]+'</div></div></div>'+
-            '<div class="change-details"><p>变爻位置：第'+pos.join('、')+'爻</p>'+
-            '<p>'+change.changeGua[4]+'</p></div></section>';
-    }
-
-    resultArea.innerHTML =
-        '<section class="card result-header"><div class="hex-symbol">' + gua[2] + '</div>' +
-        '<div class="hex-info"><h2 class="hex-name">' + gua[0] + '</h2><div class="hex-title">' + gua[1] + '</div></div>' +
-        '<div class="fortune-tag ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</div>' +
-        (question ? '<p class="hex-question">「' + question + '」</p>' : '') +
-        '<div class="share-row"><button class="btn-share" onclick="shareAsImage()">生成分享图</button></div></section>' +
-        '<section class="card"><h3>六爻解读</h3><div class="yao-list">' + yaoHtml + '</div></section>' +
-        '<section class="card"><h3>卦象分析</h3><div class="analysis-list">' + analysisHtml + '</div></section>' +
-        changeHtml;
-    resultArea.classList.add('show');
-
-    // 逐段淡入
-    const cards = resultArea.querySelectorAll('.card');
-    cards.forEach((el,i)=>{
-        el.style.opacity='0';el.style.transform='translateY(20px)';
-        setTimeout(()=>{
-            el.style.transition='opacity 0.6s ease,transform 0.6s ease';
-            el.style.opacity='1';el.style.transform='translateY(0)';
-        },200+i*180);
-    });
-}
-
+// ========== 历史（牌册） ==========
 function saveToHistory(question, gua, fullBin, hexLines, change) {
     let history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
     history.unshift({
@@ -623,58 +598,49 @@ function loadHistory() {
     const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
     const list = document.getElementById('historyList');
     if (history.length === 0) {
-        list.innerHTML = '<p class="history-empty">暂无记录</p>';
+        list.innerHTML = '<p class="history-empty">尚 无 记 录</p>';
         return;
     }
-    list.innerHTML = history.map((item, idx) =>
-        '<div class="history-item" onclick="loadHistoryItem(' + idx + ')">' +
-            '<div class="history-q">' + item.question + '</div>' +
-            '<div class="history-gua">' + item.symbol + ' ' + item.gua +
-                (item.hasChange ? ' <span class="history-tag">变</span>' : '') +
-            '</div>' +
-            '<div class="history-date">' + item.date + '</div>' +
-        '</div>'
-    ).join('');
+    list.innerHTML = history.map((item, idx) => {
+        const guaEntry = item.binary ? lookupGua(item.binary) : null;
+        const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
+        return `<div class="history-item" onclick="loadHistoryItem(${idx})">
+<div class="history-q">${item.question}</div>
+<div class="history-gua">${roman ? `<span style="font-family:'Cinzel',serif;margin-right:6px;">${roman}</span>` : ''}${item.symbol} ${item.gua}${item.hasChange ? ' <span class="history-tag">变</span>' : ''}</div>
+<div class="history-date">${item.date}</div>
+</div>`;
+    }).join('');
 }
 
 function loadHistoryItem(index) {
     const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
     const item = history[index];
     if (!item) return;
-    // 优先通过卦象符号查找（兼容旧数据）
-    const gua = GUA.find(g => g[2] === item.symbol) || (item.binary ? lookupGua(item.binary) : null) || GUA[0];
+    const gua = item.binary ? lookupGua(item.binary) : (GUA.find(g => g[2] === item.symbol) || GUA[0]);
     if (!gua) return;
+    const change = {
+        hasChange: item.hasChange,
+        changeBinary: item.changeBinary,
+        changingYaos: item.changingYaos || [],
+        changeGua: item.changeBinary ? lookupGua(item.changeBinary) : null
+    };
     if (item.hexagramLines && item.hexagramLines.length === 6) {
-        // 从爻线重新计算二进制（兼容旧数据的错误binary）
-        const bits = item.hexagramLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-        const correctBin = bits.slice(3,6).reverse().join('') + bits.slice(0,3).reverse().join('');
-        const change = calculateChangeGua(item.hexagramLines, correctBin);
-        renderResult(gua, item.hexagramLines, change, item.question, correctBin);
+        renderResult(gua, item.hexagramLines, change, item.question, item.binary);
     } else {
-        const resultArea = document.getElementById('resultArea');
-        const analysisHtml = gua[4].split('。').filter(s=>s.trim()).map(s=>
-            '<div class="analysis-item">'+s.trim()+'。</div>'
-        ).join('');
-        resultArea.innerHTML =
-            '<section class="card result-header"><div class="hex-symbol">'+gua[2]+'</div>'+
-            '<div class="hex-info"><h2 class="hex-name">'+gua[0]+'</h2><div class="hex-title">'+gua[1]+'</div></div></section>'+
-            '<section class="card"><h3>卦象分析</h3><div class="analysis-list">'+analysisHtml+'</div></section>';
-        resultArea.classList.add('show');
+        const hex = binToHexLines(item.binary || '000000');
+        renderResult(gua, hex, change, item.question, item.binary || '000000');
     }
     toggleHistory();
 }
 
 function clearHistory() {
-    if (confirm('确定清空所有历史记录？')) {
+    if (confirm('确 定 清 空 牌 册？')) {
         localStorage.removeItem('divinationHistory');
         loadHistory();
     }
 }
 
-
 // ========== 每日一卦 ==========
-
-// 获取/生成用户唯一ID（首次访问随机生成，存入localStorage）
 function getUserSeed() {
     let uid = localStorage.getItem('tianyan_uid');
     if (!uid) {
@@ -715,179 +681,89 @@ function renderDailyGua() {
     if (!el) return;
     const gua = getDailyGua();
     const motto = getDailyMotto();
-    el.innerHTML =
-        '<div class="daily-header">' +
-            '<div class="daily-label">今日卦象</div>' +
-            '<button class="daily-share-btn" id="dailyShareBtn" onclick="event.stopPropagation();shareDailyGua();">分享</button>' +
-        '</div>' +
-        '<div class="daily-content">' +
-            '<span class="daily-symbol">' + gua[2] + '</span>' +
-            '<span class="daily-name">' + gua[0] + '</span>' +
-            '<span class="fortune-tag small ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</span>' +
-            '<span class="daily-divider">·</span>' +
-            '<span class="daily-motto">' + motto + '</span>' +
-        '</div>';
-    el.onclick = function() { showGuaDetail(getDailyGua()); };
+    const roman = toRoman(guaIndex(gua));
+    el.innerHTML = `
+<div class="daily-label">DAILY · ARCANUM · 今 日 启 示</div>
+<div class="daily-content">
+    <span class="daily-roman">${roman}</span>
+    <span class="daily-symbol">${gua[2]}</span>
+    <span class="daily-name">${gua[0]}</span>
+    <span class="daily-divider">·</span>
+    <span class="daily-motto">${motto}</span>
+</div>`;
+    el.onclick = () => showGuaDetail(getDailyGua());
 }
 
-// 每日一卦分享卡片
-function createDailyShareCard() {
-    var gua = getDailyGua();
-    var motto = getDailyMotto();
-    var dateStr = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
-    var weekDay = ['日','一','二','三','四','五','六'][new Date().getDay()];
-
-    var analysis = gua[4].split('。').filter(function(s){ return s.trim(); }).map(function(s){
-        return '<div style="margin-bottom:8px;padding-left:12px;border-left:2px solid #c9a96e;font-size:13px;line-height:1.7;color:#3a3a3a;">' + s.trim() + '。</div>';
-    }).join('');
-
-    return '<div id="shareCard" style="width:480px;background:#f5f0e8;color:#2c2c2c;padding:32px 28px;font-family:serif;position:relative;">' +
-        '<div style="text-align:center;margin-bottom:6px;font-size:12px;color:#999;letter-spacing:6px;">天 衍</div>' +
-        '<div style="text-align:center;margin:8px 0 4px;"><span style="display:inline-block;padding:4px 18px;border:1px solid #c9a96e;color:#c9a96e;font-size:12px;letter-spacing:4px;">每 日 一 卦</span></div>' +
-        '<div style="text-align:center;font-size:13px;color:#999;margin-bottom:12px;">' + dateStr + ' 星期' + weekDay + '</div>' +
-        '<div style="text-align:center;padding:20px 0;">' +
-            '<div style="font-size:72px;line-height:1;color:#2c2c2c;">' + gua[2] + '</div>' +
-            '<div style="font-size:28px;margin-top:12px;letter-spacing:4px;">' + gua[0] + '</div>' +
-            '<div style="font-size:15px;color:#c9a96e;margin-top:6px;">' + gua[1] + '</div>' +
-        '</div>' +
-        '<div style="text-align:center;margin:12px 0 18px;font-size:16px;color:#666;letter-spacing:2px;font-style:italic;">「' + motto + '」</div>' +
-        '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:0 0 16px;"></div>' +
-        '<div style="padding:14px;background:rgba(0,0,0,0.03);border-radius:8px;">' + analysis + '</div>' +
-        '<div style="margin-top:20px;display:flex;justify-content:space-between;font-size:11px;color:#aaa;">' +
-            '<span>' + dateStr + '</span><span>天衍 · 每日一卦</span>' +
-        '</div>' +
-    '</div>';
-}
-
-async function shareDailyGua() {
-    var container = document.getElementById('shareImageContainer');
-    var preview = document.getElementById('shareImagePreview');
-    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
-    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
-    container.classList.add('show');
-    try {
-        var tmp = document.createElement('div');
-        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:540px;';
-        tmp.innerHTML = createDailyShareCard();
-        document.body.appendChild(tmp);
-        await sleep(300);
-        var card = tmp.querySelector('#shareCard');
-        var canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
-        document.body.removeChild(tmp);
-        var url = canvas.toDataURL('image/png', 1.0);
-        preview.innerHTML = '<img src="' + url + '" alt="每日一卦" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        bindShareButtons(canvas, '天衍_每日一卦_' + Date.now() + '.png');
-    } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
-}
-
-// ========== 卦象详解弹窗 ==========
+// ========== 卦象详解 ==========
 function showGuaDetail(gua) {
-    var old = document.querySelector('.detail-overlay');
+    const old = document.querySelector('.detail-overlay');
     if (old) old.remove();
 
-    var yaos = gua[3].split('|');
-    var yaoHtml = yaos.map(function(y) {
-        var i = y.indexOf('：');
-        var pos = i > 0 ? y.substring(0, i) : '';
-        var txt = i > 0 ? y.substring(i + 1) : y;
-        return '<div class="detail-yao"><span class="detail-yao-name">' + pos + '</span>' + txt + '</div>';
+    const yaos = gua[3].split('|');
+    const yaoHtml = yaos.map(y => {
+        const i = y.indexOf('：');
+        const pos = i > 0 ? y.substring(0, i) : '';
+        const txt = i > 0 ? y.substring(i + 1) : y;
+        return `<div class="detail-yao"><span class="detail-yao-name">${pos}</span>${txt}</div>`;
     }).join('');
 
-    var analysis = gua[4].split('。').filter(function(s) { return s.trim(); }).map(function(s) {
-        return '<p>' + s.trim() + '。</p>';
-    }).join('');
+    const analysis = gua[4].split('。').filter(s => s.trim()).map(s =>
+        `<p>${s.trim()}。</p>`
+    ).join('');
 
-    var upper = getTrigramName(gua[2][0]);
-    var lower = getTrigramName(gua[2][1]);
+    const upper = getTrigramName(gua[2][0]);
+    const lower = getTrigramName(gua[2][1]);
+    const roman = toRoman(guaIndex(gua));
 
-    var overlay = document.createElement('div');
+    const overlay = document.createElement('div');
     overlay.className = 'detail-overlay';
-    overlay.innerHTML =
-        '<div class="detail-box">' +
-            '<div class="detail-head">' +
-                '<div class="detail-symbol">' + gua[2] + '</div>' +
-                '<div class="detail-info"><h2>' + gua[0] + '</h2><div class="detail-sub">' + gua[1] + '</div>' +
-                '<div class="fortune-tag small ' + judgeFortuneLevel(gua[1]).cls + '">' + judgeFortuneLevel(gua[1]).level + '</div></div>' +
-                '<button class="detail-close" id="detailCloseBtn">&times;</button>' +
-            '</div>' +
-            '<div class="detail-meta">上卦 ' + upper + ' · 下卦 ' + lower + '</div>' +
-            '<div class="detail-section"><h3>爻辞</h3>' + yaoHtml + '</div>' +
-            '<div class="detail-section"><h3>卦象解读</h3><div class="detail-analysis">' + analysis + '</div></div>' +
-            '<div class="detail-footer"><button class="detail-share-btn" id="detailShareBtn">分享此卦</button></div>' +
-        '</div>';
-    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    overlay.innerHTML = `
+<div class="detail-box">
+    <div class="detail-head">
+        <div class="detail-symbol">${gua[2]}</div>
+        <div class="detail-info">
+            <div style="font-family:'Cinzel',serif;color:#8a6d3a;font-size:0.85rem;letter-spacing:0.4em;margin-bottom:2px;">${roman}</div>
+            <h2>${gua[0]}</h2>
+            <div class="detail-sub">${gua[1]}</div>
+        </div>
+        <button class="detail-close" id="detailCloseBtn">×</button>
+    </div>
+    <div class="detail-meta">上卦 ${upper} · 下卦 ${lower}</div>
+    <div class="detail-section"><h3>爻 辞</h3>${yaoHtml}</div>
+    <div class="detail-section"><h3>卦 象 解 读</h3><div class="detail-analysis">${analysis}</div></div>
+</div>`;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
-    overlay.querySelector('#detailCloseBtn').addEventListener('click', function() { overlay.remove(); });
-    overlay.querySelector('#detailShareBtn').addEventListener('click', function() {
-        overlay.remove();
-        shareGuaDetail(gua);
-    });
-    requestAnimationFrame(function() { overlay.classList.add('show'); });
-}
-
-// 详解弹窗分享卡片（与每日一卦分享卡片统一样式）
-function createDetailShareCard(gua) {
-    var dateStr = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric' });
-    var weekDay = ['日','一','二','三','四','五','六'][new Date().getDay()];
-    var motto = getDailyMotto();
-
-    var analysis = gua[4].split('。').filter(function(s){ return s.trim(); }).map(function(s){
-        return '<div style="margin-bottom:8px;padding-left:12px;border-left:2px solid #c9a96e;font-size:13px;line-height:1.7;color:#3a3a3a;">' + s.trim() + '。</div>';
-    }).join('');
-
-    return '<div id="shareCard" style="width:480px;background:#f5f0e8;color:#2c2c2c;padding:32px 28px;font-family:serif;position:relative;">' +
-        '<div style="text-align:center;margin-bottom:6px;font-size:12px;color:#999;letter-spacing:6px;">天 衍</div>' +
-        '<div style="text-align:center;margin:8px 0 4px;"><span style="display:inline-block;padding:4px 18px;border:1px solid #c9a96e;color:#c9a96e;font-size:12px;letter-spacing:4px;">每 日 一 卦</span></div>' +
-        '<div style="text-align:center;font-size:13px;color:#999;margin-bottom:12px;">' + dateStr + ' 星期' + weekDay + '</div>' +
-        '<div style="text-align:center;padding:20px 0;">' +
-            '<div style="font-size:72px;line-height:1;color:#2c2c2c;">' + gua[2] + '</div>' +
-            '<div style="font-size:28px;margin-top:12px;letter-spacing:4px;">' + gua[0] + '</div>' +
-            '<div style="font-size:15px;color:#c9a96e;margin-top:6px;">' + gua[1] + '</div>' +
-        '</div>' +
-        '<div style="text-align:center;margin:12px 0 18px;font-size:16px;color:#666;letter-spacing:2px;font-style:italic;">「' + motto + '」</div>' +
-        '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:0 0 16px;"></div>' +
-        '<div style="padding:14px;background:rgba(0,0,0,0.03);border-radius:8px;">' + analysis + '</div>' +
-        '<div style="margin-top:20px;display:flex;justify-content:space-between;font-size:11px;color:#aaa;">' +
-            '<span>' + dateStr + '</span><span>天衍 · 每日一卦</span>' +
-        '</div>' +
-    '</div>';
-}
-
-async function shareGuaDetail(gua) {
-    var container = document.getElementById('shareImageContainer');
-    var preview = document.getElementById('shareImagePreview');
-    preview.innerHTML = '<div style="padding:30px;text-align:center;color:#888;">生成中…</div>';
-    var tip = document.getElementById('shareTip'); if (tip) tip.style.display = 'none';
-    container.classList.add('show');
-    try {
-        var tmp = document.createElement('div');
-        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:540px;text-align:center;';
-        tmp.innerHTML = createDetailShareCard(gua);
-        document.body.appendChild(tmp);
-        await sleep(300);
-        var card = tmp.querySelector('#shareCard');
-        var canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
-        document.body.removeChild(tmp);
-        var url = canvas.toDataURL('image/png', 1.0);
-        preview.innerHTML = '<img src="' + url + '" alt="卦象详解" style="max-width:100%;border-radius:8px;border:1px solid #ddd;">';
-        bindShareButtons(canvas, '天衍_' + gua[0] + '_' + Date.now() + '.png');
-    } catch(e) { preview.innerHTML = '<div style="padding:20px;color:#b33a3a;">生成失败</div>'; }
+    overlay.querySelector('#detailCloseBtn').addEventListener('click', () => overlay.remove());
+    requestAnimationFrame(() => overlay.classList.add('show'));
 }
 
 function getTrigramName(sym) {
-    var map = {'☰':'乾(天)','☱':'兑(泽)','☲':'离(火)','☳':'震(雷)','☴':'巽(风)','☵':'坎(水)','☶':'艮(山)','☷':'坤(地)'};
+    const map = {'☰':'乾(天)','☱':'兑(泽)','☲':'离(火)','☳':'震(雷)','☴':'巽(风)','☵':'坎(水)','☶':'艮(山)','☷':'坤(地)'};
     return map[sym] || sym;
 }
 
+// ========== 时辰彩蛋 ==========
+function applyHourTheme() {
+    const h = new Date().getHours();
+    document.body.classList.remove('hour-zi', 'hour-wu');
+    if (h >= 23 || h < 1) document.body.classList.add('hour-zi');
+    else if (h >= 11 && h < 13) document.body.classList.add('hour-wu');
+}
+
 // ========== 初始化 ==========
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
+    applyHourTheme();
+    const dustCanvas = document.querySelector('.dust-layer');
+    if (dustCanvas) {
+        const dust = new DustParticles(dustCanvas);
+        dust.start();
+    }
     loadHistory();
     renderDailyGua();
-    loadBaziInput();
-    var sc = document.getElementById('shareImageContainer');
-    if (sc) sc.addEventListener('click', function(e) { if (e.target === sc) closeShare(); });
-    // 回车快捷键起卦
-    document.getElementById('question').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !document.getElementById('divineBtn').disabled) divine();
-    });
+    const sc = document.getElementById('shareImageContainer');
+    if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
+
+    // 每小时检查时辰彩蛋
+    setInterval(applyHourTheme, 60 * 1000);
 });
