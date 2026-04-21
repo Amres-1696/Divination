@@ -272,15 +272,19 @@ class ArcanaRitual {
         await sleep(350);
         const bin = TRIGRAM_TO_BINARY[this.finalGua[2][0]] + TRIGRAM_TO_BINARY[this.finalGua[2][1]];
         const finalCard = makeArcanaCard(this.finalGua, {
-            large: false,
+            large: true,
             hexLines: this.hexLines,
             changingYaos: this.change.changingYaos,
             rare: isRareGua(bin)
         });
         chosen.innerHTML = finalCard.innerHTML;
         chosen.className = finalCard.className + ' active';
-        chosen.style.transition = 'transform 1.1s cubic-bezier(0.3, 0, 0.2, 1), filter 0.8s ease';
-        chosen.style.transform = 'translate3d(0, -30px, 120px) rotate(0deg) scale(1.55)';
+        chosen.style.transition = 'transform 1.1s cubic-bezier(0.3, 0, 0.2, 1), filter 0.8s ease, width 0.6s ease, height 0.6s ease';
+        chosen.style.width = '110px';
+        chosen.style.height = '188px';
+        chosen.style.marginLeft = '-55px';
+        chosen.style.marginTop = '-94px';
+        chosen.style.transform = 'translate3d(0, -20px, 60px) rotate(0deg) scale(1.15)';
         chosen.style.zIndex = '50';
         this.chosenCard = chosen;
         await sleep(800);
@@ -304,7 +308,7 @@ class ArcanaRitual {
         await sleep(500);
         this.chosenCard.style.transition = 'transform 0.7s ease, opacity 0.7s ease';
         this.chosenCard.style.opacity = '0';
-        this.chosenCard.style.transform = 'translate3d(0, -60px, 200px) scale(1.7)';
+        this.chosenCard.style.transform = 'translate3d(0, -60px, 200px) scale(1.3)';
         this.statusEl.style.transition = 'opacity 0.6s ease';
         this.statusEl.style.opacity = '0';
         await sleep(700);
@@ -332,13 +336,32 @@ async function divine() {
     const btn = document.getElementById('divineBtn');
     const btnText = btn.querySelector('.btn-text');
     const originalText = btnText ? btnText.textContent : '起 卦';
+
+    const settings = loadSettings();
+
+    // 八字起卦需要检查八字数据
+    if (settings.method === 'bazi') {
+        if (!settings.bazi) {
+            alert('请先在设置中填写并保存生辰八字');
+            return;
+        }
+    }
+
     btn.disabled = true;
     if (btnText) btnText.textContent = '演 卦';
 
     resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
 
     const stage = document.getElementById('ritualStage');
-    const hexLines = generateHexagram();
+    stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    let hexLines;
+    if (settings.method === 'bazi') {
+        hexLines = generateHexagramBazi(settings.bazi);
+    } else {
+        hexLines = generateHexagram();
+    }
+
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
     const fullBin = bits.slice(3, 6).join('') + bits.slice(0, 3).join('');
     const gua = lookupGua(fullBin);
@@ -590,7 +613,9 @@ function saveToHistory(question, gua, fullBin, hexLines, change) {
 
 function toggleHistory() {
     const panel = document.getElementById('historyPanel');
+    const overlay = document.getElementById('historyOverlay');
     panel.classList.toggle('show');
+    overlay.classList.toggle('show');
     if (panel.classList.contains('show')) loadHistory();
 }
 
@@ -751,6 +776,159 @@ function applyHourTheme() {
     else if (h >= 11 && h < 13) document.body.classList.add('hour-wu');
 }
 
+// ========== 设置系统 ==========
+const DEFAULT_SETTINGS = {
+    method: 'coin',
+    showDaily: true,
+    showCandle: true,
+    bazi: null // { year, month, day, hour }
+};
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem('tianyan_settings');
+        if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    } catch(e) {}
+    return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings(settings) {
+    localStorage.setItem('tianyan_settings', JSON.stringify(settings));
+}
+
+function saveSetting(key, value) {
+    const settings = loadSettings();
+    settings[key] = value;
+    saveSettings(settings);
+    applySettings(settings);
+}
+
+function saveBazi() {
+    const year = document.getElementById('baziYear').value;
+    const month = document.getElementById('baziMonth').value;
+    const day = document.getElementById('baziDay').value;
+    const hour = document.getElementById('baziHour').value;
+    const status = document.getElementById('baziStatus');
+
+    if (!year || !month || !day || hour === '') {
+        status.textContent = '请填写完整的生辰八字信息';
+        status.className = 'bazi-status error';
+        return;
+    }
+    if (year < 1900 || year > 2100) {
+        status.textContent = '年份范围：1900-2100';
+        status.className = 'bazi-status error';
+        return;
+    }
+    if (day < 1 || day > 31) {
+        status.textContent = '日期范围：1-31';
+        status.className = 'bazi-status error';
+        return;
+    }
+
+    const bazi = { year: parseInt(year), month: parseInt(month), day: parseInt(day), hour: parseInt(hour) };
+    const settings = loadSettings();
+    settings.bazi = bazi;
+    saveSettings(settings);
+
+    const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+    status.textContent = `已保存：${year}年${month}月${day}日 ${shiChen[hour]}时`;
+    status.className = 'bazi-status success';
+}
+
+function applySettings(settings) {
+    // 每日启示
+    const dailyEl = document.getElementById('dailyGua');
+    if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';
+
+    // 蜡烛
+    document.querySelectorAll('.candle').forEach(c => {
+        c.style.display = settings.showCandle ? '' : 'none';
+    });
+}
+
+function restoreSettingsUI() {
+    const settings = loadSettings();
+
+    const methodEl = document.getElementById('settingMethod');
+    if (methodEl) methodEl.value = settings.method;
+
+    const dailyEl = document.getElementById('settingDaily');
+    if (dailyEl) dailyEl.checked = settings.showDaily;
+
+    const candleEl = document.getElementById('settingCandle');
+    if (candleEl) candleEl.checked = settings.showCandle;
+
+    // 恢复八字
+    if (settings.bazi) {
+        const b = settings.bazi;
+        document.getElementById('baziYear').value = b.year || '';
+        document.getElementById('baziMonth').value = b.month || '';
+        document.getElementById('baziDay').value = b.day || '';
+        document.getElementById('baziHour').value = b.hour !== undefined ? b.hour : '';
+        const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+        const status = document.getElementById('baziStatus');
+        if (status) {
+            status.textContent = `当前：${b.year}年${b.month}月${b.day}日 ${shiChen[b.hour]}时`;
+            status.className = 'bazi-status success';
+        }
+    }
+
+    applySettings(settings);
+}
+
+function toggleSettings() {
+    const panel = document.getElementById('settingsPanel');
+    const overlay = document.getElementById('settingsOverlay');
+    panel.classList.toggle('show');
+    overlay.classList.toggle('show');
+}
+
+// ========== 八字起卦算法 ==========
+function generateHexagramBazi(bazi) {
+    // 梅花易数·八字起卦法
+    // 结合生辰八字 + 当前时间，使每次占卜结果不同
+    const now = new Date();
+    const nowDay = now.getDate();
+    const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2); // 当前时辰 0-11
+    const nowMin = now.getMinutes();
+
+    // 上卦 = (出生年尾数 + 出生月 + 出生日 + 当前日) % 8
+    // 下卦 = (上卦数 + 出生时辰 + 当前时辰) % 8
+    // 动爻 = (出生年尾数 + 出生月 + 出生日 + 出生时辰 + 当前时分总和) % 6
+    const yearNum = bazi.year % 100 || 100;
+    const sumUpper = yearNum + bazi.month + bazi.day + nowDay;
+    const sumLower = sumUpper + (bazi.hour + 1) + (nowHour + 1);
+    const sumYao = yearNum + bazi.month + bazi.day + (bazi.hour + 1) + nowHour + nowMin;
+
+    const upperIdx = ((sumUpper - 1) % 8 + 8) % 8; // 0-7
+    const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
+    const changingYao = ((sumYao - 1) % 6 + 6) % 6; // 0-5 动爻位置
+
+    // 先天八卦数：乾1兑2离3震4巽5坎6艮7坤8
+    const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
+    const upperTri = xiantianOrder[upperIdx];
+    const lowerTri = xiantianOrder[lowerIdx];
+
+    // 构建六爻，动爻位置设为老阳(9)或老阴(6)
+    const upperBin = TRIGRAM_TO_BINARY[upperTri];
+    const lowerBin = TRIGRAM_TO_BINARY[lowerTri];
+
+    const lines = [];
+    for (let i = 0; i < 3; i++) {
+        lines.push(lowerBin[2-i] === '1' ? 7 : 8);
+    }
+    for (let i = 0; i < 3; i++) {
+        lines.push(upperBin[2-i] === '1' ? 7 : 8);
+    }
+
+    // 动爻变化
+    if (lines[changingYao] === 7) lines[changingYao] = 9;
+    else lines[changingYao] = 6;
+
+    return lines;
+}
+
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
     applyHourTheme();
@@ -761,6 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadHistory();
     renderDailyGua();
+    restoreSettingsUI();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 
