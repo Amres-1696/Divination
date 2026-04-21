@@ -31,9 +31,13 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
+html {
     min-height: 100vh;
     background: var(--velvet-deep);
+}
+body {
+    min-height: 100vh;
+    background: transparent;
     color: var(--parchment);
     font-family: var(--font-body);
     overflow-x: hidden;
