@@ -112,26 +112,43 @@ body {
 .candle {
     position: fixed;
     top: 50%;
-    width: 60px;
-    height: 170px;
+    width: 80px;
+    height: 400px;
     transform: translateY(-50%);
     z-index: 2;
-    filter: drop-shadow(0 0 12px rgba(244,196,122,0.4));
+    filter: drop-shadow(0 0 16px rgba(244,196,122,0.42));
+    pointer-events: none;
+    overflow: visible;
+}
+.candle > svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+.candle-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
     pointer-events: none;
 }
-.candle-left { left: max(2vw, 18px); }
-.candle-right { right: max(2vw, 18px); transform: translateY(-50%) scaleX(-1); }
+.candle-left { left: max(2vw, 12px); }
+.candle-right { right: max(2vw, 12px); transform: translateY(-50%) scaleX(-1); }
 
 .candle .flame {
-    transform-origin: 30px 80px;
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
     animation: flameSway 2.8s ease-in-out infinite;
 }
 .candle .flame-inner {
-    transform-origin: 30px 78px;
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
     animation: flameInnerSway 2.1s ease-in-out infinite;
 }
 .candle .flame-halo {
-    transform-origin: 30px 62px;
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
     animation: flameHaloPulse 3.6s ease-in-out infinite;
 }
 
@@ -1300,7 +1317,7 @@ footer p { margin: 4px 0; }
 /* ============ 响应式 ============ */
 @media (max-width: 768px) {
     .container { padding: 32px 16px 60px; }
-    .candle { width: 44px; height: 130px; }
+    .candle { width: 48px; height: 240px; }
     .candle-left { left: 6px; }
     .candle-right { right: 6px; }
     .embroidery-mat { width: 130vmin; height: 130vmin; opacity: 0.8; }
@@ -1341,8 +1358,11 @@ body.hour-zi .embroidery-mat {
     color: #a8b8d8;
     filter: drop-shadow(0 0 12px rgba(168,184,216,0.25));
 }
-body.hour-zi .candle .flame { fill: #a8c4e8; opacity: 0.75; }
-body.hour-zi .candle .flame-halo { fill: #a8c4e8; }
+body.hour-zi .candle .flame,
+body.hour-zi .candle .flame-inner {
+    filter: hue-rotate(160deg) saturate(0.75);
+}
+body.hour-zi .candle .flame-halo { filter: hue-rotate(160deg) saturate(0.8); opacity: 0.7; }
 
 body.hour-wu .velvet-bg {
     background:
@@ -1350,7 +1370,7 @@ body.hour-wu .velvet-bg {
         radial-gradient(ellipse at 70% 80%, rgba(90,40,20,0.65) 0%, transparent 60%),
         linear-gradient(135deg, #2a1410 0%, #1a0a08 60%, #2a1410 100%);
 }
-body.hour-wu .candle .flame-halo { opacity: 0.4; }
+body.hour-wu .candle .flame-halo { opacity: 0.55; }
 body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.25)); }
 
 /* ============ 右上角齿轮 ============ */

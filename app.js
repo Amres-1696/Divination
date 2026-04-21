@@ -16,7 +16,8 @@ function calculateChangeGua(hexLines, origBin) {
         else cb.push(l===7?'1':'0');
     }
     if(!cy.length) return {hasChange:false,changeBinary:origBin,changingYaos:[],changeGua:lookupGua(origBin)};
-    const full=cb.slice(3,6).join('')+cb.slice(0,3).join('');
+    // cb 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初],整体反转即可
+    const full=cb.slice().reverse().join('');
     return {hasChange:true,changeBinary:full,changingYaos:cy,changeGua:lookupGua(full)};
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
@@ -35,12 +36,8 @@ function isRareGua(bin) {
     return bin === '111111' || bin === '000000';
 }
 function getVerdict(gua) {
-    const full = gua[1] + '|' + gua[4];
-    const hasXiong = /凶|困顿|艰难|险陷|剥落|闭塞|衰退|不利|受阻|背离|极端/.test(full);
-    const hasJi = /元亨|大吉|大有|元吉|亨利|收获|光明|顺利|喜悦|上升|丰盛|大壮/.test(full);
-    if (hasXiong && !hasJi) return 'xiong';
-    if (hasJi && !hasXiong) return 'ji';
-    return 'ping';
+    // 用预标注的 VERDICT_MAP 查表,避免关键词正则在"光明被遮蔽""不利于东北"这类表述上误判
+    return VERDICT_MAP[gua[0]] || 'ping';
 }
 function binToHexLines(bin) {
     const hex = [];
@@ -306,26 +303,19 @@ class ArcanaRitual {
             c.style.transform = `translate3d(${(Math.random()-0.5)*40}px, 60px, -200px) rotate(${(Math.random()-0.5)*20}deg)`;
         });
         await sleep(500);
-        this.chosenCard.style.transition = 'transform 0.7s ease, opacity 0.7s ease';
-        this.chosenCard.style.opacity = '0';
-        this.chosenCard.style.transform = 'translate3d(0, -60px, 200px) scale(1.3)';
+        // 状态文字淡出;翻开的牌保持原位,交给 renderResult 的 FLIP 动画"接力"过渡到结果页
         this.statusEl.style.transition = 'opacity 0.6s ease';
         this.statusEl.style.opacity = '0';
-        await sleep(700);
+        await sleep(400);
     }
     pickDeckPool(n) {
-        const pool = [];
-        const used = new Set();
-        for (let i = 0; i < n; i++) {
-            let idx, tries = 0;
-            do {
-                idx = Math.floor(Math.random() * 64);
-                tries++;
-            } while (used.has(idx) && tries < 24);
-            used.add(idx);
-            pool.push(GUA[idx]);
+        // Fisher–Yates 洗牌:对 0..63 的索引数组洗一次后取前 n 张,保证抽出的卦不重复
+        const indices = Array.from({ length: 64 }, (_, i) => i);
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
         }
-        return pool;
+        return indices.slice(0, n).map(idx => GUA[idx]);
     }
 }
 
@@ -363,14 +353,16 @@ async function divine() {
     }
 
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-    const fullBin = bits.slice(3, 6).join('') + bits.slice(0, 3).join('');
+    // bits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初]
+    const fullBin = bits.slice().reverse().join('');
     const gua = lookupGua(fullBin);
     const change = calculateChangeGua(hexLines, fullBin);
 
     const ritual = new ArcanaRitual(stage, gua, hexLines, change);
     await ritual.run();
 
-    renderResult(gua, hexLines, change, question, fullBin);
+    // 把仪式中翻开的卡引用传给 renderResult,做 FLIP 平滑过渡到结果页
+    renderResult(gua, hexLines, change, question, fullBin, ritual.chosenCard);
     saveToHistory(question, gua, fullBin, hexLines, change);
 
     btn.disabled = false;
@@ -378,12 +370,19 @@ async function divine() {
 }
 
 // ========== 结果渲染 ==========
-function renderResult(gua, hexLines, change, question, fullBin) {
+function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     const resultArea = document.getElementById('resultArea');
     const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
     const roman = toRoman(guaIndex(gua));
     const verdict = getVerdict(gua);
     const verdictText = { ji:'吉', xiong:'凶', ping:'平' };
+
+    // === FLIP 第一步:DOM 替换前记录 sourceCard 在视口里的位置,然后从仪式区拔出 ===
+    let firstRect = null;
+    if (sourceCard && sourceCard.parentNode) {
+        firstRect = sourceCard.getBoundingClientRect();
+        sourceCard.remove();
+    }
 
     const yaoHtml = hexLines.map((line, i) => {
         const isYang = (line === 9 || line === 7);
@@ -432,26 +431,87 @@ function renderResult(gua, hexLines, change, question, fullBin) {
 ${changeHtml}`;
 
     const wrap = resultArea.querySelector('#chosenCardWrap');
-    const bigCard = makeArcanaCard(gua, {
-        large: true,
-        hexLines,
-        changingYaos: change.changingYaos,
-        rare: isRareGua(fullBin)
-    });
-    bigCard.classList.add('flipped');
-    wrap.appendChild(bigCard);
+    let bigCard;
+    if (sourceCard) {
+        // 复用仪式期翻开的同一个 DOM 节点:清掉仪式期 inline 样式与过时 class
+        sourceCard.style.cssText = '';
+        sourceCard.classList.remove('active', 'peak');
+        // .flipped 已在 actFlip 加上,保留;.large 也已在 actRise 加上
+        wrap.appendChild(sourceCard);
+        bigCard = sourceCard;
+    } else {
+        // 兜底(比如历史回看):按原逻辑生成新卡
+        bigCard = makeArcanaCard(gua, {
+            large: true,
+            hexLines,
+            changingYaos: change.changingYaos,
+            rare: isRareGua(fullBin)
+        });
+        bigCard.classList.add('flipped');
+        wrap.appendChild(bigCard);
+    }
 
-    const cards = resultArea.querySelectorAll('.card');
-    cards.forEach((el, i) => {
-        el.style.opacity='0'; el.style.transform='translateY(20px)';
+    // === FLIP 第二/三步:测量"目标位置"lastRect,用 transform 反演回 firstRect ===
+    if (firstRect) {
+        // 临时关掉 wrap 的 chosenFloat 呼吸动画,避免干扰 FLIP 测量与过渡
+        wrap.style.animation = 'none';
+        const lastRect = bigCard.getBoundingClientRect();
+        const dx = (firstRect.left + firstRect.width/2) - (lastRect.left + lastRect.width/2);
+        const dy = (firstRect.top + firstRect.height/2) - (lastRect.top + lastRect.height/2);
+        const scale = firstRect.width / lastRect.width;
+
+        bigCard.style.transformOrigin = 'center center';
+        bigCard.style.transition = 'none';
+        bigCard.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
+        bigCard.offsetHeight; // 强制 reflow,锁定到旧位置
+
+        // === FLIP 第四步:释放 transform,让 transition 平滑过渡到 (0,0,1) ===
+        requestAnimationFrame(() => {
+            bigCard.style.transition = 'transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)';
+            bigCard.style.transform = '';
+        });
+
+        // FLIP 完成后清掉 inline,恢复呼吸动画
+        setTimeout(() => {
+            bigCard.style.transition = '';
+            bigCard.style.transform = '';
+            bigCard.style.transformOrigin = '';
+            wrap.style.animation = '';
+        }, 1250);
+    }
+
+    // === result-header 内除大卡外的装饰元素(罗马、卦名、verdict、share)在 FLIP 进行中错时淡入 ===
+    const header = resultArea.querySelector('.result-header');
+    if (header) {
+        const headerKids = Array.from(header.children).filter(el => !el.matches('.chosen-card-wrap, .hex-symbol'));
+        headerKids.forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(8px)';
+            setTimeout(() => {
+                el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
+                el.style.opacity = '1';
+                el.style.transform = '';
+            }, 350 + i * 80);
+        });
+    }
+
+    // === 其他卡(爻辞、奥义、变卦)在 FLIP 完成后才依次出现,避免抢焦点 ===
+    const otherCards = resultArea.querySelectorAll('.card:not(.result-header)');
+    otherCards.forEach((el, i) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
         setTimeout(() => {
             el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
-            el.style.opacity='1'; el.style.transform='translateY(0)';
-        }, 200 + i*180);
+            el.style.opacity = '1';
+            el.style.transform = '';
+        }, 700 + i * 180);
     });
+
+    // 等 FLIP 落定后再温和滚动到 result-header,避免 scroll 与 FLIP 拉扯
     setTimeout(() => {
-        resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 500);
+        const target = resultArea.querySelector('.result-header') || resultArea;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 1300);
 }
 
 // ========== 分享卡 ==========
@@ -561,15 +621,14 @@ async function shareAsImage() {
     if (!data) { alert('请先占卜'); return; }
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#8a6d3a;">生成中…</div>';
     container.classList.add('show');
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:560px;';
+    tmp.innerHTML = createShareCard(data);
+    document.body.appendChild(tmp);
     try {
-        const tmp = document.createElement('div');
-        tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:560px;';
-        tmp.innerHTML = createShareCard(data);
-        document.body.appendChild(tmp);
         await sleep(300);
         const card = tmp.querySelector('#shareCard');
         const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
-        document.body.removeChild(tmp);
         const url = canvas.toDataURL('image/png', 1.0);
         preview.innerHTML = '<img src="' + url + '" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">';
         document.getElementById('shareDownloadBtn').onclick = () => {
@@ -579,15 +638,21 @@ async function shareAsImage() {
             a.click();
         };
         document.getElementById('shareCopyBtn').onclick = () => {
-            try {
-                canvas.toBlob(async blob => {
+            // toBlob 回调是异步的,try/catch 必须放在回调内部才能捕获 clipboard.write 的拒绝
+            canvas.toBlob(async blob => {
+                try {
                     await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
                     alert('已复制到剪贴板');
-                });
-            } catch(e) { alert('复制失败，请下载图片'); }
+                } catch(e) {
+                    alert('复制失败，请下载图片');
+                }
+            });
         };
     } catch(e) {
         preview.innerHTML = '<div style="padding:20px;color:#a84848;">生成失败</div>';
+    } finally {
+        // 无论成功或异常都清理临时 DOM,避免反复尝试时节点堆积
+        if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }
 }
 
@@ -893,9 +958,9 @@ function generateHexagramBazi(bazi) {
     const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2); // 当前时辰 0-11
     const nowMin = now.getMinutes();
 
-    // 上卦 = (出生年尾数 + 出生月 + 出生日 + 当前日) % 8
-    // 下卦 = (上卦数 + 出生时辰 + 当前时辰) % 8
-    // 动爻 = (出生年尾数 + 出生月 + 出生日 + 出生时辰 + 当前时分总和) % 6
+    // 上卦累加 = 出生年尾数 + 出生月 + 出生日 + 当前日,然后 (累加 - 1) % 8 取索引
+    // 下卦累加 = 上卦累加 + 出生时辰 + 当前时辰,然后 (累加 - 1) % 8 取索引
+    // 动爻   = (上述总和 - 1) % 6 取位置(0~5)
     const yearNum = bazi.year % 100 || 100;
     const sumUpper = yearNum + bazi.month + bazi.day + nowDay;
     const sumLower = sumUpper + (bazi.hour + 1) + (nowHour + 1);
@@ -943,6 +1008,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 
-    // 每小时检查时辰彩蛋
+    // 每分钟检查一次时辰(到点切换子时/午时主题)
     setInterval(applyHourTheme, 60 * 1000);
 });
