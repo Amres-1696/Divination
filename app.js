@@ -871,6 +871,25 @@ function getUserSeed() {
 function getDailyGua() {
     const d = new Date();
     const dateStr = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+    const settings = loadSettings();
+
+    // 有八字数据时：用梅花易数（八字 + 当日日期）起卦
+    if (settings.bazi) {
+        const b = settings.bazi;
+        const yearNum = b.year % 100 || 100;
+        const nowDay = d.getDate();
+        const nowMonth = d.getMonth() + 1;
+        const sumUpper = yearNum + b.month + b.day + nowDay;
+        const sumLower = sumUpper + (b.hour + 1) + nowMonth;
+        const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
+        const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
+        const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
+        const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
+        const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
+        return lookupGua(upperBin + lowerBin);
+    }
+
+    // 无八字：原逻辑（uid + 日期哈希）
     const uid = getUserSeed();
     const combined = dateStr + ':' + uid;
     let seed = 0;
