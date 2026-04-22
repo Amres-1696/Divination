@@ -23,6 +23,11 @@ function calculateChangeGua(hexLines, origBin) {
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ========== 工具 ==========
+function escHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
 function toRoman(n) {
     const ones = ['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ'];
     const tens = ['','Ⅹ','ⅩⅩ','ⅩⅩⅩ','ⅩⅬ','Ⅼ','ⅬⅩ','ⅬⅩⅩ','ⅬⅩⅩⅩ','ⅩⅭ'];
@@ -244,6 +249,13 @@ class DustParticles {
         this.running = false;
         if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
     }
+    pause() { this.running = false; }
+    resume() {
+        if (this.running) return;
+        this.running = true;
+        this.tick();
+        this.scheduleFirefly();
+    }
 }
 
 // ========== 仪式控制器（六乐章） ==========
@@ -391,7 +403,10 @@ class ArcanaRitual {
 }
 
 // ========== 占卜主流程 ==========
+let _divineRunning = false;
 async function divine() {
+    if (_divineRunning) return;
+    _divineRunning = true;
     const question = document.getElementById('question').value.trim();
     const resultArea = document.getElementById('resultArea');
     const btn = document.getElementById('divineBtn');
@@ -404,6 +419,7 @@ async function divine() {
     if (settings.method === 'bazi') {
         if (!settings.bazi) {
             alert('请先在设置中填写并保存生辰八字');
+            _divineRunning = false;
             return;
         }
     }
@@ -441,6 +457,7 @@ async function divine() {
 
     btn.disabled = false;
     if (btnText) btnText.textContent = originalText;
+    _divineRunning = false;
 }
 
 // ========== 结果渲染 ==========
@@ -496,7 +513,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     <h2 class="hex-name hex-name-art">${gua[0]}</h2>
     <div class="hex-title">${gua[1]}</div>
     <div class="hex-symbol" style="display:none;">${gua[2]}</div>
-    ${question ? `<p class="hex-question">「${question}」</p>` : ''}
+    ${question ? `<p class="hex-question">「${escHtml(question)}」</p>` : ''}
     <div class="verdict-seal ${verdict}">${verdictText[verdict]}</div>
     <div class="share-row"><button class="btn-share" onclick="shareAsImage()">✦ 生 成 分 享 图</button></div>
 </section>
@@ -715,7 +732,7 @@ function createShareCard(d) {
             '<div style="font-size:15px;color:#8a6d3a;margin-top:8px;letter-spacing:3px;">' + d.title + '</div>' +
         '</div>' +
         '<div style="height:1px;background:linear-gradient(90deg,transparent,#c9a96e,transparent);margin:12px 0 18px;"></div>' +
-        (d.question ? '<div style="text-align:center;margin-bottom:16px;font-size:14px;color:#4a1628;letter-spacing:2px;padding:8px 12px;border-top:1px dashed rgba(138,109,58,0.3);border-bottom:1px dashed rgba(138,109,58,0.3);">所 问 · ' + d.question + '</div>' : '') +
+        (d.question ? '<div style="text-align:center;margin-bottom:16px;font-size:14px;color:#4a1628;letter-spacing:2px;padding:8px 12px;border-top:1px dashed rgba(138,109,58,0.3);border-bottom:1px dashed rgba(138,109,58,0.3);">所 问 · ' + escHtml(d.question) + '</div>' : '') +
         '<div style="padding:16px 18px;background:rgba(255,255,255,0.3);border-radius:3px;">' + analysis + '</div>' +
         yaoBlock +
         changeBlock +
@@ -806,7 +823,7 @@ function loadHistory() {
         const guaEntry = item.binary ? lookupGua(item.binary) : null;
         const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
         return `<div class="history-item" onclick="loadHistoryItem(${idx})">
-<div class="history-q">${item.question}</div>
+<div class="history-q">${escHtml(item.question)}</div>
 <div class="history-gua">${roman ? `<span style="font-family:'Cinzel',serif;margin-right:6px;">${roman}</span>` : ''}${item.symbol} ${item.gua}${item.hasChange ? ' <span class="history-tag">变</span>' : ''}</div>
 <div class="history-date">${item.date}</div>
 </div>`;
@@ -954,13 +971,24 @@ function triggerIgnitionChain() {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    // 1) 按钮中心的光环（可能会触发两次:第二次上一个还没 remove 没关系）
+    // 1) 按钮中心的星芒（塔罗 ✦ 风格：8 道交替长短光线）
     const ring = document.createElement('div');
     ring.className = 'ignition-ring';
     ring.style.left = cx + 'px';
     ring.style.top = cy + 'px';
+    const rays = [];
+    for (let i = 0; i < 8; i++) {
+        const angle = i * 45;
+        const len = i % 2 === 0 ? 48 : 28; // 长短交替
+        const w = i % 2 === 0 ? 2 : 1.3;
+        const rad = angle * Math.PI / 180;
+        const x2 = Math.cos(rad) * len;
+        const y2 = Math.sin(rad) * len;
+        rays.push(`<line class="star-ray" x1="0" y1="0" x2="${x2}" y2="${y2}" stroke-width="${w}"/>`);
+    }
+    ring.innerHTML = `<svg viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg"><g>${rays.join('')}</g></svg>`;
     document.body.appendChild(ring);
-    setTimeout(() => ring.remove(), 1500);
+    setTimeout(() => ring.remove(), 1200);
 
     // 2) 烛火拔高(延迟 320ms,模拟光环传到烛台所需时间)
     setTimeout(() => {
@@ -1229,10 +1257,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     applyHourTheme();
     const dustCanvas = document.querySelector('.dust-layer');
+    let dust = null;
     if (dustCanvas) {
-        const dust = new DustParticles(dustCanvas);
+        dust = new DustParticles(dustCanvas);
         dust.start();
     }
+    // 标签页不可见时暂停 canvas 动画，节省 CPU/电量
+    document.addEventListener('visibilitychange', () => {
+        if (!dust) return;
+        if (document.hidden) dust.pause();
+        else dust.resume();
+    });
     loadHistory();
     renderDailyGua();
     restoreSettingsUI();
@@ -1240,6 +1275,11 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleGoldStreak();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
+
+    // 回车键起卦
+    document.getElementById('question').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); divine(); }
+    });
 
     // 每分钟检查一次时辰(到点切换子时/午时主题)
     setInterval(applyHourTheme, 60 * 1000);

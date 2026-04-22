@@ -370,7 +370,10 @@ header .subtitle {
     transition: all 0.3s ease;
 }
 #question::placeholder { color: rgba(232,220,192,0.4); letter-spacing: 0.2em; }
-#question:focus { border-bottom-color: var(--candle-warm); }
+#question:focus {
+    border-bottom-color: var(--candle-warm);
+    box-shadow: 0 2px 12px rgba(244,196,122,0.25);
+}
 
 /* ============ 按钮 ============ */
 .btn-group {
@@ -415,6 +418,13 @@ header .subtitle {
     transform: translateY(-1px);
 }
 .btn-divine:hover::before { border-color: var(--candle-warm); }
+.btn-divine:active:not(:disabled),
+.btn-history:active {
+    transform: translateY(1px) scale(0.97);
+    filter: brightness(0.85);
+    box-shadow: none;
+    transition-duration: 0.08s;
+}
 .btn-divine:disabled {
     opacity: 0.55;
     cursor: not-allowed;
@@ -958,6 +968,11 @@ header .subtitle {
     font-size: 1.4rem;
     color: var(--gold-deep);
     opacity: 0.7;
+    animation: changeArrowPulse 2s ease-in-out infinite;
+}
+@keyframes changeArrowPulse {
+    0%, 100% { opacity: 0.5; transform: translateX(0); }
+    50%      { opacity: 1;   transform: translateX(4px); }
 }
 .change-details {
     text-align: center;
@@ -1003,7 +1018,14 @@ footer p { margin: 4px 0; }
     backdrop-filter: blur(3px);
     transition: opacity 0.4s ease;
 }
-.history-overlay.show { display: block; }
+.history-overlay.show {
+    display: block;
+    animation: overlayFadeIn 0.3s ease forwards;
+}
+@keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
 
 .history-panel {
     position: fixed;
@@ -1132,7 +1154,10 @@ footer p { margin: 4px 0; }
     justify-content: center;
     backdrop-filter: blur(6px);
 }
-.share-overlay.show { display: flex; }
+.share-overlay.show {
+    display: flex;
+    animation: overlayFadeIn 0.3s ease forwards;
+}
 .share-box {
     background: linear-gradient(180deg, #e8dcc0, #d9c99f);
     color: var(--ink-black);
@@ -1219,6 +1244,11 @@ footer p { margin: 4px 0; }
     padding: 32px 36px;
     box-shadow: 0 0 60px rgba(244,196,122,0.3);
     position: relative;
+    transform: translateY(18px) scale(0.97);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.detail-overlay.show .detail-box {
+    transform: translateY(0) scale(1);
 }
 .detail-box::before {
     content: '';
@@ -1338,6 +1368,7 @@ footer p { margin: 4px 0; }
 }
 
 @media (max-width: 480px) {
+    .candle { display: none !important; }
     .embroidery-mat { width: 150vmin; height: 150vmin; opacity: 0.6; }
     .title-main { font-size: 2.4rem; }
     .daily-name, .daily-motto { font-size: 0.9rem; }
@@ -1587,20 +1618,32 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
 /* 按下起卦按钮时从中心爆出的光环 */
 .ignition-ring {
     position: fixed;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+    width: 0;
+    height: 0;
     transform: translate(-50%, -50%);
     pointer-events: none;
     z-index: 60;
-    border: 2px solid var(--candle-warm);
-    box-shadow: 0 0 20px var(--candle-core), inset 0 0 16px var(--candle-warm);
-    animation: ignitionRingExpand 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+    animation: ignitionStarBurst 1s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
 }
-@keyframes ignitionRingExpand {
-    0%   { width: 20px; height: 20px; opacity: 1; border-width: 2.5px; }
-    55%  { opacity: 0.85; border-width: 1.4px; }
-    100% { width: 220vmax; height: 220vmax; opacity: 0; border-width: 0.3px; }
+.ignition-ring svg {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.ignition-ring .star-ray {
+    stroke: var(--candle-warm);
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px var(--candle-core)) drop-shadow(0 0 12px var(--candle-warm));
+}
+@keyframes ignitionStarBurst {
+    0%   { width: 16px; height: 16px; opacity: 0; transform: translate(-50%, -50%) rotate(0deg) scale(0.3); }
+    12%  { opacity: 1; transform: translate(-50%, -50%) rotate(4deg) scale(0.6); }
+    40%  { opacity: 1; transform: translate(-50%, -50%) rotate(12deg) scale(1); }
+    100% { width: 160px; height: 160px; opacity: 0; transform: translate(-50%, -50%) rotate(22deg) scale(1.8); }
 }
 
 /* 烛火拔高（!important 覆盖常驻的 flameSway 等） */
@@ -1932,7 +1975,8 @@ body.mood-xiong .candle {
     body.intro-start .btn-group,
     body.intro-start footer,
     .embroidery-mat .mat-l2 text,
-    .gold-sparkle {
+    .gold-sparkle,
+    .change-arrow {
         animation: none !important;
     }
     .hex-name-art .hex-char { opacity: 1; transform: none; filter: none; }
