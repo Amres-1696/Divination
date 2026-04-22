@@ -75,11 +75,17 @@ function buildYaoArtSvg(hexLines, changingYaos) {
         const isYang = (line === 7 || line === 9);
         const isChanging = changingYaos.includes(i);
         const cls = 'yao-svg-line' + (isChanging ? ' changing' : '');
+        // 从下往上依次落位：初爻 i=0 最先画，每爻相隔 120ms
+        // 变爻有两段 animation（描画+呼吸），需要用 comma 语法分别设置 delay
+        const drawDelay = i * 120;
+        const styleAttr = isChanging
+            ? ` style="animation-delay:${drawDelay}ms,${drawDelay + 800}ms"`
+            : ` style="animation-delay:${drawDelay}ms"`;
         if (isYang) {
-            parts.push(`<line class="${cls}" x1="${cx-halfW}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
+            parts.push(`<line class="${cls}"${styleAttr} x1="${cx-halfW}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
         } else {
-            parts.push(`<line class="${cls}" x1="${cx-halfW}" y1="${y}" x2="${cx-5}" y2="${y}" />`);
-            parts.push(`<line class="${cls}" x1="${cx+5}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
+            parts.push(`<line class="${cls}"${styleAttr} x1="${cx-halfW}" y1="${y}" x2="${cx-5}" y2="${y}" />`);
+            parts.push(`<line class="${cls}"${styleAttr} x1="${cx+5}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
         }
     }
     return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">${parts.join('')}</svg>`;
@@ -113,13 +119,14 @@ function makeArcanaCard(gua, opts) {
     return card;
 }
 
-// ========== 浮尘粒子 ==========
+// ========== 浮尘粒子 + 萤火 ==========
 class DustParticles {
     constructor(canvas) {
         this.cv = canvas;
         this.ctx = canvas.getContext('2d');
         this.particles = [];
         this.running = false;
+        this.fireflyTimer = null;
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
@@ -148,23 +155,78 @@ class DustParticles {
             });
         }
     }
+    // 萤火：比浮尘更大、更亮、寿命更长、自带脉动光晕
+    spawnFirefly() {
+        this.particles.push({
+            x: Math.random() * this.w,
+            y: this.h * (0.45 + Math.random() * 0.5), // 下半屏出生
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: -0.04 - Math.random() * 0.08,        // 上升比浮尘慢得多
+            r: 1.6 + Math.random() * 1.3,
+            life: 1,
+            decay: 0.00012 + Math.random() * 0.00018, // 6–10s 寿命
+            hue: 40 + Math.random() * 10,
+            pulsePhase: Math.random() * Math.PI * 2,
+            pulseSpeed: 0.025 + Math.random() * 0.02,
+            isFirefly: true
+        });
+    }
+    scheduleFirefly() {
+        if (!this.running) return;
+        const delay = 9000 + Math.random() * 11000; // 9–20s
+        this.fireflyTimer = setTimeout(() => {
+            if (this.running) {
+                this.spawnFirefly();
+                this.scheduleFirefly();
+            }
+        }, delay);
+    }
     tick() {
         if (!this.running) return;
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.w, this.h);
-        if (this.particles.length < 10 && Math.random() < 0.06) this.spawn(1);
+        // 普通浮尘补给时只统计浮尘本身,避免寿命长的萤火占满名额
+        let dustCount = 0;
+        for (let k = 0; k < this.particles.length; k++) if (!this.particles[k].isFirefly) dustCount++;
+        if (dustCount < 10 && Math.random() < 0.06) this.spawn(1);
+
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
             p.x += p.vx;
             p.y += p.vy;
-            p.vx += (Math.random() - 0.5) * 0.02;
+            p.vx += (Math.random() - 0.5) * (p.isFirefly ? 0.008 : 0.02);
             p.life -= p.decay;
             if (p.life <= 0 || p.y < -30) { this.particles.splice(i, 1); continue; }
-            ctx.globalAlpha = p.life * 0.55;
-            ctx.fillStyle = `hsl(${p.hue}, 65%, 76%)`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fill();
+
+            if (p.isFirefly) {
+                // 脉动 + halo 光晕 + 核心
+                p.pulsePhase += p.pulseSpeed;
+                const pulse = 0.55 + 0.45 * Math.sin(p.pulsePhase);
+                // 入场/离场淡化（生命前 15% 淡入，后 25% 淡出）
+                const fade = p.life > 0.75 ? (1 - p.life) / 0.25 : Math.min(1, p.life / 0.25);
+                const a = pulse * fade;
+                // halo
+                const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
+                g.addColorStop(0,    `hsla(${p.hue}, 95%, 88%, ${a * 0.9})`);
+                g.addColorStop(0.3,  `hsla(${p.hue}, 90%, 72%, ${a * 0.45})`);
+                g.addColorStop(1,    `hsla(${p.hue}, 80%, 60%, 0)`);
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 6, 0, Math.PI * 2);
+                ctx.fill();
+                // 核心
+                ctx.globalAlpha = a;
+                ctx.fillStyle = `hsl(${p.hue}, 98%, 90%)`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.globalAlpha = p.life * 0.55;
+                ctx.fillStyle = `hsl(${p.hue}, 65%, 76%)`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
         ctx.globalAlpha = 1;
         requestAnimationFrame(() => this.tick());
@@ -174,8 +236,14 @@ class DustParticles {
         this.running = true;
         this.spawn(8);
         this.tick();
+        // 首只萤火稍稍延迟入场，避免和首屏动画抢戏
+        setTimeout(() => { if (this.running) this.spawnFirefly(); }, 4000);
+        this.scheduleFirefly();
     }
-    stop() { this.running = false; }
+    stop() {
+        this.running = false;
+        if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
+    }
 }
 
 // ========== 仪式控制器（六乐章） ==========
@@ -291,7 +359,10 @@ class ArcanaRitual {
         this.chosenCard.classList.add('flipped');
         this.chosenCard.classList.remove('active');
         this.chosenCard.classList.add('peak');
-        await sleep(1300);
+        // 等翻转到正面后再触发六爻描画，避免背面期间就画完
+        await sleep(600);
+        this.chosenCard.classList.add('yao-animate');
+        await sleep(700);
     }
     async actProclaim() {
         this.setStatus('Ⅵ · PROCLAMATION', '昭 示 归 寂');
@@ -339,6 +410,9 @@ async function divine() {
 
     btn.disabled = true;
     if (btnText) btnText.textContent = '演 卦';
+
+    // 起卦连锁：光环 → 烛火拔高 → 牌垫五层依次点亮
+    triggerIgnitionChain();
 
     resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
 
@@ -448,6 +522,7 @@ ${changeHtml}`;
             rare: isRareGua(fullBin)
         });
         bigCard.classList.add('flipped');
+        bigCard.classList.add('yao-animate');
         wrap.appendChild(bigCard);
     }
 
@@ -480,10 +555,11 @@ ${changeHtml}`;
         }, 1250);
     }
 
-    // === result-header 内除大卡外的装饰元素(罗马、卦名、verdict、share)在 FLIP 进行中错时淡入 ===
+    // === result-header 内除大卡外的装饰元素错时淡入 ===
+    // 卦名和吉凶印单独走"逐字书法"与"盖章"动画，这里排除掉
     const header = resultArea.querySelector('.result-header');
     if (header) {
-        const headerKids = Array.from(header.children).filter(el => !el.matches('.chosen-card-wrap, .hex-symbol'));
+        const headerKids = Array.from(header.children).filter(el => !el.matches('.chosen-card-wrap, .hex-symbol, .hex-name-art, .verdict-seal'));
         headerKids.forEach((el, i) => {
             el.style.opacity = '0';
             el.style.transform = 'translateY(8px)';
@@ -493,9 +569,28 @@ ${changeHtml}`;
                 el.style.transform = '';
             }, 350 + i * 80);
         });
+
+        // 卦名：拆字逐个书法落笔（每字 220ms 间隔）
+        const nameEl = header.querySelector('.hex-name-art');
+        if (nameEl) {
+            const txt = nameEl.textContent;
+            nameEl.innerHTML = txt.split('').map((ch, idx) =>
+                `<span class="hex-char" style="animation-delay:${600 + idx * 220}ms">${ch === ' ' ? '&nbsp;' : ch}</span>`
+            ).join('');
+        }
+
+        // 吉凶印：从上方盖下 + 墨迹扩散（FLIP 过渡落定后触发）
+        const seal = header.querySelector('.verdict-seal');
+        if (seal) {
+            seal.style.opacity = '0';
+            setTimeout(() => {
+                seal.style.opacity = '';
+                seal.classList.add('stamp-in');
+            }, 1400);
+        }
     }
 
-    // === 其他卡(爻辞、奥义、变卦)在 FLIP 完成后才依次出现,避免抢焦点 ===
+    // === 其他卡（爻辞、奥义、变卦）FLIP 完成后依次出现 + 内部动画接力 ===
     const otherCards = resultArea.querySelectorAll('.card:not(.result-header)');
     otherCards.forEach((el, i) => {
         el.style.opacity = '0';
@@ -504,8 +599,24 @@ ${changeHtml}`;
             el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
             el.style.opacity = '1';
             el.style.transform = '';
+            // 卡内部：爻列表卷轴展开 / 奥义段落依次滑入
+            const yaoList = el.querySelector('.yao-list');
+            if (yaoList) yaoList.classList.add('scroll-open');
+            const analysisList = el.querySelector('.analysis-list');
+            if (analysisList) analysisList.classList.add('stagger-in');
         }, 700 + i * 180);
     });
+
+    // === 烛火情绪化：根据吉/凶/平给 body 切 mood class，烛火色温缓慢过渡 ===
+    document.body.classList.remove('mood-ji', 'mood-xiong', 'mood-ping');
+    document.body.classList.add('mood-' + verdict);
+
+    // === 稀有卦（乾/坤）：围绕大卡撒几轮金箔粒子 ===
+    if (isRareGua(fullBin) && bigCard) {
+        setTimeout(() => spawnGoldSparkles(bigCard, 16), 1500);
+        setTimeout(() => spawnGoldSparkles(bigCard, 10), 5500);
+        setTimeout(() => spawnGoldSparkles(bigCard, 10), 9500);
+    }
 
     // 等 FLIP 落定后再温和滚动到 result-header,避免 scroll 与 FLIP 拉扯
     setTimeout(() => {
@@ -833,6 +944,122 @@ function getTrigramName(sym) {
     return map[sym] || sym;
 }
 
+// ========== v2 动效工具 ==========
+
+// 起卦按下时：按钮爆出光环 → 烛火拔高 → 牌垫五层由外及内依次点亮
+function triggerIgnitionChain() {
+    const btn = document.getElementById('divineBtn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    // 1) 按钮中心的光环（可能会触发两次:第二次上一个还没 remove 没关系）
+    const ring = document.createElement('div');
+    ring.className = 'ignition-ring';
+    ring.style.left = cx + 'px';
+    ring.style.top = cy + 'px';
+    document.body.appendChild(ring);
+    setTimeout(() => ring.remove(), 1500);
+
+    // 2) 烛火拔高(延迟 320ms,模拟光环传到烛台所需时间)
+    setTimeout(() => {
+        document.querySelectorAll('.candle').forEach(c => {
+            c.classList.remove('flare');
+            // 强制 reflow 后再加,确保重复点击时动画能重新播放
+            void c.offsetWidth;
+            c.classList.add('flare');
+            setTimeout(() => c.classList.remove('flare'), 2000);
+        });
+    }, 320);
+
+    // 3) 牌垫五层由外(mat-l1)到内(mat-l5)依次点亮
+    const layers = ['.mat-l1', '.mat-l2', '.mat-l3', '.mat-l4', '.mat-l5'];
+    layers.forEach((sel, i) => {
+        setTimeout(() => {
+            const el = document.querySelector('.embroidery-mat ' + sel);
+            if (!el) return;
+            el.classList.remove('mat-ignite');
+            void el.getBoundingClientRect(); // 强制 reflow 以便重新播放动画
+            el.classList.add('mat-ignite');
+            setTimeout(() => el.classList.remove('mat-ignite'), 1200);
+        }, 200 + i * 130);
+    });
+}
+
+// 稀有卦(乾/坤)：围绕大卡撒金箔粒子
+function spawnGoldSparkles(anchorEl, count) {
+    if (!anchorEl) return;
+    const rect = anchorEl.getBoundingClientRect();
+    for (let i = 0; i < count; i++) {
+        const sp = document.createElement('div');
+        sp.className = 'gold-sparkle';
+        // 在卡底部上方一圈随机位置起始
+        sp.style.left = (rect.left + rect.width * (0.1 + Math.random() * 0.8)) + 'px';
+        sp.style.top = (rect.top + rect.height * (0.55 + Math.random() * 0.4)) + 'px';
+        sp.style.setProperty('--dx', ((Math.random() - 0.5) * 40) + 'px');
+        sp.style.animationDelay = (i * 90) + 'ms';
+        sp.style.animationDuration = (1800 + Math.random() * 1000) + 'ms';
+        document.body.appendChild(sp);
+        setTimeout(() => sp.remove(), 3200 + i * 90);
+    }
+}
+
+// 鼠标视差：通过 CSS 变量 --par-x / --par-y 驱动烛台、标题的微量偏移
+function initParallax() {
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let raf = null;
+
+    // 触屏设备不启用（避免 hover 悬停效果残留）
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+
+    window.addEventListener('mousemove', (e) => {
+        targetX = (e.clientX / window.innerWidth - 0.5) * 12;  // -6 ~ 6 px
+        targetY = (e.clientY / window.innerHeight - 0.5) * 12;
+        if (raf == null) raf = requestAnimationFrame(tick);
+    });
+
+    function tick() {
+        currentX += (targetX - currentX) * 0.08;
+        currentY += (targetY - currentY) * 0.08;
+        document.documentElement.style.setProperty('--par-x', currentX.toFixed(2) + 'px');
+        document.documentElement.style.setProperty('--par-y', currentY.toFixed(2) + 'px');
+        if (Math.abs(targetX - currentX) > 0.05 || Math.abs(targetY - currentY) > 0.05) {
+            raf = requestAnimationFrame(tick);
+        } else {
+            raf = null;
+        }
+    }
+}
+
+// 偶发金色流光：每 35–65 秒从屏幕一侧斜划到另一侧，1.4s 后自动清理
+function spawnGoldStreak() {
+    // 角度在 -35° ~ +35° 或 90° ± 35° 之间随机（水平或对角走向）
+    const horizontal = Math.random() < 0.6;
+    const jitter = -35 + Math.random() * 70;
+    const angle = horizontal ? jitter : 90 + jitter;
+
+    const container = document.createElement('div');
+    container.className = 'gold-streak-container';
+    container.style.setProperty('--angle', angle.toFixed(1) + 'deg');
+
+    const beam = document.createElement('div');
+    beam.className = 'gold-streak-beam';
+    container.appendChild(beam);
+
+    document.body.appendChild(container);
+    setTimeout(() => container.remove(), 1800);
+}
+
+function scheduleGoldStreak() {
+    const delay = 35000 + Math.random() * 30000; // 35–65s
+    setTimeout(() => {
+        spawnGoldStreak();
+        scheduleGoldStreak();
+    }, delay);
+}
+
 // ========== 时辰彩蛋 ==========
 function applyHourTheme() {
     const h = new Date().getHours();
@@ -996,6 +1223,10 @@ function generateHexagramBazi(bazi) {
 
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
+    // 首次进场序列：烛台点燃 → 标题浮起 → 下方内容依次淡入
+    document.body.classList.add('intro-start');
+    setTimeout(() => document.body.classList.remove('intro-start'), 3500);
+
     applyHourTheme();
     const dustCanvas = document.querySelector('.dust-layer');
     if (dustCanvas) {
@@ -1005,6 +1236,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadHistory();
     renderDailyGua();
     restoreSettingsUI();
+    initParallax();
+    scheduleGoldStreak();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 

@@ -1577,3 +1577,527 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============================================================ */
+/* ============ v2 动效增强（追加，不改原规则） ============ */
+/* ============================================================ */
+
+/* ---------- 1. 起卦按钮 → 烛台 → 牌垫 连锁反应 ---------- */
+
+/* 按下起卦按钮时从中心爆出的光环 */
+.ignition-ring {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 60;
+    border: 2px solid var(--candle-warm);
+    box-shadow: 0 0 20px var(--candle-core), inset 0 0 16px var(--candle-warm);
+    animation: ignitionRingExpand 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+@keyframes ignitionRingExpand {
+    0%   { width: 20px; height: 20px; opacity: 1; border-width: 2.5px; }
+    55%  { opacity: 0.85; border-width: 1.4px; }
+    100% { width: 220vmax; height: 220vmax; opacity: 0; border-width: 0.3px; }
+}
+
+/* 烛火拔高（!important 覆盖常驻的 flameSway 等） */
+.candle.flare .flame       { animation: flameFlare       2s cubic-bezier(0.2,0.8,0.3,1) !important; }
+.candle.flare .flame-inner { animation: flameFlareInner  2s cubic-bezier(0.2,0.8,0.3,1) !important; }
+.candle.flare .flame-halo  { animation: flameFlareHalo   2s cubic-bezier(0.2,0.8,0.3,1) !important; }
+.candle.flare {
+    filter: drop-shadow(0 0 26px rgba(244,196,122,0.9)) drop-shadow(0 0 48px rgba(244,196,122,0.4));
+    transition: filter 0.3s ease;
+}
+@keyframes flameFlare {
+    0%, 100% { transform: rotate(-1.5deg) scaleY(1); }
+    15%      { transform: scaleY(2.2) translateY(-4%); filter: brightness(1.6); }
+    40%      { transform: scaleY(1.4); }
+}
+@keyframes flameFlareInner {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    15%      { transform: scale(1.8) translateY(-6%); opacity: 1; }
+    40%      { transform: scale(1.3); opacity: 0.95; }
+}
+@keyframes flameFlareHalo {
+    0%, 100% { transform: scale(1); opacity: 0.22; }
+    15%      { transform: scale(2.2); opacity: 0.6; }
+    40%      { transform: scale(1.6); opacity: 0.42; }
+}
+
+/* 牌垫五层由外至内依次点亮 */
+.embroidery-mat g.mat-ignite {
+    animation: matLayerIgnite 1.1s ease-out;
+}
+@keyframes matLayerIgnite {
+    0%   { filter: brightness(1) drop-shadow(0 0 0 transparent); }
+    30%  { filter: brightness(1.9) drop-shadow(0 0 14px var(--candle-warm)); }
+    100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
+}
+
+/* ---------- 2. 六爻自下而上描画 ---------- */
+/* 卡牌翻到正面(.flipped)瞬间线条默认隐藏，避免第一帧闪现整条线后才开始画 */
+.arcana-card.flipped .card-art .yao-svg-line {
+    stroke-dasharray: 60;
+    stroke-dashoffset: 60;
+}
+/* .yao-animate 启动描画 animation（actFlip 里翻过 90° 后才加） */
+.arcana-card.yao-animate .card-art .yao-svg-line {
+    animation: yaoStrokeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes yaoStrokeIn {
+    to { stroke-dashoffset: 0; }
+}
+.arcana-card.yao-animate .card-art .yao-svg-line.changing {
+    /* 两段 animation：先描画一次，再无限呼吸。延迟用 inline style 的 comma 语法分别设置 */
+    animation:
+        yaoStrokeInChanging 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+        yaoChangePulse 1.8s ease-in-out infinite;
+}
+@keyframes yaoStrokeInChanging {
+    0%   { stroke-dashoffset: 60; filter: none; }
+    70%  { stroke-dashoffset: 0;  filter: drop-shadow(0 0 8px #a84848) brightness(1.5); }
+    /* 末态对齐 yaoChangePulse 的 0% 以便无缝接力 */
+    100% { stroke-dashoffset: 0;  filter: drop-shadow(0 0 2px rgba(168,72,72,0.4)); }
+}
+
+/* 结果页 yao-list 卷轴展开 + 六爻依次露出 */
+.yao-list.scroll-open {
+    transform-origin: center;
+    animation: yaoListOpen 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes yaoListOpen {
+    0%   { transform: scaleX(0.1); opacity: 0; filter: blur(4px); }
+    100% { transform: scaleX(1);   opacity: 1; filter: blur(0); }
+}
+.yao-list.scroll-open .yao-item {
+    opacity: 0;
+    transform: translateX(-8px);
+    animation: yaoItemReveal 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.yao-list.scroll-open .yao-item:nth-child(1) { animation-delay: 0.50s; }
+.yao-list.scroll-open .yao-item:nth-child(2) { animation-delay: 0.63s; }
+.yao-list.scroll-open .yao-item:nth-child(3) { animation-delay: 0.76s; }
+.yao-list.scroll-open .yao-item:nth-child(4) { animation-delay: 0.89s; }
+.yao-list.scroll-open .yao-item:nth-child(5) { animation-delay: 1.02s; }
+.yao-list.scroll-open .yao-item:nth-child(6) { animation-delay: 1.15s; }
+@keyframes yaoItemReveal {
+    to { opacity: 1; transform: translateX(0); }
+}
+.yao-list.scroll-open .yao-item.changing {
+    animation-name: yaoItemRevealChanging;
+}
+@keyframes yaoItemRevealChanging {
+    0%   { opacity: 0; transform: translateX(-8px); box-shadow: inset 0 0 0 1px rgba(168,72,72,0.15); }
+    60%  { opacity: 1; transform: translateX(2px); box-shadow: inset 0 0 0 1px rgba(168,72,72,0.4), 0 0 16px rgba(168,72,72,0.3); }
+    100% { opacity: 1; transform: translateX(0);   box-shadow: inset 0 0 0 1px rgba(168,72,72,0.15); }
+}
+
+/* ---------- 3. 结果页：卦名书法、印章、卦象奥义逐条 ---------- */
+
+/* 卦名逐字"落笔"（由模糊 → 清晰 + 略微回弹） */
+.hex-name-art .hex-char {
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(16px) scale(1.3);
+    filter: blur(6px);
+    animation: charWriteIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes charWriteIn {
+    0%   { opacity: 0; transform: translateY(16px) scale(1.3); filter: blur(8px); }
+    60%  { opacity: 1; transform: translateY(-2px) scale(1.04); filter: blur(0); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+/* 吉凶印章"盖下" + 墨迹扩散 */
+.verdict-seal.stamp-in {
+    animation: sealStamp 0.75s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+    isolation: isolate; /* 隔离 stacking，避免 ::before 的 z-index:-1 穿出 seal 之外 */
+}
+@keyframes sealStamp {
+    0%   { transform: translateY(-80px) rotate(-12deg) scale(2.2); opacity: 0; filter: blur(4px); }
+    55%  { transform: translateY(3px) rotate(2deg) scale(0.92); opacity: 1; filter: blur(0); }
+    75%  { transform: translateY(-1px) rotate(-1deg) scale(1.03); }
+    100% { transform: translateY(0) rotate(0) scale(1); opacity: 1; filter: blur(0); }
+}
+.verdict-seal.stamp-in::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 4px;
+    background: radial-gradient(ellipse, currentColor 0%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    animation: sealInkSpread 1.1s ease-out 0.4s;
+    z-index: -1;
+}
+@keyframes sealInkSpread {
+    0%   { opacity: 0.55; transform: scale(0.7); }
+    100% { opacity: 0; transform: scale(2.5); }
+}
+
+/* 卦象奥义段落：柔和滑入（不破坏 analysis-item 原样式） */
+.analysis-list.stagger-in .analysis-item {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: analysisItemIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.analysis-list.stagger-in .analysis-item:nth-child(1) { animation-delay: 0.1s; }
+.analysis-list.stagger-in .analysis-item:nth-child(2) { animation-delay: 0.3s; }
+.analysis-list.stagger-in .analysis-item:nth-child(3) { animation-delay: 0.5s; }
+.analysis-list.stagger-in .analysis-item:nth-child(4) { animation-delay: 0.7s; }
+.analysis-list.stagger-in .analysis-item:nth-child(5) { animation-delay: 0.9s; }
+@keyframes analysisItemIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 4. 环境：首次进场、鼠标视差、烛火情绪 ---------- */
+
+/* 首次进场 stagger */
+body.intro-start .candle {
+    animation: candleIgnite 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+@keyframes candleIgnite {
+    0%   { opacity: 0; filter: drop-shadow(0 0 0 transparent) brightness(0.3); }
+    30%  { opacity: 1; filter: drop-shadow(0 0 60px rgba(244,196,122,1)) brightness(1.8); }
+    100% { opacity: 1; filter: drop-shadow(0 0 16px rgba(244,196,122,0.42)) brightness(1); }
+}
+body.intro-start .title-seal,
+body.intro-start .arcanum-header {
+    animation: titleRise 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.9s both;
+}
+@keyframes titleRise {
+    0%   { opacity: 0; transform: translateY(12px) scale(0.97); filter: blur(5px); }
+    100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+body.intro-start .daily-gua { animation: introFadeUp 0.9s ease-out 1.5s both; }
+body.intro-start .question-area { animation: introFadeUp 0.9s ease-out 1.65s both; }
+body.intro-start .btn-group { animation: introFadeUp 0.9s ease-out 1.8s both; }
+body.intro-start footer { animation: introFadeUp 0.9s ease-out 2.0s both; }
+@keyframes introFadeUp {
+    0%   { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 鼠标视差（用 CSS 变量驱动） */
+/* 覆盖 .candle 的 translateY(-50%) ——改用 top 定位 + transform 专供视差与镜像 */
+.candle { top: calc(50% - 200px); }
+.candle-left  { transform: translateX(var(--par-x, 0px)); }
+.candle-right { transform: translateX(calc(var(--par-x, 0px) * -1)) scaleX(-1); }
+header {
+    transform: translate(calc(var(--par-x, 0px) * 0.5), calc(var(--par-y, 0px) * 0.3));
+}
+
+/* 烛火情绪化（根据最近一次占卜的吉/凶切换色温） */
+.flame, .flame-inner, .flame-halo, .candle {
+    transition: filter 1.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+body.mood-ji .flame,
+body.mood-ji .flame-inner,
+body.mood-ji .flame-halo {
+    filter: hue-rotate(-8deg) saturate(1.25) brightness(1.12);
+}
+body.mood-ji .candle {
+    filter: drop-shadow(0 0 22px rgba(244,196,122,0.7));
+}
+body.mood-xiong .flame,
+body.mood-xiong .flame-inner {
+    filter: hue-rotate(165deg) saturate(0.55) brightness(0.8);
+}
+body.mood-xiong .flame-halo {
+    filter: hue-rotate(180deg) saturate(0.7) brightness(0.82);
+}
+body.mood-xiong .candle {
+    filter: drop-shadow(0 0 14px rgba(120,140,180,0.5));
+}
+
+/* 朱玄龙虎四神偶发呼吸发光 */
+.embroidery-mat .mat-l2 text {
+    animation: shenBreath 14s ease-in-out infinite;
+}
+.embroidery-mat .mat-l2 text:nth-of-type(1) { animation-delay: 0s; }
+.embroidery-mat .mat-l2 text:nth-of-type(2) { animation-delay: 3.5s; }
+.embroidery-mat .mat-l2 text:nth-of-type(3) { animation-delay: 7s; }
+.embroidery-mat .mat-l2 text:nth-of-type(4) { animation-delay: 10.5s; }
+@keyframes shenBreath {
+    0%, 92%, 100% { opacity: 0.48; filter: none; }
+    96%           { opacity: 0.95; filter: drop-shadow(0 0 6px var(--candle-warm)); }
+}
+
+/* ---------- 5. 稀有卦（乾/坤）彩蛋强化 ---------- */
+
+.arcana-card.rare-gilded {
+    box-shadow: 0 0 18px rgba(244, 196, 122, 0.55), 0 0 40px rgba(244, 196, 122, 0.3);
+}
+.arcana-card.rare-gilded.large {
+    box-shadow: 0 0 30px rgba(244, 196, 122, 0.8),
+                0 0 60px rgba(244, 196, 122, 0.5),
+                0 0 100px rgba(244, 196, 122, 0.25);
+}
+/* 金色流光横扫 */
+.arcana-card.rare-gilded .card-face.front::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 35%, rgba(255, 240, 180, 0.55) 50%, transparent 65%);
+    mix-blend-mode: overlay;
+    animation: gildedShimmer 3.5s linear infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+@keyframes gildedShimmer {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+}
+
+/* 金箔粒子（JS 动态生成 + 自动清理） */
+.gold-sparkle {
+    position: fixed;
+    width: 5px;
+    height: 5px;
+    background: radial-gradient(circle, #fff4c4 0%, #f4c47a 40%, transparent 72%);
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 55;
+    animation: sparkleFloat 2.4s ease-out forwards;
+    will-change: transform, opacity;
+}
+@keyframes sparkleFloat {
+    0%   { opacity: 0; transform: translateY(0) translateX(0) scale(0.5); }
+    15%  { opacity: 1; transform: translateY(-18px) translateX(var(--dx, 0px)) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-120px) translateX(calc(var(--dx, 0px) * 2)) scale(0.3); }
+}
+
+/* ---------- 6. 细节微反馈 ---------- */
+
+/* 起卦按钮悬停：金色光扫过 */
+.btn-divine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 70%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent, rgba(244,196,122,0.32), transparent);
+    transition: left 0.75s cubic-bezier(0.3, 0, 0.2, 1);
+    pointer-events: none;
+}
+.btn-divine:hover:not(:disabled)::after {
+    left: 140%;
+}
+
+/* 历史牌册项悬停加强 */
+.history-item { position: relative; overflow: hidden; }
+.history-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 0;
+    background: linear-gradient(180deg, var(--candle-warm), var(--arcana-gold), var(--candle-warm));
+    transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 1;
+}
+.history-item:hover::before { width: 3px; }
+.history-item:hover {
+    background: linear-gradient(90deg, rgba(201,169,110,0.14), rgba(201,169,110,0.03) 60%, transparent) !important;
+    transform: translateX(6px) !important;
+    box-shadow: 0 0 18px rgba(201,169,110,0.18);
+}
+
+/* 每日启示悬停：卦符微微发光 */
+.daily-gua { transition: filter 0.35s ease; cursor: pointer; }
+.daily-gua:hover { filter: drop-shadow(0 0 12px rgba(244,196,122,0.3)); }
+.daily-gua:hover .daily-symbol { text-shadow: 0 0 8px rgba(244,196,122,0.7); }
+
+/* ---------- 7. 减弱动画（无障碍） ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .ignition-ring,
+    .candle.flare .flame,
+    .candle.flare .flame-inner,
+    .candle.flare .flame-halo,
+    .embroidery-mat g.mat-ignite,
+    .hex-name-art .hex-char,
+    .verdict-seal.stamp-in,
+    .yao-list.scroll-open,
+    .yao-list.scroll-open .yao-item,
+    .arcana-card.rare-gilded .card-face.front::after,
+    body.intro-start .candle,
+    body.intro-start .title-seal,
+    body.intro-start .arcanum-header,
+    body.intro-start .daily-gua,
+    body.intro-start .question-area,
+    body.intro-start .btn-group,
+    body.intro-start footer,
+    .embroidery-mat .mat-l2 text,
+    .gold-sparkle {
+        animation: none !important;
+    }
+    .hex-name-art .hex-char { opacity: 1; transform: none; filter: none; }
+    .yao-list.scroll-open .yao-item { opacity: 1; transform: none; }
+    .arcana-card.yao-animate .card-art .yao-svg-line { stroke-dashoffset: 0 !important; }
+}
+
+/* ============================================================ */
+/* ============ v3 常驻氛围层 ============ */
+/* ============================================================ */
+
+/* ---------- ① 远处缭绕青烟 ---------- */
+/* 3 层极透明 radial blob，各自独立周期漂移，形成"永远在动但不重复"的氛围 */
+.incense-smoke {
+    position: fixed;
+    inset: 0;
+    z-index: -6;              /* velvet-bg(-10) 之上，embroidery-mat(-5) 之下 */
+    pointer-events: none;
+    overflow: hidden;
+}
+.smoke-layer {
+    position: absolute;
+    width: 60vmax;
+    height: 60vmax;
+    border-radius: 50%;
+    filter: blur(80px);
+    /* 原本想用 mix-blend-mode: screen 让烟雾在深色丝绒上变亮,
+       但 .incense-smoke 的 position:fixed + z-index 会创建 isolated stacking context,
+       screen 只能在 smoke 层内部生效,碰不到 velvet-bg。
+       改用纯半透明叠加,并略调亮 alpha 补偿视觉。 */
+    will-change: transform, opacity;
+}
+.smoke-1 {
+    background: radial-gradient(circle, rgba(210,225,240,0.65) 0%, rgba(180,205,230,0.28) 30%, transparent 70%);
+    top: -20%; left: -15%;
+    animation: smokeDrift1 72s ease-in-out infinite alternate;
+}
+.smoke-2 {
+    background: radial-gradient(circle, rgba(230,210,175,0.5) 0%, rgba(190,160,130,0.22) 30%, transparent 70%);
+    bottom: -25%; right: -10%;
+    animation: smokeDrift2 88s ease-in-out infinite alternate;
+    animation-delay: -30s;
+}
+.smoke-3 {
+    width: 80vmax; height: 80vmax;
+    background: radial-gradient(circle, rgba(160,185,210,0.4) 0%, rgba(120,145,175,0.18) 35%, transparent 70%);
+    top: 20%; left: 40%;
+    animation: smokeDrift3 65s ease-in-out infinite alternate;
+    animation-delay: -18s;
+}
+@keyframes smokeDrift1 {
+    0%   { transform: translate(0, 0) scale(1);    opacity: 0.10; }
+    50%  { transform: translate(15vw, 8vh) scale(1.15);  opacity: 0.16; }
+    100% { transform: translate(30vw, -5vh) scale(0.95); opacity: 0.12; }
+}
+@keyframes smokeDrift2 {
+    0%   { transform: translate(0, 0) scale(1.05);       opacity: 0.13; }
+    50%  { transform: translate(-20vw, -12vh) scale(0.9);opacity: 0.08; }
+    100% { transform: translate(-8vw, -25vh) scale(1.2); opacity: 0.15; }
+}
+@keyframes smokeDrift3 {
+    0%   { transform: translate(0, 0) scale(1);          opacity: 0.08; }
+    50%  { transform: translate(-15vw, 10vh) scale(1.1); opacity: 0.12; }
+    100% { transform: translate(10vw, 20vh) scale(0.95); opacity: 0.10; }
+}
+
+/* ---------- ④ 中央印记脉动 ---------- */
+/* 给「天衍」中央印记加独立光晕脉动，与标题 sealGlow(6s) 形成 1:2 节律 */
+.embroidery-mat .mat-l5 {
+    animation: matSealPulse 12s ease-in-out infinite;
+    transform-origin: center;
+}
+@keyframes matSealPulse {
+    0%, 100% {
+        filter: drop-shadow(0 0 3px rgba(201, 169, 110, 0.35)) brightness(1);
+    }
+    50% {
+        filter: drop-shadow(0 0 14px rgba(244, 196, 122, 0.65)) brightness(1.15);
+    }
+}
+/* 中央圆环附带一次极慢的 stroke 粗细呼吸，增加"活着"的感觉 */
+.embroidery-mat .mat-l5 > circle:first-of-type {
+    animation: matSealRing 12s ease-in-out infinite;
+}
+@keyframes matSealRing {
+    0%, 100% { stroke-width: 0.5; }
+    50%      { stroke-width: 0.9; }
+}
+
+/* ---------- 减弱动画 ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .smoke-layer,
+    .embroidery-mat .mat-l5,
+    .embroidery-mat .mat-l5 > circle:first-of-type {
+        animation: none !important;
+    }
+}
+
+/* ============================================================ */
+/* ============ v3 追加：② 偶发金色流光 & ⑤ 牌垫金线涌流 ============ */
+/* ============================================================ */
+
+/* ---------- ② 偶发金色流光（JS 定时生成，1.4s 划过后自动移除） ---------- */
+.gold-streak-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 200vmax;
+    height: 200vmax;
+    transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
+    pointer-events: none;
+    z-index: 30;      /* 在 candle(2) 之上、history-panel(100) 之下 */
+    overflow: visible;
+}
+.gold-streak-beam {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 18vmax;
+    height: 2px;
+    margin-top: -1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 244, 196, 0) 18%,
+        rgba(255, 244, 196, 0.95) 50%,
+        rgba(255, 244, 196, 0) 82%,
+        transparent 100%);
+    filter:
+        blur(0.4px)
+        drop-shadow(0 0 6px rgba(244, 196, 122, 0.9))
+        drop-shadow(0 0 14px rgba(244, 196, 122, 0.5));
+    /* transform 动画走 compositor 层(GPU),比 left 动画不触发 reflow,60fps 顺滑 */
+    animation: goldBeamSweep 1.4s cubic-bezier(0.32, 0, 0.32, 1) forwards;
+    will-change: transform, opacity;
+}
+@keyframes goldBeamSweep {
+    0%   { transform: translateX(-18vmax); opacity: 0; }
+    12%  { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { transform: translateX(200vmax); opacity: 0; }
+}
+
+/* ---------- ⑤ 牌垫外环金色流光（常驻，55s 一圈） ---------- */
+/* r=492 的 circle 夹在原有 r=495 和 r=488 两条主环之间，
+   周长 ≈ 2π·492 ≈ 3091；dash 80 + gap 3030 = 3110 略大一点点，
+   让亮段看起来是"电流沿着外环滚动"的效果 */
+.embroidery-mat .mat-flow-ring {
+    stroke: #f4c47a;
+    stroke-dasharray: 80 3030;
+    stroke-linecap: round;   /* 光滴两端圆润,像"电流"而非方切口 */
+    opacity: 0.85;
+    filter: drop-shadow(0 0 5px rgba(244, 196, 122, 0.85));
+    animation: matOuterFlow 55s linear infinite;
+}
+@keyframes matOuterFlow {
+    /* dashoffset 变化必须精确等于周长 2π·492 ≈ 3091.24,
+       否则 loop 重置时亮段位置会跳变 ~2° */
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -3091.24; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gold-streak-beam,
+    .embroidery-mat .mat-flow-ring {
+        animation: none !important;
+    }
+    .gold-streak-container { display: none; }
+}
