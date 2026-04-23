@@ -431,48 +431,47 @@ async function divine() {
     const settings = loadSettings();
 
     // 八字起卦需要检查八字数据
-    if (settings.method === 'bazi') {
-        if (!settings.bazi) {
-            alert('请先在设置中填写并保存生辰八字');
-            _divineRunning = false;
-            return;
-        }
+    if (settings.method === 'bazi' && !settings.bazi) {
+        alert('请先在设置中填写并保存生辰八字');
+        _divineRunning = false;
+        return;
     }
 
     btn.disabled = true;
     if (btnText) btnText.textContent = '演 卦';
 
-    // 起卦连锁：光环 → 烛火拔高 → 牌垫五层依次点亮
-    triggerIgnitionChain();
+    // 关键:任何 await / DOM 操作都可能抛异常,用 try/finally 确保按钮和锁一定被重置,
+    //      否则异常后 _divineRunning 永远为 true,起卦按钮永久禁用。
+    try {
+        // 起卦连锁：光环 → 烛火拔高 → 牌垫五层依次点亮
+        triggerIgnitionChain();
 
-    resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
+        resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
 
-    const stage = document.getElementById('ritualStage');
-    stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const stage = document.getElementById('ritualStage');
+        stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    let hexLines;
-    if (settings.method === 'bazi') {
-        hexLines = generateHexagramBazi(settings.bazi);
-    } else {
-        hexLines = generateHexagram();
+        const hexLines = settings.method === 'bazi'
+            ? generateHexagramBazi(settings.bazi)
+            : generateHexagram();
+
+        const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
+        // bits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初]
+        const fullBin = bits.slice().reverse().join('');
+        const gua = lookupGua(fullBin);
+        const change = calculateChangeGua(hexLines, fullBin);
+
+        const ritual = new ArcanaRitual(stage, gua, hexLines, change);
+        await ritual.run();
+
+        // 把仪式中翻开的卡引用传给 renderResult,做 FLIP 平滑过渡到结果页
+        renderResult(gua, hexLines, change, question, fullBin, ritual.chosenCard);
+        saveToHistory(question, gua, fullBin, hexLines, change);
+    } finally {
+        btn.disabled = false;
+        if (btnText) btnText.textContent = originalText;
+        _divineRunning = false;
     }
-
-    const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-    // bits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初]
-    const fullBin = bits.slice().reverse().join('');
-    const gua = lookupGua(fullBin);
-    const change = calculateChangeGua(hexLines, fullBin);
-
-    const ritual = new ArcanaRitual(stage, gua, hexLines, change);
-    await ritual.run();
-
-    // 把仪式中翻开的卡引用传给 renderResult,做 FLIP 平滑过渡到结果页
-    renderResult(gua, hexLines, change, question, fullBin, ritual.chosenCard);
-    saveToHistory(question, gua, fullBin, hexLines, change);
-
-    btn.disabled = false;
-    if (btnText) btnText.textContent = originalText;
-    _divineRunning = false;
 }
 
 // ========== 结果渲染 ==========
@@ -777,6 +776,11 @@ function isMobile() {
         (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
 }
 
+function renderShareCanvas(card, scale) {
+    // 不透明背景色兜底:粘贴到不支持 alpha 的应用(微信/便签/iMessage)不会变成全白空白
+    return html2canvas(card, { backgroundColor: '#e8dcc0', scale, logging: false, useCORS: true });
+}
+
 async function shareAsImage() {
     if (typeof html2canvas !== 'function') {
         alert('分享功能加载失败，请刷新页面后重试');
@@ -789,7 +793,6 @@ async function shareAsImage() {
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#8a6d3a;">生成中…</div>';
     container.classList.add('show');
 
-    // 释放上一次的 Blob URL
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
 
@@ -805,22 +808,60 @@ async function shareAsImage() {
         }
         await sleep(300);
         const card = tmp.querySelector('#shareCard');
-        // 移动端 scale 降到 2：体积近乎减半,iOS Safari 下载/预览成功率大增
-        const scale = isMobile() ? 2 : 3;
-        // 不透明背景色兜底:粘贴到不支持 alpha 的应用(微信/便签/iMessage)不会变成全白空白
-        const canvas = await html2canvas(card, { backgroundColor: '#e8dcc0', scale, logging: false, useCORS: true });
 
-        // Blob URL 在移动端远比 data URL 可靠(无长度上限 + 原生 Blob)
-        const blob = await canvasToBlob(canvas, 'image/png');
+        // 移动端 scale 先 2,失败降 1：iOS canvas 面积软限 16M 像素,超过会静默返回空 canvas
+        let scale = isMobile() ? 2 : 3;
+        let canvas;
+        try {
+            canvas = await renderShareCanvas(card, scale);
+        } catch (e1) {
+            // html2canvas 首次渲染抛异常 —— 降级 scale=1 重试
+            scale = 1;
+            canvas = await renderShareCanvas(card, 1);
+        }
+        if (!canvas || !canvas.width || !canvas.height) {
+            // 渲染结果尺寸异常 —— 同样降级重试一次
+            scale = 1;
+            canvas = await renderShareCanvas(card, 1);
+        }
+
+        // Blob URL 在现代浏览器下比 dataUrl 轻量,但若 toBlob 返回 null 同样降级重试
+        let blob = await canvasToBlob(canvas, 'image/png');
+        if (!blob && scale > 1) {
+            canvas = await renderShareCanvas(card, 1);
+            blob = await canvasToBlob(canvas, 'image/png');
+        }
+        if (!blob) throw new Error('toBlob returned null');
+
         const objectUrl = URL.createObjectURL(blob);
         _lastBlobUrl = objectUrl;
         _lastBlob = blob;
 
+        // dataUrl 同步生成 —— 用作 <img> 首选 src。
+        // 原因:微信/QQ/抖音等内置 WebView 对 blob: URL 的 <img> 加载支持不稳,
+        //      会显示"加载图片失败"。dataUrl 是纯字符串,任何 WebView 都认。
+        let dataUrl = '';
+        try { dataUrl = canvas.toDataURL('image/png'); } catch (e) { /* tainted 等 —— 留空走 blob */ }
+
         const hint = isMobile()
             ? '<div style="margin-top:10px;text-align:center;font-size:12px;color:#8a6d3a;letter-spacing:2px;">长 按 图 片 · 保 存 到 相 册</div>'
             : '';
+        const primarySrc = dataUrl || objectUrl;
+        const fallbackSrc = dataUrl && objectUrl ? objectUrl : '';
         preview.innerHTML =
-            '<img src="' + objectUrl + '" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">' + hint;
+            '<img id="sharePreviewImg" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">' + hint;
+        const imgEl = preview.querySelector('#sharePreviewImg');
+        let triedFallback = false;
+        imgEl.onerror = function() {
+            if (!triedFallback && fallbackSrc) {
+                triedFallback = true;
+                this.src = fallbackSrc;
+                return;
+            }
+            this.onerror = null;
+            preview.innerHTML = '<div style="padding:20px;color:#a84848;">预览加载失败，可直接点「下载图片」</div>';
+        };
+        imgEl.src = primarySrc;
 
         document.getElementById('shareDownloadBtn').onclick = () => {
             try {
@@ -863,7 +904,11 @@ async function shareAsImage() {
             }
         };
     } catch(e) {
-        preview.innerHTML = '<div style="padding:20px;color:#a84848;">生成失败</div>';
+        // 把真实错误消息展示出来,便于排查(是 html2canvas 渲染失败/toBlob null/tainted 等哪一类)
+        const msg = (e && e.message) ? e.message : String(e);
+        preview.innerHTML =
+            '<div style="padding:20px;color:#a84848;text-align:center;">生成失败' +
+            '<br><small style="color:#666;font-size:11px;opacity:0.7;word-break:break-all;display:inline-block;margin-top:6px;">' + escHtml(msg) + '</small></div>';
     } finally {
         // 无论成功或异常都清理临时 DOM,避免反复尝试时节点堆积
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
@@ -880,19 +925,34 @@ function closeShare() {
 }
 
 // ========== 历史（牌册） ==========
+function readHistorySafe() {
+    // JSON.parse / 私密模式均可能抛异常,统一降级为空数组,保证上层逻辑不炸
+    try {
+        const raw = localStorage.getItem('divinationHistory');
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
 function saveToHistory(question, gua, fullBin, hexLines, change) {
-    let history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
-    history.unshift({
-        question: question || '心中所念',
-        gua: gua[0], symbol: gua[2], title: gua[1],
-        binary: fullBin, hexagramLines: hexLines,
-        changeBinary: change.changeBinary,
-        hasChange: change.hasChange,
-        changingYaos: change.changingYaos,
-        date: new Date().toLocaleString('zh-CN')
-    });
-    history = history.slice(0, HISTORY_MAX);
-    localStorage.setItem('divinationHistory', JSON.stringify(history));
+    try {
+        const history = readHistorySafe();
+        history.unshift({
+            question: question || '心中所念',
+            gua: gua[0], symbol: gua[2], title: gua[1],
+            binary: fullBin, hexagramLines: hexLines,
+            changeBinary: change.changeBinary,
+            hasChange: change.hasChange,
+            changingYaos: change.changingYaos,
+            date: new Date().toLocaleString('zh-CN')
+        });
+        localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
+    } catch (e) {
+        // iOS 私密模式 / quota 满 / 数据损坏 —— 占卜本身已成功,不阻断用户流程
+    }
 }
 
 function toggleHistory() {
@@ -904,7 +964,7 @@ function toggleHistory() {
 }
 
 function loadHistory() {
-    const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
+    const history = readHistorySafe();
     const list = document.getElementById('historyList');
     if (history.length === 0) {
         list.innerHTML = '<p class="history-empty">尚 无 记 录</p>';
@@ -925,7 +985,7 @@ function loadHistory() {
 }
 
 function loadHistoryItem(index) {
-    const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
+    const history = readHistorySafe();
     const item = history[index];
     if (!item) return;
     const gua = item.binary ? lookupGua(item.binary) : (GUA.find(g => g[2] === item.symbol) || GUA[0]);
@@ -947,19 +1007,25 @@ function loadHistoryItem(index) {
 
 function clearHistory() {
     if (confirm('确 定 清 空 牌 册？')) {
-        localStorage.removeItem('divinationHistory');
+        try { localStorage.removeItem('divinationHistory'); } catch (e) {}
         loadHistory();
     }
 }
 
 // ========== 每日一卦 ==========
 function getUserSeed() {
-    let uid = localStorage.getItem('tianyan_uid');
-    if (!uid) {
-        uid = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        localStorage.setItem('tianyan_uid', uid);
+    try {
+        let uid = localStorage.getItem('tianyan_uid');
+        if (!uid) {
+            uid = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            localStorage.setItem('tianyan_uid', uid);
+        }
+        return uid;
+    } catch (e) {
+        // iOS 私密模式:localStorage 不可写。降级为进程内会话 seed —— 每次刷新会变,
+        // 牺牲每日一卦的跨日稳定性但保证首屏不崩。
+        return Math.random().toString(36).substring(2) + Date.now().toString(36);
     }
-    return uid;
 }
 
 function getDailyGua() {
@@ -1219,7 +1285,11 @@ function loadSettings() {
 }
 
 function saveSettings(settings) {
-    localStorage.setItem('tianyan_settings', JSON.stringify(settings));
+    try {
+        localStorage.setItem('tianyan_settings', JSON.stringify(settings));
+    } catch (e) {
+        // 私密模式 / quota —— 设置无法持久化,但当前会话内应用仍生效
+    }
 }
 
 function saveSetting(key, value) {
