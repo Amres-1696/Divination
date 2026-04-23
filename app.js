@@ -759,6 +759,23 @@ function createShareCard(d) {
     '</div>';
 }
 
+// 上一次生成的 Blob URL —— 打开新分享时释放,避免内存泄漏
+let _lastBlobUrl = null;
+
+function canvasToBlob(canvas, type) {
+    return new Promise(resolve => canvas.toBlob(resolve, type, 1.0));
+}
+
+function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // iPadOS 13+
+}
+
+function isMobile() {
+    return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches);
+}
+
 async function shareAsImage() {
     if (typeof html2canvas !== 'function') {
         alert('分享功能加载失败，请刷新页面后重试');
@@ -770,6 +787,10 @@ async function shareAsImage() {
     if (!data) { alert('请先占卜'); return; }
     preview.innerHTML = '<div style="padding:30px;text-align:center;color:#8a6d3a;">生成中…</div>';
     container.classList.add('show');
+
+    // 释放上一次的 Blob URL
+    if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
+
     const tmp = document.createElement('div');
     tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:560px;';
     tmp.innerHTML = createShareCard(data);
@@ -777,25 +798,56 @@ async function shareAsImage() {
     try {
         await sleep(300);
         const card = tmp.querySelector('#shareCard');
-        const canvas = await html2canvas(card, { backgroundColor: null, scale: 3, logging: false });
-        const url = canvas.toDataURL('image/png', 1.0);
-        preview.innerHTML = '<img src="' + url + '" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">';
+        // 移动端 scale 降到 2：体积近乎减半,iOS Safari 下载/预览成功率大增
+        const scale = isMobile() ? 2 : 3;
+        const canvas = await html2canvas(card, { backgroundColor: null, scale, logging: false });
+
+        // Blob URL 在移动端远比 data URL 可靠(无长度上限 + 原生 Blob)
+        const blob = await canvasToBlob(canvas, 'image/png');
+        const objectUrl = URL.createObjectURL(blob);
+        _lastBlobUrl = objectUrl;
+
+        const hint = isMobile()
+            ? '<div style="margin-top:10px;text-align:center;font-size:12px;color:#8a6d3a;letter-spacing:2px;">长 按 图 片 · 保 存 到 相 册</div>'
+            : '';
+        preview.innerHTML =
+            '<img src="' + objectUrl + '" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">' + hint;
+
         document.getElementById('shareDownloadBtn').onclick = () => {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '天衍_Arcana_' + Date.now() + '.png';
-            a.click();
-        };
-        document.getElementById('shareCopyBtn').onclick = () => {
-            // toBlob 回调是异步的,try/catch 必须放在回调内部才能捕获 clipboard.write 的拒绝
-            canvas.toBlob(async blob => {
-                try {
-                    await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-                    alert('已复制到剪贴板');
-                } catch(e) {
-                    alert('复制失败，请下载图片');
+            try {
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = '天衍_Arcana_' + Date.now() + '.png';
+                document.body.appendChild(a); // Firefox 要求节点在文档中才能触发 click
+                a.click();
+                a.remove();
+                if (isIOS()) {
+                    // iOS Safari 对 <a download> 支持仍不稳定 —— 兜底引导
+                    setTimeout(() => alert('若未自动保存，请长按上方预览图选择「保存到相册」'), 300);
                 }
-            });
+            } catch (e) {
+                alert('下载失败，请长按上方预览图保存到相册');
+            }
+        };
+
+        document.getElementById('shareCopyBtn').onclick = async () => {
+            // 关键：Safari / Chrome 要求在用户手势内【同步】创建 ClipboardItem。
+            // 传入 Promise 让浏览器自己等 toBlob 完成,手势上下文不丢。
+            if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+                alert('此浏览器不支持复制图片，请长按预览图保存到相册');
+                return;
+            }
+            try {
+                const item = new ClipboardItem({
+                    'image/png': canvasToBlob(canvas, 'image/png')
+                });
+                await navigator.clipboard.write([item]);
+                alert('已复制到剪贴板');
+            } catch (e) {
+                alert(isMobile()
+                    ? '复制失败，请长按预览图保存到相册'
+                    : '复制失败，请点击下载图片');
+            }
         };
     } catch(e) {
         preview.innerHTML = '<div style="padding:20px;color:#a84848;">生成失败</div>';
@@ -807,6 +859,10 @@ async function shareAsImage() {
 
 function closeShare() {
     document.getElementById('shareImageContainer').classList.remove('show');
+    if (_lastBlobUrl) {
+        URL.revokeObjectURL(_lastBlobUrl);
+        _lastBlobUrl = null;
+    }
 }
 
 // ========== 历史（牌册） ==========
