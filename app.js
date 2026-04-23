@@ -759,8 +759,9 @@ function createShareCard(d) {
     '</div>';
 }
 
-// 上一次生成的 Blob URL —— 打开新分享时释放,避免内存泄漏
+// 上一次生成的 Blob / Blob URL —— 打开新分享时释放,避免内存泄漏
 let _lastBlobUrl = null;
+let _lastBlob = null;
 
 function canvasToBlob(canvas, type) {
     return new Promise(resolve => canvas.toBlob(resolve, type, 1.0));
@@ -790,22 +791,30 @@ async function shareAsImage() {
 
     // 释放上一次的 Blob URL
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
+    _lastBlob = null;
 
+    // 改用"视口内但不可见"定位:某些移动浏览器对 left:-9999px 的元素不进行完整布局/绘制
     const tmp = document.createElement('div');
-    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:560px;';
+    tmp.style.cssText = 'position:fixed;left:0;top:0;width:560px;opacity:0;pointer-events:none;z-index:-1;';
     tmp.innerHTML = createShareCard(data);
     document.body.appendChild(tmp);
     try {
+        // 等 Web Fonts 加载完,否则 html2canvas 会用 fallback 字体,布局可能塌
+        if (document.fonts && document.fonts.ready) {
+            try { await document.fonts.ready; } catch(e) {}
+        }
         await sleep(300);
         const card = tmp.querySelector('#shareCard');
         // 移动端 scale 降到 2：体积近乎减半,iOS Safari 下载/预览成功率大增
         const scale = isMobile() ? 2 : 3;
-        const canvas = await html2canvas(card, { backgroundColor: null, scale, logging: false });
+        // 不透明背景色兜底:粘贴到不支持 alpha 的应用(微信/便签/iMessage)不会变成全白空白
+        const canvas = await html2canvas(card, { backgroundColor: '#e8dcc0', scale, logging: false, useCORS: true });
 
         // Blob URL 在移动端远比 data URL 可靠(无长度上限 + 原生 Blob)
         const blob = await canvasToBlob(canvas, 'image/png');
         const objectUrl = URL.createObjectURL(blob);
         _lastBlobUrl = objectUrl;
+        _lastBlob = blob;
 
         const hint = isMobile()
             ? '<div style="margin-top:10px;text-align:center;font-size:12px;color:#8a6d3a;letter-spacing:2px;">长 按 图 片 · 保 存 到 相 册</div>'
@@ -831,15 +840,19 @@ async function shareAsImage() {
         };
 
         document.getElementById('shareCopyBtn').onclick = async () => {
-            // 关键：Safari / Chrome 要求在用户手势内【同步】创建 ClipboardItem。
-            // 传入 Promise 让浏览器自己等 toBlob 完成,手势上下文不丢。
             if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
                 alert('此浏览器不支持复制图片，请长按预览图保存到相册');
                 return;
             }
+            if (!_lastBlob) {
+                alert('图片尚未生成完毕，请稍候再试');
+                return;
+            }
             try {
+                // 关键:用【已生成】的 Blob,避免 iOS Safari 在 Promise 化 toBlob 过程中丢数据(导致空白图)。
+                // Promise.resolve 仅为满足 ClipboardItem 类型要求,同步 resolve 不阻塞手势授权。
                 const item = new ClipboardItem({
-                    'image/png': canvasToBlob(canvas, 'image/png')
+                    'image/png': Promise.resolve(_lastBlob)
                 });
                 await navigator.clipboard.write([item]);
                 alert('已复制到剪贴板');
@@ -863,6 +876,7 @@ function closeShare() {
         URL.revokeObjectURL(_lastBlobUrl);
         _lastBlobUrl = null;
     }
+    _lastBlob = null;
 }
 
 // ========== 历史（牌册） ==========
