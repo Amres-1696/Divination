@@ -1,24 +1,30 @@
+// ========== 常量 ==========
+const DECK_POOL_SIZE = 16;
+const HISTORY_MAX = 50;
+const COIN_TO_LINE = { 3: 9, 2: 8, 1: 7, 0: 6 }; // 铜钱法：3阳=老阳9, 2阳=少阴8, 1阳=少阳7, 0阳=老阴6
+
 // ========== 核心算法（保留，不得修改逻辑）==========
 function generateHexagram() {
     const lines = [];
     for (let i = 0; i < 6; i++) {
-        const s = (Math.random()>0.5?1:0)+(Math.random()>0.5?1:0)+(Math.random()>0.5?1:0);
-        lines.push(s===3?9:s===2?8:s===1?7:6);
+        const coins = (Math.random() > 0.5 ? 1 : 0) + (Math.random() > 0.5 ? 1 : 0) + (Math.random() > 0.5 ? 1 : 0);
+        lines.push(COIN_TO_LINE[coins]);
     }
     return lines;
 }
 function calculateChangeGua(hexLines, origBin) {
-    const cy=[], cb=[];
-    for (let i=0;i<hexLines.length;i++) {
-        const l=hexLines[i];
-        if(l===9){cy.push(i);cb.push('0');}
-        else if(l===6){cy.push(i);cb.push('1');}
-        else cb.push(l===7?'1':'0');
+    const changingYaoPositions = [];
+    const changeBits = [];
+    for (let i = 0; i < hexLines.length; i++) {
+        const line = hexLines[i];
+        if (line === 9) { changingYaoPositions.push(i); changeBits.push('0'); }
+        else if (line === 6) { changingYaoPositions.push(i); changeBits.push('1'); }
+        else changeBits.push(line === 7 ? '1' : '0');
     }
-    if(!cy.length) return {hasChange:false,changeBinary:origBin,changingYaos:[],changeGua:lookupGua(origBin)};
-    // cb 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初],整体反转即可
-    const full=cb.slice().reverse().join('');
-    return {hasChange:true,changeBinary:full,changingYaos:cy,changeGua:lookupGua(full)};
+    if (!changingYaoPositions.length) return { hasChange: false, changeBinary: origBin, changingYaos: [], changeGua: lookupGua(origBin) };
+    // changeBits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初],整体反转即可
+    const fullBin = changeBits.slice().reverse().join('');
+    return { hasChange: true, changeBinary: fullBin, changingYaos: changingYaoPositions, changeGua: lookupGua(fullBin) };
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
@@ -132,6 +138,7 @@ class DustParticles {
         this.particles = [];
         this.running = false;
         this.fireflyTimer = null;
+        this._rafId = null;
         this.resize();
         window.addEventListener('resize', () => this.resize());
     }
@@ -201,7 +208,12 @@ class DustParticles {
             p.y += p.vy;
             p.vx += (Math.random() - 0.5) * (p.isFirefly ? 0.008 : 0.02);
             p.life -= p.decay;
-            if (p.life <= 0 || p.y < -30) { this.particles.splice(i, 1); continue; }
+            if (p.life <= 0 || p.y < -30) {
+                // swap-and-pop: O(1) 删除，避免 splice 的 O(n)
+                this.particles[i] = this.particles[this.particles.length - 1];
+                this.particles.pop();
+                continue;
+            }
 
             if (p.isFirefly) {
                 // 脉动 + halo 光晕 + 核心
@@ -234,7 +246,7 @@ class DustParticles {
             }
         }
         ctx.globalAlpha = 1;
-        requestAnimationFrame(() => this.tick());
+        this._rafId = requestAnimationFrame(() => this.tick());
     }
     start() {
         if (this.running) return;
@@ -249,7 +261,10 @@ class DustParticles {
         this.running = false;
         if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
     }
-    pause() { this.running = false; }
+    pause() {
+        this.running = false;
+        if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+    }
     resume() {
         if (this.running) return;
         this.running = true;
@@ -293,8 +308,8 @@ class ArcanaRitual {
     }
     async actRiffle() {
         this.setStatus('Ⅱ · RIFFLE', '洗 牌');
-        const pool = this.pickDeckPool(16);
-        for (let i = 0; i < 16; i++) {
+        const pool = this.pickDeckPool(DECK_POOL_SIZE);
+        for (let i = 0; i < DECK_POOL_SIZE; i++) {
             const card = makeArcanaCard(pool[i], { large: false });
             card.style.transform = `translate3d(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px, ${-i*0.5}px) rotate(${(Math.random()-0.5)*4}deg)`;
             card.style.zIndex = String(i);
@@ -515,11 +530,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     <div class="hex-symbol" style="display:none;">${gua[2]}</div>
     ${question ? `<p class="hex-question">「${escHtml(question)}」</p>` : ''}
     <div class="verdict-seal ${verdict}">${verdictText[verdict]}</div>
-    <div class="share-row"><button class="btn-share" onclick="shareAsImage()">✦ 生 成 分 享 图</button></div>
+    <div class="share-row"><button class="btn-share" id="shareBtn">✦ 生 成 分 享 图</button></div>
 </section>
 <section class="card"><h3>六 爻 之 辞</h3><div class="yao-list">${yaoHtml}</div></section>
 <section class="card"><h3>卦 象 奥 义</h3><div class="analysis-list">${analysisHtml}</div></section>
 ${changeHtml}`;
+
+    resultArea.querySelector('#shareBtn').addEventListener('click', shareAsImage);
 
     const wrap = resultArea.querySelector('#chosenCardWrap');
     let bigCard;
@@ -743,6 +760,10 @@ function createShareCard(d) {
 }
 
 async function shareAsImage() {
+    if (typeof html2canvas !== 'function') {
+        alert('分享功能加载失败，请刷新页面后重试');
+        return;
+    }
     const container = document.getElementById('shareImageContainer');
     const preview = document.getElementById('shareImagePreview');
     const data = getCurrentGuaData();
@@ -800,7 +821,7 @@ function saveToHistory(question, gua, fullBin, hexLines, change) {
         changingYaos: change.changingYaos,
         date: new Date().toLocaleString('zh-CN')
     });
-    history = history.slice(0, 50);
+    history = history.slice(0, HISTORY_MAX);
     localStorage.setItem('divinationHistory', JSON.stringify(history));
 }
 
@@ -822,12 +843,15 @@ function loadHistory() {
     list.innerHTML = history.map((item, idx) => {
         const guaEntry = item.binary ? lookupGua(item.binary) : null;
         const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
-        return `<div class="history-item" onclick="loadHistoryItem(${idx})">
+        return `<div class="history-item" data-idx="${idx}">
 <div class="history-q">${escHtml(item.question)}</div>
 <div class="history-gua">${roman ? `<span style="font-family:'Cinzel',serif;margin-right:6px;">${roman}</span>` : ''}${item.symbol} ${item.gua}${item.hasChange ? ' <span class="history-tag">变</span>' : ''}</div>
 <div class="history-date">${item.date}</div>
 </div>`;
     }).join('');
+    list.querySelectorAll('.history-item').forEach(el => {
+        el.addEventListener('click', () => loadHistoryItem(parseInt(el.dataset.idx)));
+    });
 }
 
 function loadHistoryItem(index) {
@@ -905,13 +929,6 @@ function getDailyMotto() {
     for (let i = 0; i < str.length; i++) seed = ((seed << 5) - seed + str.charCodeAt(i)) | 0;
     return DAILY_MOTTOS[Math.abs(seed) % DAILY_MOTTOS.length];
 }
-
-const DAILY_MOTTOS = [
-    '顺势而为，静待花开', '心正则事顺，行稳致远', '厚积薄发，水到渠成',
-    '知止而后有定，定而后能静', '天行健，君子以自强不息', '地势坤，君子以厚德载物',
-    '积善之家，必有余庆', '穷则变，变则通，通则久', '居安思危，思则有备',
-    '见善则迁，有过则改', '谦谦君子，卑以自牧', '不忘初心，方得始终'
-];
 
 function renderDailyGua() {
     const el = document.getElementById('dailyGua');
@@ -1159,8 +1176,9 @@ function saveBazi() {
         status.className = 'bazi-status error';
         return;
     }
-    if (day < 1 || day > 31) {
-        status.textContent = '日期范围：1-31';
+    const maxDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+    if (day < 1 || day > maxDay) {
+        status.textContent = `${month}月最多${maxDay}天，请检查日期`;
         status.className = 'bazi-status error';
         return;
     }
@@ -1294,6 +1312,21 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleGoldStreak();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
+
+    // 事件绑定（替代 inline onclick）
+    document.getElementById('settingsGear').addEventListener('click', toggleSettings);
+    document.getElementById('settingsOverlay').addEventListener('click', toggleSettings);
+    document.getElementById('settingsCloseBtn').addEventListener('click', toggleSettings);
+    document.getElementById('divineBtn').addEventListener('click', divine);
+    document.getElementById('historyBtn').addEventListener('click', toggleHistory);
+    document.getElementById('historyOverlay').addEventListener('click', toggleHistory);
+    document.getElementById('historyCloseBtn').addEventListener('click', toggleHistory);
+    document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+    document.getElementById('saveBaziBtn').addEventListener('click', saveBazi);
+    document.getElementById('closeShareBtn').addEventListener('click', closeShare);
+    document.getElementById('settingMethod').addEventListener('change', function() { saveSetting('method', this.value); });
+    document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
+    document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
 
     // 回车键起卦
     document.getElementById('question').addEventListener('keydown', e => {

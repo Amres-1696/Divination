@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="天衍 · Eastern Arcana — 基于易经六十四卦的在线占卜应用">
     <title>天衍 · Eastern Arcana</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="style.css">
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" defer crossorigin="anonymous" onerror="console.warn('html2canvas 加载失败，分享功能不可用')"></script>
 </head>
 <body>
     <!-- L1 丝绒桌面 -->
@@ -122,6 +126,60 @@
     <!-- 烛台共享 gradient 定义 -->
     <svg class="candle-defs" width="0" height="0" aria-hidden="true" focusable="false">
         <defs>
+            <symbol id="candlestick-body" viewBox="-50 0 100 500">
+                <ellipse cx="0" cy="478" rx="48" ry="7" fill="url(#candle-groundShadow)"/>
+                <polygon points="-30,470 30,470 35,466 35,462 30,452 -30,452 -35,462 -35,466" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.5"/>
+                <line x1="-30" y1="452" x2="30" y2="452" stroke="#1a1008" stroke-width="0.4"/>
+                <path d="M -34 462 Q 0 460 34 462" fill="none" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
+                <ellipse cx="0" cy="452" rx="22" ry="2.5" fill="#5a4a2a"/>
+                <rect x="-22" y="442" width="44" height="10" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
+                <ellipse cx="0" cy="442" rx="22" ry="2" fill="url(#candle-brassDark)"/>
+                <ellipse cx="0" cy="441" rx="20" ry="0.8" fill="#fff4c4" opacity="0.45"/>
+                <ellipse cx="0" cy="442" rx="14" ry="2" fill="#1a1008" opacity="0.5"/>
+                <ellipse cx="0" cy="438" rx="14" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
+                <ellipse cx="0" cy="434" rx="11" ry="2.2" fill="#fff4c4" opacity="0.5"/>
+                <ellipse cx="0" cy="443" rx="13" ry="1.5" fill="#1a1008" opacity="0.4"/>
+                <rect x="-10" y="420" width="20" height="12" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
+                <line x1="-9" y1="421" x2="9" y2="421" stroke="#fff4c4" stroke-width="0.3" opacity="0.5"/>
+                <rect x="-3.5" y="304" width="7" height="116" fill="url(#candle-brass)"/>
+                <ellipse cx="0" cy="304" rx="11" ry="2.3" fill="#1a1008" opacity="0.5"/>
+                <ellipse cx="0" cy="300" rx="11" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
+                <ellipse cx="0" cy="296" rx="9" ry="2.2" fill="#fff4c4" opacity="0.55"/>
+                <ellipse cx="0" cy="305" rx="10" ry="1.5" fill="#1a1008" opacity="0.4"/>
+                <rect x="-3" y="236" width="6" height="64" fill="url(#candle-brass)"/>
+                <ellipse cx="0" cy="237" rx="10" ry="2" fill="#1a1008" opacity="0.5"/>
+                <ellipse cx="0" cy="232" rx="10" ry="6" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
+                <ellipse cx="0" cy="229" rx="8" ry="1.8" fill="#fff4c4" opacity="0.6"/>
+                <polygon points="-7,228 7,228 18,214 -18,214" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
+                <line x1="-15" y1="217" x2="-3" y2="227" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
+                <ellipse cx="0" cy="216" rx="22" ry="4.2" fill="#1a1008" opacity="0.7"/>
+                <ellipse cx="0" cy="214" rx="22" ry="3.5" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
+                <ellipse cx="0" cy="212.5" rx="18" ry="2.8" fill="url(#candle-brassDark)"/>
+                <path d="M -19 212.5 Q 0 210.5 19 212.5" fill="none" stroke="#fff4c4" stroke-width="0.5" opacity="0.7"/>
+                <rect x="-9" y="124" width="18" height="86" fill="url(#candle-wax)"/>
+                <ellipse cx="0" cy="210" rx="9" ry="2" fill="#5a4a2a"/>
+                <path d="M -14 213 Q -9 215.5 0 215.5 Q 9 215.5 14 213" fill="none" stroke="#3a2a14" stroke-width="0.7"/>
+                <path d="M -19 215 Q -20 222 -17 232 Q -15 235 -13 232 Q -11 224 -14 215 Z" fill="url(#candle-redwax)"/>
+                <line x1="-17" y1="218" x2="-15" y2="230" stroke="#e88898" stroke-width="0.5" opacity="0.65"/>
+                <path d="M -7 216 Q -8 228 -4 242 Q -2 246 0 242 Q 1 228 -2 216 Z" fill="url(#candle-redwax)"/>
+                <line x1="-5" y1="220" x2="-3" y2="240" stroke="#e88898" stroke-width="0.5" opacity="0.7"/>
+                <path d="M 13 215 Q 15 225 14 233 Q 12 236 10 233 Q 9 224 11 215 Z" fill="url(#candle-redwax)"/>
+                <line x1="14" y1="219" x2="13" y2="231" stroke="#e88898" stroke-width="0.4" opacity="0.6"/>
+                <path d="M 6 124 Q 8 145 6 162 Q 4 178 6 202 L 9 202 L 9 124 Z" fill="url(#candle-redwax)" opacity="0.9"/>
+                <line x1="7" y1="128" x2="7" y2="195" stroke="#e88898" stroke-width="0.4" opacity="0.5"/>
+                <path d="M -7 128 Q -8 142 -6 158 L -3 158 L -3 128 Z" fill="url(#candle-redwax)" opacity="0.85"/>
+                <line x1="-5" y1="130" x2="-4" y2="152" stroke="#e88898" stroke-width="0.3" opacity="0.45"/>
+                <ellipse cx="0" cy="170" rx="160" ry="130" fill="url(#candle-castLight)" pointer-events="none" style="mix-blend-mode: screen;"/>
+                <rect x="-9" y="124" width="18" height="40" fill="url(#candle-waxWarm)" pointer-events="none"/>
+                <ellipse cx="0" cy="124" rx="9" ry="3" fill="#3a2a1a"/>
+                <ellipse cx="0" cy="123" rx="8" ry="2.3" fill="#1a0a08"/>
+                <line x1="0" y1="124" x2="0" y2="112" stroke="#1a0a08" stroke-width="1.2"/>
+                <ellipse cx="0" cy="115" rx="1.2" ry="2.5" fill="#3a1a08"/>
+                <ellipse class="flame-halo" cx="0" cy="78" rx="48" ry="68" fill="url(#candle-haloGrad)"/>
+                <path class="flame" d="M 0 112 Q -9 92 -4 68 Q 0 50 0 42 Q 0 50 4 68 Q 9 92 0 112 Z" fill="url(#candle-flameGrad)"/>
+                <path class="flame-inner" d="M 0 108 Q -3.5 92 -1.5 78 Q 0 64 0 58 Q 0 64 1.5 78 Q 3.5 92 0 108 Z" fill="#fff4c4" opacity="0.9"/>
+                <ellipse cx="0" cy="92" rx="1.5" ry="7" fill="#1a4060" opacity="0.35"/>
+            </symbol>
             <linearGradient id="candle-brass" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stop-color="#3a2a14"/>
                 <stop offset="22%" stop-color="#8a6d3a"/>
@@ -179,121 +237,19 @@
     <!-- 左烛台 -->
     <div class="candle candle-left" aria-hidden="true">
         <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="0" cy="478" rx="48" ry="7" fill="url(#candle-groundShadow)"/>
-            <polygon points="-30,470 30,470 35,466 35,462 30,452 -30,452 -35,462 -35,466" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.5"/>
-            <line x1="-30" y1="452" x2="30" y2="452" stroke="#1a1008" stroke-width="0.4"/>
-            <path d="M -34 462 Q 0 460 34 462" fill="none" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-            <ellipse cx="0" cy="452" rx="22" ry="2.5" fill="#5a4a2a"/>
-            <rect x="-22" y="442" width="44" height="10" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="442" rx="22" ry="2" fill="url(#candle-brassDark)"/>
-            <ellipse cx="0" cy="441" rx="20" ry="0.8" fill="#fff4c4" opacity="0.45"/>
-            <ellipse cx="0" cy="442" rx="14" ry="2" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="438" rx="14" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="434" rx="11" ry="2.2" fill="#fff4c4" opacity="0.5"/>
-            <ellipse cx="0" cy="443" rx="13" ry="1.5" fill="#1a1008" opacity="0.4"/>
-            <rect x="-10" y="420" width="20" height="12" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <line x1="-9" y1="421" x2="9" y2="421" stroke="#fff4c4" stroke-width="0.3" opacity="0.5"/>
-            <rect x="-3.5" y="304" width="7" height="116" fill="url(#candle-brass)"/>
-            <ellipse cx="0" cy="304" rx="11" ry="2.3" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="300" rx="11" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <ellipse cx="0" cy="296" rx="9" ry="2.2" fill="#fff4c4" opacity="0.55"/>
-            <ellipse cx="0" cy="305" rx="10" ry="1.5" fill="#1a1008" opacity="0.4"/>
-            <rect x="-3" y="236" width="6" height="64" fill="url(#candle-brass)"/>
-            <ellipse cx="0" cy="237" rx="10" ry="2" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="232" rx="10" ry="6" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <ellipse cx="0" cy="229" rx="8" ry="1.8" fill="#fff4c4" opacity="0.6"/>
-            <polygon points="-7,228 7,228 18,214 -18,214" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <line x1="-15" y1="217" x2="-3" y2="227" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-            <ellipse cx="0" cy="216" rx="22" ry="4.2" fill="#1a1008" opacity="0.7"/>
-            <ellipse cx="0" cy="214" rx="22" ry="3.5" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="212.5" rx="18" ry="2.8" fill="url(#candle-brassDark)"/>
-            <path d="M -19 212.5 Q 0 210.5 19 212.5" fill="none" stroke="#fff4c4" stroke-width="0.5" opacity="0.7"/>
-            <rect x="-9" y="124" width="18" height="86" fill="url(#candle-wax)"/>
-            <ellipse cx="0" cy="210" rx="9" ry="2" fill="#5a4a2a"/>
-            <path d="M -14 213 Q -9 215.5 0 215.5 Q 9 215.5 14 213" fill="none" stroke="#3a2a14" stroke-width="0.7"/>
-            <path d="M -19 215 Q -20 222 -17 232 Q -15 235 -13 232 Q -11 224 -14 215 Z" fill="url(#candle-redwax)"/>
-            <line x1="-17" y1="218" x2="-15" y2="230" stroke="#e88898" stroke-width="0.5" opacity="0.65"/>
-            <path d="M -7 216 Q -8 228 -4 242 Q -2 246 0 242 Q 1 228 -2 216 Z" fill="url(#candle-redwax)"/>
-            <line x1="-5" y1="220" x2="-3" y2="240" stroke="#e88898" stroke-width="0.5" opacity="0.7"/>
-            <path d="M 13 215 Q 15 225 14 233 Q 12 236 10 233 Q 9 224 11 215 Z" fill="url(#candle-redwax)"/>
-            <line x1="14" y1="219" x2="13" y2="231" stroke="#e88898" stroke-width="0.4" opacity="0.6"/>
-            <path d="M 6 124 Q 8 145 6 162 Q 4 178 6 202 L 9 202 L 9 124 Z" fill="url(#candle-redwax)" opacity="0.9"/>
-            <line x1="7" y1="128" x2="7" y2="195" stroke="#e88898" stroke-width="0.4" opacity="0.5"/>
-            <path d="M -7 128 Q -8 142 -6 158 L -3 158 L -3 128 Z" fill="url(#candle-redwax)" opacity="0.85"/>
-            <line x1="-5" y1="130" x2="-4" y2="152" stroke="#e88898" stroke-width="0.3" opacity="0.45"/>
-            <ellipse cx="0" cy="170" rx="160" ry="130" fill="url(#candle-castLight)" pointer-events="none" style="mix-blend-mode: screen;"/>
-            <rect x="-9" y="124" width="18" height="40" fill="url(#candle-waxWarm)" pointer-events="none"/>
-            <ellipse cx="0" cy="124" rx="9" ry="3" fill="#3a2a1a"/>
-            <ellipse cx="0" cy="123" rx="8" ry="2.3" fill="#1a0a08"/>
-            <line x1="0" y1="124" x2="0" y2="112" stroke="#1a0a08" stroke-width="1.2"/>
-            <ellipse cx="0" cy="115" rx="1.2" ry="2.5" fill="#3a1a08"/>
-            <ellipse class="flame-halo" cx="0" cy="78" rx="48" ry="68" fill="url(#candle-haloGrad)"/>
-            <path class="flame" d="M 0 112 Q -9 92 -4 68 Q 0 50 0 42 Q 0 50 4 68 Q 9 92 0 112 Z" fill="url(#candle-flameGrad)"/>
-            <path class="flame-inner" d="M 0 108 Q -3.5 92 -1.5 78 Q 0 64 0 58 Q 0 64 1.5 78 Q 3.5 92 0 108 Z" fill="#fff4c4" opacity="0.9"/>
-            <ellipse cx="0" cy="92" rx="1.5" ry="7" fill="#1a4060" opacity="0.35"/>
+            <use href="#candlestick-body"/>
         </svg>
     </div>
 
     <!-- 右烛台 -->
     <div class="candle candle-right" aria-hidden="true">
         <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="0" cy="478" rx="48" ry="7" fill="url(#candle-groundShadow)"/>
-            <polygon points="-30,470 30,470 35,466 35,462 30,452 -30,452 -35,462 -35,466" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.5"/>
-            <line x1="-30" y1="452" x2="30" y2="452" stroke="#1a1008" stroke-width="0.4"/>
-            <path d="M -34 462 Q 0 460 34 462" fill="none" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-            <ellipse cx="0" cy="452" rx="22" ry="2.5" fill="#5a4a2a"/>
-            <rect x="-22" y="442" width="44" height="10" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="442" rx="22" ry="2" fill="url(#candle-brassDark)"/>
-            <ellipse cx="0" cy="441" rx="20" ry="0.8" fill="#fff4c4" opacity="0.45"/>
-            <ellipse cx="0" cy="442" rx="14" ry="2" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="438" rx="14" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="434" rx="11" ry="2.2" fill="#fff4c4" opacity="0.5"/>
-            <ellipse cx="0" cy="443" rx="13" ry="1.5" fill="#1a1008" opacity="0.4"/>
-            <rect x="-10" y="420" width="20" height="12" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <line x1="-9" y1="421" x2="9" y2="421" stroke="#fff4c4" stroke-width="0.3" opacity="0.5"/>
-            <rect x="-3.5" y="304" width="7" height="116" fill="url(#candle-brass)"/>
-            <ellipse cx="0" cy="304" rx="11" ry="2.3" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="300" rx="11" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <ellipse cx="0" cy="296" rx="9" ry="2.2" fill="#fff4c4" opacity="0.55"/>
-            <ellipse cx="0" cy="305" rx="10" ry="1.5" fill="#1a1008" opacity="0.4"/>
-            <rect x="-3" y="236" width="6" height="64" fill="url(#candle-brass)"/>
-            <ellipse cx="0" cy="237" rx="10" ry="2" fill="#1a1008" opacity="0.5"/>
-            <ellipse cx="0" cy="232" rx="10" ry="6" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <ellipse cx="0" cy="229" rx="8" ry="1.8" fill="#fff4c4" opacity="0.6"/>
-            <polygon points="-7,228 7,228 18,214 -18,214" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-            <line x1="-15" y1="217" x2="-3" y2="227" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-            <ellipse cx="0" cy="216" rx="22" ry="4.2" fill="#1a1008" opacity="0.7"/>
-            <ellipse cx="0" cy="214" rx="22" ry="3.5" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-            <ellipse cx="0" cy="212.5" rx="18" ry="2.8" fill="url(#candle-brassDark)"/>
-            <path d="M -19 212.5 Q 0 210.5 19 212.5" fill="none" stroke="#fff4c4" stroke-width="0.5" opacity="0.7"/>
-            <rect x="-9" y="124" width="18" height="86" fill="url(#candle-wax)"/>
-            <ellipse cx="0" cy="210" rx="9" ry="2" fill="#5a4a2a"/>
-            <path d="M -14 213 Q -9 215.5 0 215.5 Q 9 215.5 14 213" fill="none" stroke="#3a2a14" stroke-width="0.7"/>
-            <path d="M -19 215 Q -20 222 -17 232 Q -15 235 -13 232 Q -11 224 -14 215 Z" fill="url(#candle-redwax)"/>
-            <line x1="-17" y1="218" x2="-15" y2="230" stroke="#e88898" stroke-width="0.5" opacity="0.65"/>
-            <path d="M -7 216 Q -8 228 -4 242 Q -2 246 0 242 Q 1 228 -2 216 Z" fill="url(#candle-redwax)"/>
-            <line x1="-5" y1="220" x2="-3" y2="240" stroke="#e88898" stroke-width="0.5" opacity="0.7"/>
-            <path d="M 13 215 Q 15 225 14 233 Q 12 236 10 233 Q 9 224 11 215 Z" fill="url(#candle-redwax)"/>
-            <line x1="14" y1="219" x2="13" y2="231" stroke="#e88898" stroke-width="0.4" opacity="0.6"/>
-            <path d="M 6 124 Q 8 145 6 162 Q 4 178 6 202 L 9 202 L 9 124 Z" fill="url(#candle-redwax)" opacity="0.9"/>
-            <line x1="7" y1="128" x2="7" y2="195" stroke="#e88898" stroke-width="0.4" opacity="0.5"/>
-            <path d="M -7 128 Q -8 142 -6 158 L -3 158 L -3 128 Z" fill="url(#candle-redwax)" opacity="0.85"/>
-            <line x1="-5" y1="130" x2="-4" y2="152" stroke="#e88898" stroke-width="0.3" opacity="0.45"/>
-            <ellipse cx="0" cy="170" rx="160" ry="130" fill="url(#candle-castLight)" pointer-events="none" style="mix-blend-mode: screen;"/>
-            <rect x="-9" y="124" width="18" height="40" fill="url(#candle-waxWarm)" pointer-events="none"/>
-            <ellipse cx="0" cy="124" rx="9" ry="3" fill="#3a2a1a"/>
-            <ellipse cx="0" cy="123" rx="8" ry="2.3" fill="#1a0a08"/>
-            <line x1="0" y1="124" x2="0" y2="112" stroke="#1a0a08" stroke-width="1.2"/>
-            <ellipse cx="0" cy="115" rx="1.2" ry="2.5" fill="#3a1a08"/>
-            <ellipse class="flame-halo" cx="0" cy="78" rx="48" ry="68" fill="url(#candle-haloGrad)"/>
-            <path class="flame" d="M 0 112 Q -9 92 -4 68 Q 0 50 0 42 Q 0 50 4 68 Q 9 92 0 112 Z" fill="url(#candle-flameGrad)"/>
-            <path class="flame-inner" d="M 0 108 Q -3.5 92 -1.5 78 Q 0 64 0 58 Q 0 64 1.5 78 Q 3.5 92 0 108 Z" fill="#fff4c4" opacity="0.9"/>
-            <ellipse cx="0" cy="92" rx="1.5" ry="7" fill="#1a4060" opacity="0.35"/>
+            <use href="#candlestick-body"/>
         </svg>
     </div>
 
     <!-- 右上角设置按钮 -->
-    <button class="settings-gear" onclick="toggleSettings()" aria-label="设置">⚙</button>
+    <button class="settings-gear" id="settingsGear" aria-label="设置">⚙</button>
 
     <!-- 浮尘 Canvas -->
     <canvas class="dust-layer" aria-hidden="true"></canvas>
@@ -326,12 +282,12 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn-divine" id="divineBtn" onclick="divine()">
+            <button class="btn-divine" id="divineBtn">
                 <span class="btn-rune">✧</span>
                 <span class="btn-text">起 卦</span>
                 <span class="btn-rune">✧</span>
             </button>
-            <button class="btn-history" onclick="toggleHistory()">
+            <button class="btn-history" id="historyBtn">
                 <span class="btn-rune">◱</span>
                 <span class="btn-text">牌 册</span>
             </button>
@@ -346,19 +302,19 @@
     </div>
 
     <!-- 设置遮罩 -->
-    <div class="history-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+    <div class="history-overlay" id="settingsOverlay"></div>
 
     <!-- 设置面板 -->
     <div class="history-panel settings-panel" id="settingsPanel">
         <div class="history-head">
             <h3>设 置</h3>
-            <button class="btn-close" onclick="toggleSettings()">闭</button>
+            <button class="btn-close" id="settingsCloseBtn">闭</button>
         </div>
         <div class="settings-content">
             <!-- 算卦方式 -->
             <div class="settings-group">
                 <div class="settings-label">算 卦 方 式</div>
-                <select class="settings-select" id="settingMethod" onchange="saveSetting('method', this.value)">
+                <select class="settings-select" id="settingMethod">
                     <option value="coin">铜钱法（三枚铜钱）</option>
                     <option value="bazi">八字起卦（生辰八字）</option>
                 </select>
@@ -414,7 +370,7 @@
                         </select>
                     </div>
                 </div>
-                <button class="btn-save-bazi" onclick="saveBazi()">保 存 八 字</button>
+                <button class="btn-save-bazi" id="saveBaziBtn">保 存 八 字</button>
                 <div class="bazi-status" id="baziStatus"></div>
             </div>
 
@@ -423,7 +379,7 @@
                 <div class="settings-row-toggle">
                     <span class="settings-label">每 日 启 示</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="settingDaily" onchange="saveSetting('showDaily', this.checked)" checked>
+                        <input type="checkbox" id="settingDaily" checked>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -435,7 +391,7 @@
                 <div class="settings-row-toggle">
                     <span class="settings-label">蜡 烛 显 示</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="settingCandle" onchange="saveSetting('showCandle', this.checked)" checked>
+                        <input type="checkbox" id="settingCandle" checked>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -445,16 +401,16 @@
     </div>
 
     <!-- 历史遮罩 -->
-    <div class="history-overlay" id="historyOverlay" onclick="toggleHistory()"></div>
+    <div class="history-overlay" id="historyOverlay"></div>
 
     <!-- 历史面板（牌册） -->
     <div class="history-panel" id="historyPanel">
         <div class="history-head">
             <h3>牌 册</h3>
-            <button class="btn-close" onclick="toggleHistory()">闭</button>
+            <button class="btn-close" id="historyCloseBtn">闭</button>
         </div>
         <div id="historyList"></div>
-        <button class="btn-clear" onclick="clearHistory()">清 空 牌 册</button>
+        <button class="btn-clear" id="clearHistoryBtn">清 空 牌 册</button>
     </div>
 
     <!-- 分享弹窗 -->
@@ -465,7 +421,7 @@
             <div class="share-actions">
                 <button class="btn-download" id="shareDownloadBtn">下载图片</button>
                 <button class="btn-copy" id="shareCopyBtn">复制图片</button>
-                <button class="btn-close-share" onclick="closeShare()">关闭</button>
+                <button class="btn-close-share" id="closeShareBtn">关闭</button>
             </div>
         </div>
     </div>
