@@ -27,6 +27,14 @@ function calculateChangeGua(hexLines, origBin) {
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
 // ========== 工具 ==========
+function simpleHash(str) {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash);
+}
+
 function escHtml(s) {
     const d = document.createElement('div');
     d.textContent = s;
@@ -435,7 +443,7 @@ async function divine() {
         stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         const hexLines = settings.method === 'bazi'
-            ? generateHexagramBazi(settings.bazi)
+            ? generateHexagramBazi(settings.bazi, question)
             : generateHexagram();
 
         const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
@@ -1360,32 +1368,31 @@ function toggleSettings() {
     overlay.classList.toggle('show');
 }
 
-// 八字起卦
-function generateHexagramBazi(bazi) {
-
+// 八字起卦（混合模式：梅花易数字数 + 八字 + 问题哈希）
+function generateHexagramBazi(bazi, question) {
     const now = new Date();
     const nowDay = now.getDate();
-    const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2); // 当前时辰 0-11
-    const nowMin = now.getMinutes();
+    const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2);
 
-    // 上卦累加 = 出生年尾数 + 出生月 + 出生日 + 当前日,然后 (累加 - 1) % 8 取索引
-    // 下卦累加 = 上卦累加 + 出生时辰 + 当前时辰,然后 (累加 - 1) % 8 取索引
-    // 动爻   = (上述总和 - 1) % 6 取位置(0~5)
     const yearNum = bazi.year % 100 || 100;
-    const sumUpper = yearNum + bazi.month + bazi.day + nowDay;
-    const sumLower = sumUpper + (bazi.hour + 1) + (nowHour + 1);
-    const sumYao = yearNum + bazi.month + bazi.day + (bazi.hour + 1) + nowHour + nowMin;
+    const qLen = question ? question.length : 0;
+    const qHash = question ? simpleHash(question) : 0;
 
-    const upperIdx = ((sumUpper - 1) % 8 + 8) % 8; // 0-7
+    // 上卦：梅花易数字数 + 八字年 + 当前日
+    const sumUpper = qLen + yearNum + nowDay;
+    // 下卦：字数 + 出生时辰 + 当前时辰 + 出生月
+    const sumLower = qLen + (bazi.hour + 1) + (nowHour + 1) + bazi.month;
+    // 动爻：问题哈希 + 当前时辰（哈希保证同字数不同内容产生不同变爻）
+    const sumYao = qHash + (nowHour + 1);
+
+    const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
     const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
-    const changingYao = ((sumYao - 1) % 6 + 6) % 6; // 0-5 动爻位置
+    const changingYao = ((sumYao - 1) % 6 + 6) % 6;
 
-    // 先天八卦数：乾1兑2离3震4巽5坎6艮7坤8
     const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
     const upperTri = xiantianOrder[upperIdx];
     const lowerTri = xiantianOrder[lowerIdx];
 
-    // 构建六爻，动爻位置设为老阳(9)或老阴(6)
     const upperBin = TRIGRAM_TO_BINARY[upperTri];
     const lowerBin = TRIGRAM_TO_BINARY[lowerTri];
 
@@ -1397,7 +1404,6 @@ function generateHexagramBazi(bazi) {
         lines.push(upperBin[2-i] === '1' ? 7 : 8);
     }
 
-    // 动爻变化
     if (lines[changingYao] === 7) lines[changingYao] = 9;
     else lines[changingYao] = 6;
 
