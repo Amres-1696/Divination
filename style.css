@@ -1620,11 +1620,6 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ============================================================ */
-/* ============ v2 动效增强（追加，不改原规则） ============ */
-/* ============================================================ */
-
-/* ---------- 1. 起卦按钮 → 烛台 → 牌垫 连锁反应 ---------- */
 
 /* 按下起卦按钮时从中心爆出的光环 */
 .ignition-ring {
@@ -1657,7 +1652,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     100% { width: 160px; height: 160px; opacity: 0; transform: translate(-50%, -50%) rotate(22deg) scale(1.8); }
 }
 
-/* 烛火拔高（!important 覆盖常驻的 flameSway 等） */
+/* 烛火拔高 */
 .candle.flare .flame       { animation: flameFlare       2s cubic-bezier(0.2,0.8,0.3,1) !important; }
 .candle.flare .flame-inner { animation: flameFlareInner  2s cubic-bezier(0.2,0.8,0.3,1) !important; }
 .candle.flare .flame-halo  { animation: flameFlareHalo   2s cubic-bezier(0.2,0.8,0.3,1) !important; }
@@ -1691,13 +1686,13 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
 }
 
-/* ---------- 2. 六爻自下而上描画 ---------- */
-/* 卡牌翻到正面(.flipped)瞬间线条默认隐藏，避免第一帧闪现整条线后才开始画 */
+
+/* 卡牌翻到正面 */
 .arcana-card.flipped .card-art .yao-svg-line {
     stroke-dasharray: 60;
     stroke-dashoffset: 60;
 }
-/* .yao-animate 启动描画 animation（actFlip 里翻过 90° 后才加） */
+/* 启动描画 */
 .arcana-card.yao-animate .card-art .yao-svg-line {
     animation: yaoStrokeIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -1705,7 +1700,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     to { stroke-dashoffset: 0; }
 }
 .arcana-card.yao-animate .card-art .yao-svg-line.changing {
-    /* 两段 animation：先描画一次，再无限呼吸。延迟用 inline style 的 comma 语法分别设置 */
+
     animation:
         yaoStrokeInChanging 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards,
         yaoChangePulse 1.8s ease-in-out infinite;
@@ -1713,7 +1708,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
 @keyframes yaoStrokeInChanging {
     0%   { stroke-dashoffset: 60; filter: none; }
     70%  { stroke-dashoffset: 0;  filter: drop-shadow(0 0 8px #a84848) brightness(1.5); }
-    /* 末态对齐 yaoChangePulse 的 0% 以便无缝接力 */
+
     100% { stroke-dashoffset: 0;  filter: drop-shadow(0 0 2px rgba(168,72,72,0.4)); }
 }
 
@@ -1749,9 +1744,8 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     100% { opacity: 1; transform: translateX(0);   box-shadow: inset 0 0 0 1px rgba(168,72,72,0.15); }
 }
 
-/* ---------- 3. 结果页：卦名书法、印章、卦象奥义逐条 ---------- */
 
-/* 卦名逐字"落笔"（由模糊 → 清晰 + 略微回弹） */
+/* 卦名 */
 .hex-name-art .hex-char {
     display: inline-block;
     opacity: 0;
@@ -1765,7 +1759,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
-/* 吉凶印章"盖下" + 墨迹扩散 */
+/* 吉凶印章 */
 .verdict-seal.stamp-in {
     animation: sealStamp 0.75s cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
     isolation: isolate; /* 隔离 stacking，避免 ::before 的 z-index:-1 穿出 seal 之外 */
@@ -1792,7 +1786,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     100% { opacity: 0; transform: scale(2.5); }
 }
 
-/* 卦象奥义段落：柔和滑入（不破坏 analysis-item 原样式） */
+/* 卦象 */
 .analysis-list.stagger-in .analysis-item {
     opacity: 0;
     transform: translateY(8px);
@@ -1807,9 +1801,9 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---------- 4. 环境：首次进场、鼠标视差、烛火情绪 ---------- */
 
-/* 首次进场 stagger */
+
+/* 首次进场 */
 body.intro-start .candle {
     animation: candleIgnite 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
 }
@@ -1835,8 +1829,7 @@ body.intro-start footer { animation: introFadeUp 0.9s ease-out 2.0s both; }
     100% { opacity: 1; transform: translateY(0); }
 }
 
-/* 鼠标视差（用 CSS 变量驱动） */
-/* 覆盖 .candle 的 translateY(-50%) ——改用 top 定位 + transform 专供视差与镜像 */
+/* 鼠标视差 */
 .candle { top: calc(50% - 200px); }
 .candle-left  { transform: translateX(var(--par-x, 0px)); }
 .candle-right { transform: translateX(calc(var(--par-x, 0px) * -1)) scaleX(-1); }
@@ -1844,7 +1837,7 @@ header {
     transform: translate(calc(var(--par-x, 0px) * 0.5), calc(var(--par-y, 0px) * 0.3));
 }
 
-/* 烛火情绪化（根据最近一次占卜的吉/凶切换色温） */
+/* 根据最近一次占卜的吉/凶切换烛火色温 */
 .flame, .flame-inner, .flame-halo, .candle {
     transition: filter 1.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1867,7 +1860,7 @@ body.mood-xiong .candle {
     filter: drop-shadow(0 0 14px rgba(120,140,180,0.5));
 }
 
-/* 朱玄龙虎四神偶发呼吸发光 */
+/* 朱玄龙虎发呼吸发光 */
 .embroidery-mat .mat-l2 text {
     animation: shenBreath 14s ease-in-out infinite;
 }
@@ -1880,7 +1873,6 @@ body.mood-xiong .candle {
     96%           { opacity: 0.95; filter: drop-shadow(0 0 6px var(--candle-warm)); }
 }
 
-/* ---------- 5. 稀有卦（乾/坤）彩蛋强化 ---------- */
 
 .arcana-card.rare-gilded {
     box-shadow: 0 0 18px rgba(244, 196, 122, 0.55), 0 0 40px rgba(244, 196, 122, 0.3);
@@ -1906,7 +1898,7 @@ body.mood-xiong .candle {
     100% { transform: translateX(120%); }
 }
 
-/* 金箔粒子（JS 动态生成 + 自动清理） */
+/* 金箔粒子 */
 .gold-sparkle {
     position: fixed;
     width: 5px;
@@ -1925,9 +1917,8 @@ body.mood-xiong .candle {
     100% { opacity: 0; transform: translateY(-120px) translateX(calc(var(--dx, 0px) * 2)) scale(0.3); }
 }
 
-/* ---------- 6. 细节微反馈 ---------- */
 
-/* 起卦按钮悬停：金色光扫过 */
+/* 起卦按钮 */
 .btn-divine::after {
     content: '';
     position: absolute;
@@ -1943,7 +1934,7 @@ body.mood-xiong .candle {
     left: 140%;
 }
 
-/* 历史牌册项悬停加强 */
+/* 牌册 */
 .history-item { position: relative; overflow: hidden; }
 .history-item::before {
     content: '';
@@ -1961,12 +1952,12 @@ body.mood-xiong .candle {
     box-shadow: 0 0 18px rgba(201,169,110,0.18);
 }
 
-/* 每日启示悬停：卦符微微发光 */
+/* 每日启示 */
 .daily-gua { transition: filter 0.35s ease; cursor: pointer; }
 .daily-gua:hover { filter: drop-shadow(0 0 12px rgba(244,196,122,0.3)); }
 .daily-gua:hover .daily-symbol { text-shadow: 0 0 8px rgba(244,196,122,0.7); }
 
-/* ---------- 7. 减弱动画（无障碍） ---------- */
+
 @media (prefers-reduced-motion: reduce) {
     .ignition-ring,
     .candle.flare .flame,
@@ -1995,16 +1986,12 @@ body.mood-xiong .candle {
     .arcana-card.yao-animate .card-art .yao-svg-line { stroke-dashoffset: 0 !important; }
 }
 
-/* ============================================================ */
-/* ============ v3 常驻氛围层 ============ */
-/* ============================================================ */
 
-/* ---------- ① 远处缭绕青烟 ---------- */
-/* 3 层极透明 radial blob，各自独立周期漂移，形成"永远在动但不重复"的氛围 */
+
 .incense-smoke {
     position: fixed;
     inset: 0;
-    z-index: -6;              /* velvet-bg(-10) 之上，embroidery-mat(-5) 之下 */
+    z-index: -6;              
     pointer-events: none;
     overflow: hidden;
 }
@@ -2014,10 +2001,6 @@ body.mood-xiong .candle {
     height: 60vmax;
     border-radius: 50%;
     filter: blur(80px);
-    /* 原本想用 mix-blend-mode: screen 让烟雾在深色丝绒上变亮,
-       但 .incense-smoke 的 position:fixed + z-index 会创建 isolated stacking context,
-       screen 只能在 smoke 层内部生效,碰不到 velvet-bg。
-       改用纯半透明叠加,并略调亮 alpha 补偿视觉。 */
     will-change: transform, opacity;
 }
 .smoke-1 {
@@ -2054,8 +2037,7 @@ body.mood-xiong .candle {
     100% { transform: translate(10vw, 20vh) scale(0.95); opacity: 0.10; }
 }
 
-/* ---------- ④ 中央印记脉动 ---------- */
-/* 给「天衍」中央印记加独立光晕脉动，与标题 sealGlow(6s) 形成 1:2 节律 */
+
 .embroidery-mat .mat-l5 {
     animation: matSealPulse 12s ease-in-out infinite;
     transform-origin: center;
@@ -2068,7 +2050,7 @@ body.mood-xiong .candle {
         filter: drop-shadow(0 0 14px rgba(244, 196, 122, 0.65)) brightness(1.15);
     }
 }
-/* 中央圆环附带一次极慢的 stroke 粗细呼吸，增加"活着"的感觉 */
+
 .embroidery-mat .mat-l5 > circle:first-of-type {
     animation: matSealRing 12s ease-in-out infinite;
 }
@@ -2077,7 +2059,6 @@ body.mood-xiong .candle {
     50%      { stroke-width: 0.9; }
 }
 
-/* ---------- 减弱动画 ---------- */
 @media (prefers-reduced-motion: reduce) {
     .smoke-layer,
     .embroidery-mat .mat-l5,
@@ -2086,11 +2067,7 @@ body.mood-xiong .candle {
     }
 }
 
-/* ============================================================ */
-/* ============ v3 追加：② 偶发金色流光 & ⑤ 牌垫金线涌流 ============ */
-/* ============================================================ */
 
-/* ---------- ② 偶发金色流光（JS 定时生成，1.4s 划过后自动移除） ---------- */
 .gold-streak-container {
     position: fixed;
     top: 50%;
@@ -2099,7 +2076,7 @@ body.mood-xiong .candle {
     height: 200vmax;
     transform: translate(-50%, -50%) rotate(var(--angle, 0deg));
     pointer-events: none;
-    z-index: 30;      /* 在 candle(2) 之上、history-panel(100) 之下 */
+    z-index: 30;      
     overflow: visible;
 }
 .gold-streak-beam {
@@ -2119,7 +2096,6 @@ body.mood-xiong .candle {
         blur(0.4px)
         drop-shadow(0 0 6px rgba(244, 196, 122, 0.9))
         drop-shadow(0 0 14px rgba(244, 196, 122, 0.5));
-    /* transform 动画走 compositor 层(GPU),比 left 动画不触发 reflow,60fps 顺滑 */
     animation: goldBeamSweep 1.4s cubic-bezier(0.32, 0, 0.32, 1) forwards;
     will-change: transform, opacity;
 }
@@ -2130,21 +2106,16 @@ body.mood-xiong .candle {
     100% { transform: translateX(200vmax); opacity: 0; }
 }
 
-/* ---------- ⑤ 牌垫外环金色流光（常驻，55s 一圈） ---------- */
-/* r=492 的 circle 夹在原有 r=495 和 r=488 两条主环之间，
-   周长 ≈ 2π·492 ≈ 3091；dash 80 + gap 3030 = 3110 略大一点点，
-   让亮段看起来是"电流沿着外环滚动"的效果 */
+
 .embroidery-mat .mat-flow-ring {
     stroke: #f4c47a;
     stroke-dasharray: 80 3030;
-    stroke-linecap: round;   /* 光滴两端圆润,像"电流"而非方切口 */
+    stroke-linecap: round;   
     opacity: 0.85;
     filter: drop-shadow(0 0 5px rgba(244, 196, 122, 0.85));
     animation: matOuterFlow 55s linear infinite;
 }
 @keyframes matOuterFlow {
-    /* dashoffset 变化必须精确等于周长 2π·492 ≈ 3091.24,
-       否则 loop 重置时亮段位置会跳变 ~2° */
     from { stroke-dashoffset: 0; }
     to   { stroke-dashoffset: -3091.24; }
 }

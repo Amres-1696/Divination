@@ -1,9 +1,8 @@
-// ========== 常量 ==========
+
 const DECK_POOL_SIZE = 16;
 const HISTORY_MAX = 50;
 const COIN_TO_LINE = { 3: 9, 2: 8, 1: 7, 0: 6 }; // 铜钱法：3阳=老阳9, 2阳=少阴8, 1阳=少阳7, 0阳=老阴6
 
-// ========== 核心算法（保留，不得修改逻辑）==========
 function generateHexagram() {
     const lines = [];
     for (let i = 0; i < 6; i++) {
@@ -22,7 +21,6 @@ function calculateChangeGua(hexLines, origBin) {
         else changeBits.push(line === 7 ? '1' : '0');
     }
     if (!changingYaoPositions.length) return { hasChange: false, changeBinary: origBin, changingYaos: [], changeGua: lookupGua(origBin) };
-    // changeBits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初],整体反转即可
     const fullBin = changeBits.slice().reverse().join('');
     return { hasChange: true, changeBinary: fullBin, changingYaos: changingYaoPositions, changeGua: lookupGua(fullBin) };
 }
@@ -47,7 +45,7 @@ function isRareGua(bin) {
     return bin === '111111' || bin === '000000';
 }
 function getVerdict(gua) {
-    // 用预标注的 VERDICT_MAP 查表,避免关键词正则在"光明被遮蔽""不利于东北"这类表述上误判
+
     return VERDICT_MAP[gua[0]] || 'ping';
 }
 function binToHexLines(bin) {
@@ -56,7 +54,7 @@ function binToHexLines(bin) {
     return hex;
 }
 
-// ========== 卡牌工厂 ==========
+
 function buildMandalaSvg() {
     const petals = [];
     for (let i = 0; i < 8; i++) {
@@ -86,8 +84,6 @@ function buildYaoArtSvg(hexLines, changingYaos) {
         const isYang = (line === 7 || line === 9);
         const isChanging = changingYaos.includes(i);
         const cls = 'yao-svg-line' + (isChanging ? ' changing' : '');
-        // 从下往上依次落位：初爻 i=0 最先画，每爻相隔 120ms
-        // 变爻有两段 animation（描画+呼吸），需要用 comma 语法分别设置 delay
         const drawDelay = i * 120;
         const styleAttr = isChanging
             ? ` style="animation-delay:${drawDelay}ms,${drawDelay + 800}ms"`
@@ -130,7 +126,6 @@ function makeArcanaCard(gua, opts) {
     return card;
 }
 
-// ========== 浮尘粒子 + 萤火 ==========
 class DustParticles {
     constructor(canvas) {
         this.cv = canvas;
@@ -167,13 +162,12 @@ class DustParticles {
             });
         }
     }
-    // 萤火：比浮尘更大、更亮、寿命更长、自带脉动光晕
     spawnFirefly() {
         this.particles.push({
             x: Math.random() * this.w,
             y: this.h * (0.45 + Math.random() * 0.5), // 下半屏出生
             vx: (Math.random() - 0.5) * 0.15,
-            vy: -0.04 - Math.random() * 0.08,        // 上升比浮尘慢得多
+            vy: -0.04 - Math.random() * 0.08,        
             r: 1.6 + Math.random() * 1.3,
             life: 1,
             decay: 0.00012 + Math.random() * 0.00018, // 6–10s 寿命
@@ -197,7 +191,6 @@ class DustParticles {
         if (!this.running) return;
         const ctx = this.ctx;
         ctx.clearRect(0, 0, this.w, this.h);
-        // 普通浮尘补给时只统计浮尘本身,避免寿命长的萤火占满名额
         let dustCount = 0;
         for (let k = 0; k < this.particles.length; k++) if (!this.particles[k].isFirefly) dustCount++;
         if (dustCount < 10 && Math.random() < 0.06) this.spawn(1);
@@ -209,20 +202,16 @@ class DustParticles {
             p.vx += (Math.random() - 0.5) * (p.isFirefly ? 0.008 : 0.02);
             p.life -= p.decay;
             if (p.life <= 0 || p.y < -30) {
-                // swap-and-pop: O(1) 删除，避免 splice 的 O(n)
                 this.particles[i] = this.particles[this.particles.length - 1];
                 this.particles.pop();
                 continue;
             }
 
             if (p.isFirefly) {
-                // 脉动 + halo 光晕 + 核心
                 p.pulsePhase += p.pulseSpeed;
                 const pulse = 0.55 + 0.45 * Math.sin(p.pulsePhase);
-                // 入场/离场淡化（生命前 15% 淡入，后 25% 淡出）
                 const fade = p.life > 0.75 ? (1 - p.life) / 0.25 : Math.min(1, p.life / 0.25);
                 const a = pulse * fade;
-                // halo
                 const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 6);
                 g.addColorStop(0,    `hsla(${p.hue}, 95%, 88%, ${a * 0.9})`);
                 g.addColorStop(0.3,  `hsla(${p.hue}, 90%, 72%, ${a * 0.45})`);
@@ -253,7 +242,6 @@ class DustParticles {
         this.running = true;
         this.spawn(8);
         this.tick();
-        // 首只萤火稍稍延迟入场，避免和首屏动画抢戏
         setTimeout(() => { if (this.running) this.spawnFirefly(); }, 4000);
         this.scheduleFirefly();
     }
@@ -274,7 +262,7 @@ class DustParticles {
     }
 }
 
-// ========== 仪式控制器（六乐章） ==========
+
 class ArcanaRitual {
     constructor(stage, finalGua, hexLines, change) {
         this.stage = stage;
@@ -387,7 +375,6 @@ class ArcanaRitual {
         this.chosenCard.classList.add('flipped');
         this.chosenCard.classList.remove('active');
         this.chosenCard.classList.add('peak');
-        // 等翻转到正面后再触发六爻描画，避免背面期间就画完
         await sleep(600);
         this.chosenCard.classList.add('yao-animate');
         await sleep(700);
@@ -402,13 +389,11 @@ class ArcanaRitual {
             c.style.transform = `translate3d(${(Math.random()-0.5)*40}px, 60px, -200px) rotate(${(Math.random()-0.5)*20}deg)`;
         });
         await sleep(500);
-        // 状态文字淡出;翻开的牌保持原位,交给 renderResult 的 FLIP 动画"接力"过渡到结果页
         this.statusEl.style.transition = 'opacity 0.6s ease';
         this.statusEl.style.opacity = '0';
         await sleep(400);
     }
     pickDeckPool(n) {
-        // Fisher–Yates 洗牌:对 0..63 的索引数组洗一次后取前 n 张,保证抽出的卦不重复
         const indices = Array.from({ length: 64 }, (_, i) => i);
         for (let i = indices.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -418,7 +403,7 @@ class ArcanaRitual {
     }
 }
 
-// ========== 占卜主流程 ==========
+// 占卜主流程 
 let _divineRunning = false;
 async function divine() {
     if (_divineRunning) return;
@@ -441,10 +426,7 @@ async function divine() {
     btn.disabled = true;
     if (btnText) btnText.textContent = '演 卦';
 
-    // 关键:任何 await / DOM 操作都可能抛异常,用 try/finally 确保按钮和锁一定被重置,
-    //      否则异常后 _divineRunning 永远为 true,起卦按钮永久禁用。
     try {
-        // 起卦连锁：光环 → 烛火拔高 → 牌垫五层依次点亮
         triggerIgnitionChain();
 
         resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
@@ -457,15 +439,13 @@ async function divine() {
             : generateHexagram();
 
         const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-        // bits 顺序为 [初,二,三,四,五,上];GUA_LOOKUP 的 key 是 [上,五,四,三,二,初]
         const fullBin = bits.slice().reverse().join('');
         const gua = lookupGua(fullBin);
         const change = calculateChangeGua(hexLines, fullBin);
-
         const ritual = new ArcanaRitual(stage, gua, hexLines, change);
         await ritual.run();
 
-        // 把仪式中翻开的卡引用传给 renderResult,做 FLIP 平滑过渡到结果页
+
         renderResult(gua, hexLines, change, question, fullBin, ritual.chosenCard);
         saveToHistory(question, gua, fullBin, hexLines, change);
     } finally {
@@ -475,15 +455,13 @@ async function divine() {
     }
 }
 
-// ========== 结果渲染 ==========
+
 function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     const resultArea = document.getElementById('resultArea');
     const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
     const roman = toRoman(guaIndex(gua));
     const verdict = getVerdict(gua);
     const verdictText = { ji:'吉', xiong:'凶', ping:'平' };
-
-    // === FLIP 第一步:DOM 替换前记录 sourceCard 在视口里的位置,然后从仪式区拔出 ===
     let firstRect = null;
     if (sourceCard && sourceCard.parentNode) {
         firstRect = sourceCard.getBoundingClientRect();
@@ -541,14 +519,11 @@ ${changeHtml}`;
     const wrap = resultArea.querySelector('#chosenCardWrap');
     let bigCard;
     if (sourceCard) {
-        // 复用仪式期翻开的同一个 DOM 节点:清掉仪式期 inline 样式与过时 class
         sourceCard.style.cssText = '';
         sourceCard.classList.remove('active', 'peak');
-        // .flipped 已在 actFlip 加上,保留;.large 也已在 actRise 加上
         wrap.appendChild(sourceCard);
         bigCard = sourceCard;
     } else {
-        // 兜底(比如历史回看):按原逻辑生成新卡
         bigCard = makeArcanaCard(gua, {
             large: true,
             hexLines,
@@ -560,9 +535,7 @@ ${changeHtml}`;
         wrap.appendChild(bigCard);
     }
 
-    // === FLIP 第二/三步:测量"目标位置"lastRect,用 transform 反演回 firstRect ===
     if (firstRect) {
-        // 临时关掉 wrap 的 chosenFloat 呼吸动画,避免干扰 FLIP 测量与过渡
         wrap.style.animation = 'none';
         const lastRect = bigCard.getBoundingClientRect();
         const dx = (firstRect.left + firstRect.width/2) - (lastRect.left + lastRect.width/2);
@@ -572,15 +545,14 @@ ${changeHtml}`;
         bigCard.style.transformOrigin = 'center center';
         bigCard.style.transition = 'none';
         bigCard.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
-        bigCard.offsetHeight; // 强制 reflow,锁定到旧位置
+        bigCard.offsetHeight; 
 
-        // === FLIP 第四步:释放 transform,让 transition 平滑过渡到 (0,0,1) ===
         requestAnimationFrame(() => {
             bigCard.style.transition = 'transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)';
             bigCard.style.transform = '';
         });
 
-        // FLIP 完成后清掉 inline,恢复呼吸动画
+
         setTimeout(() => {
             bigCard.style.transition = '';
             bigCard.style.transform = '';
@@ -589,8 +561,7 @@ ${changeHtml}`;
         }, 1250);
     }
 
-    // === result-header 内除大卡外的装饰元素错时淡入 ===
-    // 卦名和吉凶印单独走"逐字书法"与"盖章"动画，这里排除掉
+
     const header = resultArea.querySelector('.result-header');
     if (header) {
         const headerKids = Array.from(header.children).filter(el => !el.matches('.chosen-card-wrap, .hex-symbol, .hex-name-art, .verdict-seal'));
@@ -604,7 +575,7 @@ ${changeHtml}`;
             }, 350 + i * 80);
         });
 
-        // 卦名：拆字逐个书法落笔（每字 220ms 间隔）
+
         const nameEl = header.querySelector('.hex-name-art');
         if (nameEl) {
             const txt = nameEl.textContent;
@@ -613,7 +584,7 @@ ${changeHtml}`;
             ).join('');
         }
 
-        // 吉凶印：从上方盖下 + 墨迹扩散（FLIP 过渡落定后触发）
+
         const seal = header.querySelector('.verdict-seal');
         if (seal) {
             seal.style.opacity = '0';
@@ -624,7 +595,7 @@ ${changeHtml}`;
         }
     }
 
-    // === 其他卡（爻辞、奥义、变卦）FLIP 完成后依次出现 + 内部动画接力 ===
+
     const otherCards = resultArea.querySelectorAll('.card:not(.result-header)');
     otherCards.forEach((el, i) => {
         el.style.opacity = '0';
@@ -633,7 +604,6 @@ ${changeHtml}`;
             el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
             el.style.opacity = '1';
             el.style.transform = '';
-            // 卡内部：爻列表卷轴展开 / 奥义段落依次滑入
             const yaoList = el.querySelector('.yao-list');
             if (yaoList) yaoList.classList.add('scroll-open');
             const analysisList = el.querySelector('.analysis-list');
@@ -641,25 +611,22 @@ ${changeHtml}`;
         }, 700 + i * 180);
     });
 
-    // === 烛火情绪化：根据吉/凶/平给 body 切 mood class，烛火色温缓慢过渡 ===
     document.body.classList.remove('mood-ji', 'mood-xiong', 'mood-ping');
     document.body.classList.add('mood-' + verdict);
 
-    // === 稀有卦（乾/坤）：围绕大卡撒几轮金箔粒子 ===
     if (isRareGua(fullBin) && bigCard) {
         setTimeout(() => spawnGoldSparkles(bigCard, 16), 1500);
         setTimeout(() => spawnGoldSparkles(bigCard, 10), 5500);
         setTimeout(() => spawnGoldSparkles(bigCard, 10), 9500);
     }
 
-    // 等 FLIP 落定后再温和滚动到 result-header,避免 scroll 与 FLIP 拉扯
     setTimeout(() => {
         const target = resultArea.querySelector('.result-header') || resultArea;
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 1300);
 }
 
-// ========== 分享卡 ==========
+// 分享卡
 function getCurrentGuaData() {
     const r = document.getElementById('resultArea');
     if (!r) return null;
@@ -754,12 +721,11 @@ function createShareCard(d) {
         yaoBlock +
         changeBlock +
         '<div style="margin-top:24px;padding-top:14px;border-top:1px solid rgba(138,109,58,0.3);display:flex;justify-content:space-between;font-size:11px;color:#8a6d3a;letter-spacing:1px;">' +
-            '<span>' + d.date + '</span><span>天 衍 · EASTERN ARCANA</span>' +
+            '<span>' + d.date + '</span><span>天 衍 · DESTINY</span>' +
         '</div>' +
     '</div>';
 }
 
-// 上一次生成的 Blob / Blob URL —— 打开新分享时释放,避免内存泄漏
 let _lastBlobUrl = null;
 let _lastBlob = null;
 
@@ -778,7 +744,6 @@ function isMobile() {
 }
 
 function renderShareCanvas(card, scale) {
-    // 不透明背景色兜底:粘贴到不支持 alpha 的应用(微信/便签/iMessage)不会变成全白空白
     return html2canvas(card, { backgroundColor: '#e8dcc0', scale, logging: false, useCORS: true });
 }
 
@@ -797,36 +762,30 @@ async function shareAsImage() {
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
 
-    // 改用"视口内但不可见"定位:某些移动浏览器对 left:-9999px 的元素不进行完整布局/绘制
     const tmp = document.createElement('div');
     tmp.style.cssText = 'position:fixed;left:0;top:0;width:560px;opacity:0;pointer-events:none;z-index:-1;';
     tmp.innerHTML = createShareCard(data);
     document.body.appendChild(tmp);
     try {
-        // 等 Web Fonts 加载完,否则 html2canvas 会用 fallback 字体,布局可能塌
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch(e) {}
         }
         await sleep(300);
         const card = tmp.querySelector('#shareCard');
 
-        // 移动端 scale 先 2,失败降 1：iOS canvas 面积软限 16M 像素,超过会静默返回空 canvas
         let scale = isMobile() ? 2 : 3;
         let canvas;
         try {
             canvas = await renderShareCanvas(card, scale);
         } catch (e1) {
-            // html2canvas 首次渲染抛异常 —— 降级 scale=1 重试
             scale = 1;
             canvas = await renderShareCanvas(card, 1);
         }
         if (!canvas || !canvas.width || !canvas.height) {
-            // 渲染结果尺寸异常 —— 同样降级重试一次
             scale = 1;
             canvas = await renderShareCanvas(card, 1);
         }
 
-        // Blob URL 在现代浏览器下比 dataUrl 轻量,但若 toBlob 返回 null 同样降级重试
         let blob = await canvasToBlob(canvas, 'image/png');
         if (!blob && scale > 1) {
             canvas = await renderShareCanvas(card, 1);
@@ -838,9 +797,6 @@ async function shareAsImage() {
         _lastBlobUrl = objectUrl;
         _lastBlob = blob;
 
-        // dataUrl 同步生成 —— 用作 <img> 首选 src。
-        // 原因:微信/QQ/抖音等内置 WebView 对 blob: URL 的 <img> 加载支持不稳,
-        //      会显示"加载图片失败"。dataUrl 是纯字符串,任何 WebView 都认。
         let dataUrl = '';
         try { dataUrl = canvas.toDataURL('image/png'); } catch (e) { /* tainted 等 —— 留空走 blob */ }
 
@@ -891,8 +847,7 @@ async function shareAsImage() {
                 return;
             }
             try {
-                // 关键:用【已生成】的 Blob,避免 iOS Safari 在 Promise 化 toBlob 过程中丢数据(导致空白图)。
-                // Promise.resolve 仅为满足 ClipboardItem 类型要求,同步 resolve 不阻塞手势授权。
+
                 const item = new ClipboardItem({
                     'image/png': Promise.resolve(_lastBlob)
                 });
@@ -905,13 +860,11 @@ async function shareAsImage() {
             }
         };
     } catch(e) {
-        // 把真实错误消息展示出来,便于排查(是 html2canvas 渲染失败/toBlob null/tainted 等哪一类)
         const msg = (e && e.message) ? e.message : String(e);
         preview.innerHTML =
             '<div style="padding:20px;color:#a84848;text-align:center;">生成失败' +
             '<br><small style="color:#666;font-size:11px;opacity:0.7;word-break:break-all;display:inline-block;margin-top:6px;">' + escHtml(msg) + '</small></div>';
     } finally {
-        // 无论成功或异常都清理临时 DOM,避免反复尝试时节点堆积
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }
 }
@@ -925,9 +878,8 @@ function closeShare() {
     _lastBlob = null;
 }
 
-// ========== 历史（牌册） ==========
+// 历史
 function readHistorySafe() {
-    // JSON.parse / 私密模式均可能抛异常,统一降级为空数组,保证上层逻辑不炸
     try {
         const raw = localStorage.getItem('divinationHistory');
         if (!raw) return [];
@@ -952,7 +904,6 @@ function saveToHistory(question, gua, fullBin, hexLines, change) {
         });
         localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
     } catch (e) {
-        // iOS 私密模式 / quota 满 / 数据损坏 —— 占卜本身已成功,不阻断用户流程
     }
 }
 
@@ -1013,7 +964,7 @@ function clearHistory() {
     }
 }
 
-// ========== 每日一卦 ==========
+// 每日一卦 
 function getUserSeed() {
     try {
         let uid = localStorage.getItem('tianyan_uid');
@@ -1023,8 +974,7 @@ function getUserSeed() {
         }
         return uid;
     } catch (e) {
-        // iOS 私密模式:localStorage 不可写。降级为进程内会话 seed —— 每次刷新会变,
-        // 牺牲每日一卦的跨日稳定性但保证首屏不崩。
+
         return Math.random().toString(36).substring(2) + Date.now().toString(36);
     }
 }
@@ -1034,7 +984,6 @@ function getDailyGua() {
     const dateStr = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
     const settings = loadSettings();
 
-    // 有八字数据时：用梅花易数（八字 + 当日日期）起卦
     if (settings.bazi) {
         const b = settings.bazi;
         const yearNum = b.year % 100 || 100;
@@ -1050,7 +999,6 @@ function getDailyGua() {
         return lookupGua(upperBin + lowerBin);
     }
 
-    // 无八字：原逻辑（uid + 日期哈希）
     const uid = getUserSeed();
     const combined = dateStr + ':' + uid;
     let seed = 0;
@@ -1085,7 +1033,7 @@ function renderDailyGua() {
     el.onclick = () => showGuaDetail(getDailyGua());
 }
 
-// ========== 卦象详解 ==========
+// 卦象详解 
 function showGuaDetail(gua) {
     const old = document.querySelector('.detail-overlay');
     if (old) old.remove();
@@ -1134,9 +1082,6 @@ function getTrigramName(sym) {
     return map[sym] || sym;
 }
 
-// ========== v2 动效工具 ==========
-
-// 起卦按下时：按钮爆出光环 → 烛火拔高 → 牌垫五层由外及内依次点亮
 function triggerIgnitionChain() {
     const btn = document.getElementById('divineBtn');
     if (!btn) return;
@@ -1144,7 +1089,6 @@ function triggerIgnitionChain() {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    // 1) 按钮中心的星芒（塔罗 ✦ 风格：8 道交替长短光线）
     const ring = document.createElement('div');
     ring.className = 'ignition-ring';
     ring.style.left = cx + 'px';
@@ -1152,7 +1096,7 @@ function triggerIgnitionChain() {
     const rays = [];
     for (let i = 0; i < 8; i++) {
         const angle = i * 45;
-        const len = i % 2 === 0 ? 48 : 28; // 长短交替
+        const len = i % 2 === 0 ? 48 : 28; 
         const w = i % 2 === 0 ? 2 : 1.3;
         const rad = angle * Math.PI / 180;
         const x2 = Math.cos(rad) * len;
@@ -1163,39 +1107,34 @@ function triggerIgnitionChain() {
     document.body.appendChild(ring);
     setTimeout(() => ring.remove(), 1200);
 
-    // 2) 烛火拔高(延迟 320ms,模拟光环传到烛台所需时间)
     setTimeout(() => {
         document.querySelectorAll('.candle').forEach(c => {
             c.classList.remove('flare');
-            // 强制 reflow 后再加,确保重复点击时动画能重新播放
             void c.offsetWidth;
             c.classList.add('flare');
             setTimeout(() => c.classList.remove('flare'), 2000);
         });
     }, 320);
 
-    // 3) 牌垫五层由外(mat-l1)到内(mat-l5)依次点亮
     const layers = ['.mat-l1', '.mat-l2', '.mat-l3', '.mat-l4', '.mat-l5'];
     layers.forEach((sel, i) => {
         setTimeout(() => {
             const el = document.querySelector('.embroidery-mat ' + sel);
             if (!el) return;
             el.classList.remove('mat-ignite');
-            void el.getBoundingClientRect(); // 强制 reflow 以便重新播放动画
+            void el.getBoundingClientRect(); 
             el.classList.add('mat-ignite');
             setTimeout(() => el.classList.remove('mat-ignite'), 1200);
         }, 200 + i * 130);
     });
 }
 
-// 稀有卦(乾/坤)：围绕大卡撒金箔粒子
 function spawnGoldSparkles(anchorEl, count) {
     if (!anchorEl) return;
     const rect = anchorEl.getBoundingClientRect();
     for (let i = 0; i < count; i++) {
         const sp = document.createElement('div');
         sp.className = 'gold-sparkle';
-        // 在卡底部上方一圈随机位置起始
         sp.style.left = (rect.left + rect.width * (0.1 + Math.random() * 0.8)) + 'px';
         sp.style.top = (rect.top + rect.height * (0.55 + Math.random() * 0.4)) + 'px';
         sp.style.setProperty('--dx', ((Math.random() - 0.5) * 40) + 'px');
@@ -1206,13 +1145,11 @@ function spawnGoldSparkles(anchorEl, count) {
     }
 }
 
-// 鼠标视差：通过 CSS 变量 --par-x / --par-y 驱动烛台、标题的微量偏移
 function initParallax() {
     let targetX = 0, targetY = 0;
     let currentX = 0, currentY = 0;
     let raf = null;
 
-    // 触屏设备不启用（避免 hover 悬停效果残留）
     if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
 
     window.addEventListener('mousemove', (e) => {
@@ -1234,9 +1171,7 @@ function initParallax() {
     }
 }
 
-// 偶发金色流光：每 35–65 秒从屏幕一侧斜划到另一侧，1.4s 后自动清理
 function spawnGoldStreak() {
-    // 角度在 -35° ~ +35° 或 90° ± 35° 之间随机（水平或对角走向）
     const horizontal = Math.random() < 0.6;
     const jitter = -35 + Math.random() * 70;
     const angle = horizontal ? jitter : 90 + jitter;
@@ -1261,7 +1196,7 @@ function scheduleGoldStreak() {
     }, delay);
 }
 
-// ========== 时辰彩蛋 ==========
+// 时间彩蛋
 function applyHourTheme() {
     const h = new Date().getHours();
     document.body.classList.remove('hour-zi', 'hour-wu');
@@ -1269,12 +1204,12 @@ function applyHourTheme() {
     else if (h >= 11 && h < 13) document.body.classList.add('hour-wu');
 }
 
-// ========== 设置系统 ==========
+// 设置
 const DEFAULT_SETTINGS = {
     method: 'coin',
     showDaily: true,
     showCandle: true,
-    bazi: null // { year, month, day, hour }
+    bazi: null 
 };
 
 function loadSettings() {
@@ -1289,7 +1224,6 @@ function saveSettings(settings) {
     try {
         localStorage.setItem('tianyan_settings', JSON.stringify(settings));
     } catch (e) {
-        // 私密模式 / quota —— 设置无法持久化,但当前会话内应用仍生效
     }
 }
 
@@ -1382,10 +1316,9 @@ function toggleSettings() {
     overlay.classList.toggle('show');
 }
 
-// ========== 八字起卦算法 ==========
+// 八字起卦
 function generateHexagramBazi(bazi) {
-    // 梅花易数·八字起卦法
-    // 结合生辰八字 + 当前时间，使每次占卜结果不同
+
     const now = new Date();
     const nowDay = now.getDate();
     const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2); // 当前时辰 0-11
@@ -1427,9 +1360,7 @@ function generateHexagramBazi(bazi) {
     return lines;
 }
 
-// ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', () => {
-    // 首次进场序列：烛台点燃 → 标题浮起 → 下方内容依次淡入
     document.body.classList.add('intro-start');
     setTimeout(() => document.body.classList.remove('intro-start'), 3500);
 
@@ -1440,7 +1371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         dust = new DustParticles(dustCanvas);
         dust.start();
     }
-    // 标签页不可见时暂停 canvas 动画，节省 CPU/电量
     document.addEventListener('visibilitychange', () => {
         if (!dust) return;
         if (document.hidden) dust.pause();
@@ -1454,7 +1384,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 
-    // 事件绑定（替代 inline onclick）
     document.getElementById('settingsGear').addEventListener('click', toggleSettings);
     document.getElementById('settingsOverlay').addEventListener('click', toggleSettings);
     document.getElementById('settingsCloseBtn').addEventListener('click', toggleSettings);
@@ -1469,7 +1398,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
     document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
 
-    // 回车键起卦
     document.getElementById('question').addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); divine(); }
     });

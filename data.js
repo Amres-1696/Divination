@@ -95,8 +95,8 @@ function lookupGua(fullBinary) {
     return GUA_LOOKUP[fullBinary] || GUA[0]; // 兜底返回坤卦
 }
 
-// 64 卦吉凶预标注表（基于卦辞与传统断辞人工标注）
-// ji = 吉，xiong = 凶，ping = 中性 / 无明显倾向
+
+// ji = 吉，xiong = 凶，ping = 中性 
 const VERDICT_MAP = {
     // 坤宫 8 卦
     '坤为地': 'ji', '地雷复': 'ji', '地水师': 'ping', '地泽临': 'ji',

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="天衍 · Eastern Arcana — 基于易经六十四卦的在线占卜应用">
-    <title>天衍 · Eastern Arcana</title>
+    <meta name="description" content="天衍 · EDESTINY — 基于易经六十四卦的在线占卜">
+    <title>天衍 · DESTINY</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,27 +12,19 @@
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" defer crossorigin="anonymous" onerror="console.warn('html2canvas 加载失败，分享功能不可用')"></script>
 </head>
 <body>
-    <!-- L1 丝绒桌面 -->
     <div class="velvet-bg" aria-hidden="true"></div>
-
-    <!-- L1.5 远处缭绕青烟（3 层极透明 radial blob，各自周期漂移） -->
     <div class="incense-smoke" aria-hidden="true">
         <div class="smoke-layer smoke-1"></div>
         <div class="smoke-layer smoke-2"></div>
         <div class="smoke-layer smoke-3"></div>
     </div>
-
-    <!-- L2 金线刺绣牌垫 -->
     <svg class="embroidery-mat" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <g transform="translate(500 500)">
-            <!-- L1 外环花体藤蔓 95~100% -->
             <g class="mat-l1">
                 <circle r="495" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.38"/>
                 <circle r="488" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.2"/>
-                <!-- v3 常驻：金线涌流（独立图层，不替换主环） -->
                 <circle class="mat-flow-ring" r="492" fill="none" stroke-width="2" pointer-events="none"/>
                 <g opacity="0.35">
-                    <!-- 24 瓣唐草缠枝纹 -->
                     <g id="vineGroup">
                         <g id="vineUnit">
                             <path d="M 0,-492 Q 12,-478 8,-462 Q 4,-448 -4,-440 Q -10,-434 -6,-425" fill="none" stroke="currentColor" stroke-width="0.8"/>
@@ -66,8 +58,6 @@
                     </g>
                 </g>
             </g>
-
-            <!-- L2 四方神兽锚点 80~85% -->
             <g class="mat-l2">
                 <circle r="415" fill="none" stroke="currentColor" stroke-width="1" opacity="0.32"/>
                 <circle r="409" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.18"/>
@@ -82,8 +72,6 @@
                     <circle cx="415" cy="0" r="6" fill="currentColor"/>
                 </g>
             </g>
-
-            <!-- L3 三才分位 58~68% -->
             <g class="mat-l3">
                 <circle r="320" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.28"/>
                 <circle r="315" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.15"/>
@@ -91,8 +79,6 @@
                 <text x="-256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">人</text>
                 <text x="256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">地</text>
             </g>
-
-            <!-- L4 太极双环 38~48% 自转 -->
             <g class="mat-l4">
                 <circle r="228" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.28"/>
                 <circle r="220" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.15"/>
@@ -107,8 +93,6 @@
                     <text x="-150" y="-150" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☴</text>
                 </g>
             </g>
-
-            <!-- L5 中央牌位印记 20~30% -->
             <g class="mat-l5">
                 <circle r="128" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
                 <circle r="120" fill="none" stroke="currentColor" stroke-width="0.25" opacity="0.2"/>
@@ -122,8 +106,6 @@
             </g>
         </g>
     </svg>
-
-    <!-- 烛台共享 gradient 定义 -->
     <svg class="candle-defs" width="0" height="0" aria-hidden="true" focusable="false">
         <defs>
             <symbol id="candlestick-body" viewBox="-50 0 100 500" overflow="visible">
@@ -233,25 +215,17 @@
             </radialGradient>
         </defs>
     </svg>
-
-    <!-- 左烛台 -->
     <div class="candle candle-left" aria-hidden="true">
         <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
             <use href="#candlestick-body"/>
         </svg>
     </div>
-
-    <!-- 右烛台 -->
     <div class="candle candle-right" aria-hidden="true">
         <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
             <use href="#candlestick-body"/>
         </svg>
     </div>
-
-    <!-- 右上角设置按钮 -->
     <button class="settings-gear" id="settingsGear" aria-label="设置">⚙</button>
-
-    <!-- 浮尘 Canvas -->
     <canvas class="dust-layer" aria-hidden="true"></canvas>
 
     <div class="container">
@@ -263,17 +237,15 @@
             </div>
             <div class="title-seal">
                 <div class="title-main">天衍</div>
-                <div class="title-roman">EASTERN · ARCANA</div>
+                <div class="title-roman">DESTINY</div>
             </div>
-            <div class="subtitle">六十四卦 · 奥义读牌</div>
+            <div class="subtitle">六十四卦 · 命之所向</div>
             <div class="arcanum-header">
                 <span class="deco-line"></span>
                 <span class="deco-mark">✦</span>
                 <span class="deco-line"></span>
             </div>
         </header>
-
-        <!-- 每日一卦 -->
         <div class="daily-gua" id="dailyGua"></div>
 
         <div class="question-area">
@@ -297,21 +269,16 @@
 
         <footer>
             <p>此为占卜游戏 · 命运系于自身</p>
-            <p>&copy; 2026 · 天衍 EASTERN ARCANA</p>
+            <p>&copy; 2026 · 天衍 DESTINY</p>
         </footer>
     </div>
-
-    <!-- 设置遮罩 -->
     <div class="history-overlay" id="settingsOverlay"></div>
-
-    <!-- 设置面板 -->
     <div class="history-panel settings-panel" id="settingsPanel">
         <div class="history-head">
             <h3>设 置</h3>
             <button class="btn-close" id="settingsCloseBtn">闭</button>
         </div>
         <div class="settings-content">
-            <!-- 算卦方式 -->
             <div class="settings-group">
                 <div class="settings-label">算 卦 方 式</div>
                 <select class="settings-select" id="settingMethod">
@@ -320,8 +287,6 @@
                 </select>
                 <div class="settings-hint">八字起卦需先填写生辰八字信息</div>
             </div>
-
-            <!-- 生辰八字 -->
             <div class="settings-group">
                 <div class="settings-label">生 辰 八 字</div>
                 <div class="bazi-form">
@@ -373,8 +338,6 @@
                 <button class="btn-save-bazi" id="saveBaziBtn">保 存 八 字</button>
                 <div class="bazi-status" id="baziStatus"></div>
             </div>
-
-            <!-- 每日启示 -->
             <div class="settings-group">
                 <div class="settings-row-toggle">
                     <span class="settings-label">每 日 启 示</span>
@@ -385,8 +348,6 @@
                 </div>
                 <div class="settings-hint">首页显示每日一卦与箴言</div>
             </div>
-
-            <!-- 蜡烛显示 -->
             <div class="settings-group">
                 <div class="settings-row-toggle">
                     <span class="settings-label">蜡 烛 显 示</span>
@@ -399,11 +360,7 @@
             </div>
         </div>
     </div>
-
-    <!-- 历史遮罩 -->
     <div class="history-overlay" id="historyOverlay"></div>
-
-    <!-- 历史面板（牌册） -->
     <div class="history-panel" id="historyPanel">
         <div class="history-head">
             <h3>牌 册</h3>
@@ -412,8 +369,6 @@
         <div id="historyList"></div>
         <button class="btn-clear" id="clearHistoryBtn">清 空 牌 册</button>
     </div>
-
-    <!-- 分享弹窗 -->
     <div class="share-overlay" id="shareImageContainer">
         <div class="share-box">
             <h3>分享卡片</h3>
