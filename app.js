@@ -925,14 +925,31 @@ function loadHistory() {
     list.innerHTML = history.map((item, idx) => {
         const guaEntry = item.binary ? lookupGua(item.binary) : null;
         const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
+        const hexLines = (item.hexagramLines && item.hexagramLines.length === 6)
+            ? item.hexagramLines
+            : binToHexLines(item.binary || '000000');
+        const thumb = buildYaoArtSvg(hexLines, item.changingYaos || []);
         return `<div class="history-item" data-idx="${idx}">
+<div class="history-yao-thumb">${thumb}</div>
+<div class="history-info">
 <div class="history-q">${escHtml(item.question)}</div>
 <div class="history-gua">${roman ? `<span style="font-family:'Cinzel',serif;margin-right:6px;">${roman}</span>` : ''}${item.symbol} ${item.gua}${item.hasChange ? ' <span class="history-tag">变</span>' : ''}</div>
 <div class="history-date">${item.date}</div>
+</div>
+<button class="history-del" data-idx="${idx}" aria-label="删除">×</button>
 </div>`;
     }).join('');
     list.querySelectorAll('.history-item').forEach(el => {
-        el.addEventListener('click', () => loadHistoryItem(parseInt(el.dataset.idx)));
+        el.addEventListener('click', (e) => {
+            if (e.target.closest('.history-del')) return;
+            loadHistoryItem(parseInt(el.dataset.idx));
+        });
+    });
+    list.querySelectorAll('.history-del').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteHistoryItem(parseInt(btn.dataset.idx));
+        });
     });
 }
 
@@ -955,6 +972,33 @@ function loadHistoryItem(index) {
         renderResult(gua, hex, change, item.question, item.binary || '000000');
     }
     toggleHistory();
+}
+
+function deleteHistoryItem(index) {
+    const history = readHistorySafe();
+    if (index < 0 || index >= history.length) return;
+    const item = history[index];
+    const el = document.querySelector(`.history-item[data-idx="${index}"]`);
+    if (el) {
+        el.style.transition = 'transform 0.35s ease, opacity 0.35s ease, max-height 0.3s ease 0.1s';
+        el.style.transform = 'translateX(-100%)';
+        el.style.opacity = '0';
+        el.style.maxHeight = el.offsetHeight + 'px';
+        el.offsetHeight;
+        el.style.maxHeight = '0';
+        el.style.marginBottom = '0';
+        el.style.paddingTop = '0';
+        el.style.paddingBottom = '0';
+        el.addEventListener('transitionend', () => {
+            history.splice(index, 1);
+            try { localStorage.setItem('divinationHistory', JSON.stringify(history)); } catch (e) {}
+            loadHistory();
+        }, { once: true });
+    } else {
+        history.splice(index, 1);
+        try { localStorage.setItem('divinationHistory', JSON.stringify(history)); } catch (e) {}
+        loadHistory();
+    }
 }
 
 function clearHistory() {
@@ -1398,8 +1442,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
     document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
 
-    document.getElementById('question').addEventListener('keydown', e => {
+    const questionInput = document.getElementById('question');
+    const divineButton = document.getElementById('divineBtn');
+    questionInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); divine(); }
+    });
+    questionInput.addEventListener('input', () => {
+        divineButton.classList.toggle('charged', questionInput.value.trim().length > 0);
     });
 
     // 每分钟检查一次时辰(到点切换子时/午时主题)
