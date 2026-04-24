@@ -264,6 +264,7 @@ class DustParticles {
     pause() {
         this.running = false;
         if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+        if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
     }
     resume() {
         if (this.running) return;
