@@ -8,8 +8,15 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- 核心字体：preload 优先加载 -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- 装饰字体：延迟加载 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap">
+    </noscript>
     <link rel="stylesheet" href="style.css">
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js" defer crossorigin="anonymous" onerror="console.warn('html2canvas 加载失败，分享功能不可用')"></script>
+    <script src="html2canvas.min.js" defer></script>
 </head>
 <body>
     <div class="velvet-bg" aria-hidden="true"></div>
@@ -225,7 +232,12 @@
             <use href="#candlestick-body"/>
         </svg>
     </div>
-    <button class="settings-gear" id="settingsGear" aria-label="设置">⚙</button>
+    <button class="settings-gear" id="settingsGear" aria-label="设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+    </button>
     <canvas class="dust-layer" aria-hidden="true"></canvas>
 
     <div class="container">
@@ -255,13 +267,14 @@
 
         <div class="btn-group">
             <button class="btn-divine" id="divineBtn">
+                <span class="btn-spark" aria-hidden="true"></span>
                 <span class="btn-rune">✧</span>
-                <span class="btn-text">起 卦</span>
+                <span class="btn-text">起卦</span>
                 <span class="btn-rune">✧</span>
             </button>
             <button class="btn-history" id="historyBtn">
                 <span class="btn-rune">◱</span>
-                <span class="btn-text">牌 册</span>
+                <span class="btn-text">牌册</span>
             </button>
         </div>
 
@@ -275,12 +288,12 @@
     <div class="history-overlay" id="settingsOverlay"></div>
     <div class="history-panel settings-panel" id="settingsPanel">
         <div class="history-head">
-            <h3>设 置</h3>
-            <button class="btn-close" id="settingsCloseBtn">闭</button>
+            <h3>设置</h3>
+            <button class="btn-close" id="settingsCloseBtn">×</button>
         </div>
         <div class="settings-content">
             <div class="settings-group">
-                <div class="settings-label">算 卦 方 式</div>
+                <div class="settings-label">算卦方式</div>
                 <select class="settings-select" id="settingMethod">
                     <option value="coin">铜钱法（三枚铜钱）</option>
                     <option value="bazi">八字起卦（生辰八字）</option>
@@ -288,59 +301,59 @@
                 <div class="settings-hint">八字起卦需先填写生辰八字信息</div>
             </div>
             <div class="settings-group">
-                <div class="settings-label">生 辰 八 字</div>
-                <div class="bazi-form">
-                    <div class="bazi-row">
-                        <label>出生年份</label>
-                        <input type="number" id="baziYear" placeholder="如 1990" min="1900" max="2100">
-                    </div>
-                    <div class="bazi-row">
-                        <label>出生月份</label>
-                        <select id="baziMonth">
-                            <option value="">请选择</option>
-                            <option value="1">正月（1月）</option>
-                            <option value="2">二月（2月）</option>
-                            <option value="3">三月（3月）</option>
-                            <option value="4">四月（4月）</option>
-                            <option value="5">五月（5月）</option>
-                            <option value="6">六月（6月）</option>
-                            <option value="7">七月（7月）</option>
-                            <option value="8">八月（8月）</option>
-                            <option value="9">九月（9月）</option>
-                            <option value="10">十月（10月）</option>
-                            <option value="11">冬月（11月）</option>
-                            <option value="12">腊月（12月）</option>
+                <div class="settings-label">生辰八字</div>
+                <div class="bazi-seals">
+                    <label class="bazi-seal" for="baziYear">
+                        <span class="seal-label">年</span>
+                        <input type="number" id="baziYear" class="seal-input" placeholder="—" min="1900" max="2100" inputmode="numeric">
+                    </label>
+                    <label class="bazi-seal" for="baziMonth">
+                        <span class="seal-label">月</span>
+                        <select id="baziMonth" class="seal-input">
+                            <option value="">—</option>
+                            <option value="1">正</option>
+                            <option value="2">二</option>
+                            <option value="3">三</option>
+                            <option value="4">四</option>
+                            <option value="5">五</option>
+                            <option value="6">六</option>
+                            <option value="7">七</option>
+                            <option value="8">八</option>
+                            <option value="9">九</option>
+                            <option value="10">十</option>
+                            <option value="11">冬</option>
+                            <option value="12">腊</option>
                         </select>
-                    </div>
-                    <div class="bazi-row">
-                        <label>出生日期</label>
-                        <input type="number" id="baziDay" placeholder="如 15" min="1" max="31">
-                    </div>
-                    <div class="bazi-row">
-                        <label>出生时辰</label>
-                        <select id="baziHour">
-                            <option value="">请选择</option>
-                            <option value="0">子时（23:00-01:00）</option>
-                            <option value="1">丑时（01:00-03:00）</option>
-                            <option value="2">寅时（03:00-05:00）</option>
-                            <option value="3">卯时（05:00-07:00）</option>
-                            <option value="4">辰时（07:00-09:00）</option>
-                            <option value="5">巳时（09:00-11:00）</option>
-                            <option value="6">午时（11:00-13:00）</option>
-                            <option value="7">未时（13:00-15:00）</option>
-                            <option value="8">申时（15:00-17:00）</option>
-                            <option value="9">酉时（17:00-19:00）</option>
-                            <option value="10">戌时（19:00-21:00）</option>
-                            <option value="11">亥时（21:00-23:00）</option>
+                    </label>
+                    <label class="bazi-seal" for="baziDay">
+                        <span class="seal-label">日</span>
+                        <input type="number" id="baziDay" class="seal-input" placeholder="—" min="1" max="31" inputmode="numeric">
+                    </label>
+                    <label class="bazi-seal bazi-seal-hour" for="baziHour">
+                        <span class="seal-label">时</span>
+                        <select id="baziHour" class="seal-input seal-input-hour">
+                            <option value="">—</option>
+                            <option value="0" data-range="23-1">子</option>
+                            <option value="1" data-range="1-3">丑</option>
+                            <option value="2" data-range="3-5">寅</option>
+                            <option value="3" data-range="5-7">卯</option>
+                            <option value="4" data-range="7-9">辰</option>
+                            <option value="5" data-range="9-11">巳</option>
+                            <option value="6" data-range="11-13">午</option>
+                            <option value="7" data-range="13-15">未</option>
+                            <option value="8" data-range="15-17">申</option>
+                            <option value="9" data-range="17-19">酉</option>
+                            <option value="10" data-range="19-21">戌</option>
+                            <option value="11" data-range="21-23">亥</option>
                         </select>
-                    </div>
+                    </label>
                 </div>
-                <button class="btn-save-bazi" id="saveBaziBtn">保 存 八 字</button>
+                <button class="btn-save-bazi" id="saveBaziBtn">保存八字</button>
                 <div class="bazi-status" id="baziStatus"></div>
             </div>
             <div class="settings-group">
                 <div class="settings-row-toggle">
-                    <span class="settings-label">每 日 启 示</span>
+                    <span class="settings-label">每日启示</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="settingDaily" checked>
                         <span class="toggle-slider"></span>
@@ -350,7 +363,7 @@
             </div>
             <div class="settings-group">
                 <div class="settings-row-toggle">
-                    <span class="settings-label">蜡 烛 显 示</span>
+                    <span class="settings-label">蜡烛显示</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="settingCandle" checked>
                         <span class="toggle-slider"></span>
@@ -363,11 +376,11 @@
     <div class="history-overlay" id="historyOverlay"></div>
     <div class="history-panel" id="historyPanel">
         <div class="history-head">
-            <h3>牌 册</h3>
-            <button class="btn-close" id="historyCloseBtn">闭</button>
+            <h3>牌册</h3>
+            <button class="btn-close" id="historyCloseBtn">×</button>
         </div>
         <div id="historyList"></div>
-        <button class="btn-clear" id="clearHistoryBtn">清 空 牌 册</button>
+        <button class="btn-clear" id="clearHistoryBtn">清空牌册</button>
     </div>
     <div class="share-overlay" id="shareImageContainer">
         <div class="share-box">
@@ -377,6 +390,26 @@
                 <button class="btn-download" id="shareDownloadBtn">下载图片</button>
                 <button class="btn-copy" id="shareCopyBtn">复制图片</button>
                 <button class="btn-close-share" id="closeShareBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 回到顶部 -->
+    <button class="back-to-top" id="backToTop" aria-label="回到顶部">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"/>
+        </svg>
+    </button>
+
+    <!-- Toast 提示 -->
+    <div class="toast-container" id="toastContainer"></div>
+    <!-- Confirm 弹窗 -->
+    <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+            <div class="confirm-msg" id="confirmMsg"></div>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-yes" id="confirmYes">确定</button>
+                <button class="confirm-btn confirm-no" id="confirmNo">取消</button>
             </div>
         </div>
     </div>
