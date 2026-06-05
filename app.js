@@ -336,9 +336,12 @@ class ArcanaRitual {
     buildStage() {
         this.stage.innerHTML = `
 <div class="ritual-status" id="ritualStatus"></div>
-<div class="deck-area" id="deckArea"></div>`;
+<div class="deck-area" id="deckArea"></div>
+<button type="button" class="ritual-skip" id="ritualSkip">跳过仪式 ›</button>`;
         this.statusEl = this.stage.querySelector('#ritualStatus');
         this.deckEl = this.stage.querySelector('#deckArea');
+        const skipBtn = this.stage.querySelector('#ritualSkip');
+        if (skipBtn) skipBtn.addEventListener('click', () => { if (this._onSkip) this._onSkip(); });
     }
     setStatus(roman, cn) {
         this.statusEl.innerHTML = `${roman}<span class="ritual-status-sub">${cn}</span>`;
@@ -409,70 +412,43 @@ class ArcanaRitual {
         await sleep(1700);
     }
     async actChoose() {
-        const CHOOSE_TIMEOUT = 8000;
-        const WARN_AT = 3000;
-        const isMob = window.innerWidth <= 768;
-        this.setStatus('CHOOSE · 心选一卦', isMob ? '轻触预览 · 再触选定' : '8秒后由天意定之');
-        const fallbackIdx = Math.floor(this.cards.length / 2);
+        this.setStatus('CHOOSE · 心选一卦', '凝神择牌 · 轻触预览');
+        const randomIdx = () => Math.floor(Math.random() * this.cards.length);
 
-        // 倒计时圆环
-        const cdEl = document.createElement('div');
-        cdEl.className = 'choose-countdown';
-        cdEl.innerHTML = '<svg viewBox="0 0 40 40"><circle class="countdown-track" cx="20" cy="20" r="17"/><circle class="countdown-ring" cx="20" cy="20" r="17"/></svg><span class="countdown-num">8</span>';
-        this.deckEl.appendChild(cdEl);
-        const ring = cdEl.querySelector('.countdown-ring');
-        const numEl = cdEl.querySelector('.countdown-num');
-        const circumference = 2 * Math.PI * 17;
-        ring.style.strokeDasharray = circumference;
-        ring.style.strokeDashoffset = '0';
-
-        const startTime = Date.now();
-        const countdownInterval = setInterval(() => {
-            const elapsed = Date.now() - startTime;
-            const remaining = Math.max(0, CHOOSE_TIMEOUT - elapsed);
-            const sec = Math.ceil(remaining / 1000);
-            numEl.textContent = sec;
-            ring.style.strokeDashoffset = (elapsed / CHOOSE_TIMEOUT) * circumference;
-            if (remaining <= WARN_AT && !cdEl.classList.contains('warn')) {
-                cdEl.classList.add('warn');
-                this.cards.forEach(c => c.classList.add('choose-blink'));
-            }
-        }, 100);
+        // 「由天意定之」：从容的出口，不读秒、不催促
+        const fateBtn = document.createElement('button');
+        fateBtn.type = 'button';
+        fateBtn.className = 'choose-fate-btn';
+        fateBtn.textContent = '由天意定之';
+        this.deckEl.appendChild(fateBtn);
 
         return new Promise(resolve => {
             let resolved = false;
-            let highlightedIndex = -1;
+            let candidateIndex = -1;
 
             const liftCard = (card) => {
                 card.style.zIndex = '100';
                 card.style.transition = 'transform 0.22s ease, filter 0.22s ease';
                 card.style.transform = `translate3d(${card._fanX}px, ${card._fanY - 20}px, 0) rotate(${card._fanRot}deg) scale(1.08)`;
                 card.style.filter = 'drop-shadow(0 8px 20px rgba(201,169,110,0.5))';
+                card.classList.add('candidate');
             };
             const dropCard = (card) => {
                 card.style.zIndex = String(card._fanZ);
                 card.style.transition = 'transform 0.22s ease, filter 0.22s ease';
                 card.style.transform = `translate3d(${card._fanX}px, ${card._fanY}px, 0) rotate(${card._fanRot}deg)`;
                 card.style.filter = '';
+                card.classList.remove('candidate');
             };
 
             const cleanup = () => {
-                clearInterval(countdownInterval);
-                cdEl.remove();
+                fateBtn.remove();
                 this.cards.forEach(c => {
-                    c.classList.remove('selectable', 'choose-blink');
+                    c.classList.remove('selectable', 'candidate');
                     c.style.cursor = '';
                     if (c._chooseHandler) {
                         c.removeEventListener('click', c._chooseHandler);
                         delete c._chooseHandler;
-                    }
-                    if (c._enterHandler) {
-                        c.removeEventListener('pointerenter', c._enterHandler);
-                        delete c._enterHandler;
-                    }
-                    if (c._leaveHandler) {
-                        c.removeEventListener('pointerleave', c._leaveHandler);
-                        delete c._leaveHandler;
                     }
                 });
             };
@@ -480,60 +456,32 @@ class ArcanaRitual {
                 if (resolved) return;
                 resolved = true;
                 this.chosenIndex = idx;
-                clearTimeout(timerId);
                 cleanup();
                 resolve();
             };
 
+            // 两段式（桌面 / 移动一致）：点击成为候选（上浮预览），再次点击同一张落定
+            // 避免桌面端「悬停即选、误触即定终身」
             this.cards.forEach((c, i) => {
                 c.classList.add('selectable');
                 c.style.cursor = 'pointer';
-
-                if (isMob) {
-                    // 移动端：第一次轻触预览（牌上浮），第二次点击同一张确认选定
-                    const handler = () => {
-                        if (highlightedIndex === i) {
-                            haptic(15);
-                            settle(i);
-                        } else {
-                            if (highlightedIndex >= 0 && this.cards[highlightedIndex]) {
-                                dropCard(this.cards[highlightedIndex]);
-                            }
-                            haptic(8);
-                            highlightedIndex = i;
-                            liftCard(c);
-                        }
-                    };
-                    c._chooseHandler = handler;
-                    c.addEventListener('click', handler);
-                } else {
-                    // 桌面端：鼠标悬停预览，点击选定
-                    const onEnter = () => {
-                        if (highlightedIndex >= 0 && highlightedIndex !== i && this.cards[highlightedIndex]) {
-                            dropCard(this.cards[highlightedIndex]);
-                        }
-                        highlightedIndex = i;
+                const handler = () => {
+                    if (candidateIndex === i) {
+                        haptic(15);
+                        settle(i);
+                    } else {
+                        if (candidateIndex >= 0 && this.cards[candidateIndex]) dropCard(this.cards[candidateIndex]);
+                        haptic(8);
+                        candidateIndex = i;
                         liftCard(c);
-                    };
-                    const onLeave = () => {
-                        if (highlightedIndex === i) highlightedIndex = -1;
-                        dropCard(c);
-                    };
-                    c.addEventListener('pointerenter', onEnter);
-                    c.addEventListener('pointerleave', onLeave);
-                    c._enterHandler = onEnter;
-                    c._leaveHandler = onLeave;
-
-                    const handler = () => { haptic(15); settle(i); };
-                    c._chooseHandler = handler;
-                    c.addEventListener('click', handler);
-                }
+                        this.setStatus('CHOOSE · 心选一卦', '再触此卦 · 落定');
+                    }
+                };
+                c._chooseHandler = handler;
+                c.addEventListener('click', handler);
             });
 
-            // 超时：若已预览某牌则选该牌，否则天意定之
-            const timerId = setTimeout(() => {
-                settle(highlightedIndex >= 0 ? highlightedIndex : fallbackIdx);
-            }, CHOOSE_TIMEOUT);
+            fateBtn.addEventListener('click', () => { haptic(12); settle(randomIdx()); });
         });
     }
     async actRise() {
@@ -681,8 +629,11 @@ async function divine() {
         let chosenCard = null;
         if (!prefersReducedMotion) {
             const ritual = new ArcanaRitual(stage, gua, hexLines, change);
-            await ritual.run();
-            chosenCard = ritual.chosenCard;
+            // 仪式与「跳过」信号竞速：点跳过即直奔结果，不触碰内部动画时序
+            let skipped = false;
+            const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; res(); }; });
+            await Promise.race([ritual.run(), skipPromise]);
+            chosenCard = skipped ? null : ritual.chosenCard;
         }
 
         renderResult(gua, hexLines, change, question, fullBin, chosenCard);
@@ -1866,9 +1817,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
     document.getElementById('saveBaziBtn').addEventListener('click', saveBazi);
     document.getElementById('closeShareBtn').addEventListener('click', closeShare);
-    document.getElementById('settingMethod').addEventListener('change', function() { saveSetting('method', this.value); });
+    document.getElementById('settingMethod').addEventListener('change', function() {
+        saveSetting('method', this.value);
+        // 选八字起卦但尚未填八字：就地提示并高亮表单，避免回到主页起卦时才报错
+        if (this.value === 'bazi' && !loadSettings().bazi) {
+            showToast('八字起卦需先填写并保存生辰八字', 'error');
+            const seals = document.querySelector('.bazi-seals');
+            if (seals) {
+                seals.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                seals.classList.add('hint-flash');
+                setTimeout(() => seals.classList.remove('hint-flash'), 1600);
+            }
+        }
+    });
     document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
     document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
+
+    // Esc 关闭当前打开的弹层（按层级优先级，从最上层往下）
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const detail = document.querySelector('.detail-overlay.show');
+        if (detail) { detail.remove(); return; }
+        const confirmO = document.getElementById('confirmOverlay');
+        if (confirmO && confirmO.classList.contains('show')) { document.getElementById('confirmNo').click(); return; }
+        const share = document.getElementById('shareImageContainer');
+        if (share && share.classList.contains('show')) { closeShare(); return; }
+        const settingsO = document.getElementById('settingsOverlay');
+        if (settingsO && settingsO.classList.contains('show')) { toggleSettings(); return; }
+        const historyO = document.getElementById('historyOverlay');
+        if (historyO && historyO.classList.contains('show')) { toggleHistory(); return; }
+    });
     const questionInput = document.getElementById('question');
     const divineButton = document.getElementById('divineBtn');
     questionInput.addEventListener('keydown', e => {
