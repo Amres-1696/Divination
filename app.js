@@ -695,12 +695,47 @@ async function divine() {
 }
 
 
+// 主断：依朱熹《易学启蒙》变爻取辞法，明确「该以哪一条为主断」
+// changingYaos 为升序（0=初爻 … 5=上爻）
+function getMainReading(gua, change) {
+    const yaoArr = gua[3].split('|');
+    const changing = change.changingYaos;
+    const n = changing.length;
+    const benName = gua[0];
+    const zhi = change.changeGua;
+    const posCN = ['初', '二', '三', '四', '五', '上'];
+    const all = [0, 1, 2, 3, 4, 5];
+
+    if (n === 0)
+        return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」` };
+    if (n === 1)
+        return { rule: '一爻动', text: `以本卦《${benName}》${posCN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}` };
+    if (n === 2)
+        return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}` };
+    if (n === 3)
+        return { rule: '三爻动', text: `三爻变，本卦《${benName}》与之卦《${zhi[0]}》卦辞并参 —— 本卦「${gua[1]}」，之卦「${zhi[1]}」。` };
+    if (n === 4) {
+        const low = all.filter(i => !changing.includes(i))[0];
+        return { rule: '四爻动', text: `四爻变，看之卦《${zhi[0]}》中二不变爻，以下爻为主 —— ${zhi[3].split('|')[low] || ''}` };
+    }
+    if (n === 5) {
+        const only = all.filter(i => !changing.includes(i))[0];
+        return { rule: '五爻动', text: `五爻变，以之卦《${zhi[0]}》唯一不变之爻为主 —— ${zhi[3].split('|')[only] || ''}` };
+    }
+    if (benName === '乾为天')
+        return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」' };
+    if (benName === '坤为地')
+        return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」' };
+    return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」` };
+}
+
 function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     const resultArea = document.getElementById('resultArea');
     const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
     const roman = toRoman(guaIndex(gua));
     const verdict = getVerdict(gua);
     const verdictText = { ji:'吉', xiong:'凶', ping:'平' };
+    const mainReading = getMainReading(gua, change);
     let firstRect = null;
     if (sourceCard && sourceCard.parentNode) {
         firstRect = sourceCard.getBoundingClientRect();
@@ -749,6 +784,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
     <div class="verdict-seal ${verdict}">${verdictText[verdict]}</div>
     <div class="share-row"><button class="btn-share" id="shareBtn">✦ 生成分享图</button></div>
 </section>
+<section class="card card-primary main-reading"><h3>主 · 断 <span class="hex-tag">${mainReading.rule}</span></h3><div class="analysis-list"><div class="analysis-item">${mainReading.text}</div></div></section>
 <section class="card card-primary"><h3>卦象奥义</h3><div class="analysis-list">${analysisHtml}</div></section>
 <section class="card card-secondary"><h3>六爻之辞</h3><div class="yao-list">${yaoHtml}</div></section>
 ${changeHtml}
@@ -1714,41 +1750,44 @@ function toggleSettings() {
     overlay.classList.toggle('show');
 }
 
-// 八字起卦（混合模式：梅花易数字数 + 八字 + 问题哈希）
+// 归一化问题：去空白、去标点符号、全角转半角、统一小写
+// 让「同一个问题」在语义上恒定，不因末尾空格 / 标点差异而改变卦象
+function normalizeQuestion(q) {
+    if (!q) return '';
+    return q
+        .normalize('NFKC')               // 全角数字 / 字母 / 符号归一为半角
+        .replace(/\s+/g, '')             // 去除所有空白
+        .replace(/[\p{P}\p{S}]/gu, '')   // 去除标点与符号
+        .toLowerCase();
+}
+
+// 八字起卦（纯宿命版）：卦象 = f(八字, 归一化问题)，不掺入当前时间
+// 同一人 + 同一问题 → 永远同一卦。再三问亦不改，暗合蒙卦「初筮告，再三渎，渎则不告」。
 function generateHexagramBazi(bazi, question) {
-    const now = new Date();
-    const nowDay = now.getDate();
-    const nowHour = Math.floor(((now.getHours() + 1) % 24) / 2);
+    const qn = normalizeQuestion(question);
+    const qNum = qn ? simpleHash(qn) : 0;        // 稳定非负整数，同问题恒定
 
     const yearNum = bazi.year % 100 || 100;
-    const qLen = question ? question.length : 0;
-    const qHash = question ? simpleHash(question) : 0;
+    // 梅花易数：以八字「年月日」起上卦，「年月日时」起下卦——八字即先天之命
+    const baseUpper = yearNum + bazi.month + bazi.day;
+    const baseLower = baseUpper + (bazi.hour + 1);
 
-    // 上卦：梅花易数字数 + 八字年 + 当前日
-    const sumUpper = qLen + yearNum + nowDay;
-    // 下卦：字数 + 出生时辰 + 当前时辰 + 出生月
-    const sumLower = qLen + (bazi.hour + 1) + (nowHour + 1) + bazi.month;
-    // 动爻：问题哈希 + 当前时辰（哈希保证同字数不同内容产生不同变爻）
-    const sumYao = qHash + (nowHour + 1);
+    // 融入所问之事（确定性：同一问题恒定，不同问题分散；取质数模以打散分布）
+    const sumUpper = baseUpper + (qNum % 97);
+    const sumLower = baseLower + (Math.floor(qNum / 97) % 89);
+    const sumYao   = sumUpper + sumLower;        // 动爻＝上下卦总数 mod 6（梅花传统）
 
     const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
     const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
     const changingYao = ((sumYao - 1) % 6 + 6) % 6;
 
     const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
-    const upperTri = xiantianOrder[upperIdx];
-    const lowerTri = xiantianOrder[lowerIdx];
-
-    const upperBin = TRIGRAM_TO_BINARY[upperTri];
-    const lowerBin = TRIGRAM_TO_BINARY[lowerTri];
+    const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
+    const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
 
     const lines = [];
-    for (let i = 0; i < 3; i++) {
-        lines.push(lowerBin[2-i] === '1' ? 7 : 8);
-    }
-    for (let i = 0; i < 3; i++) {
-        lines.push(upperBin[2-i] === '1' ? 7 : 8);
-    }
+    for (let i = 0; i < 3; i++) lines.push(lowerBin[2 - i] === '1' ? 7 : 8);
+    for (let i = 0; i < 3; i++) lines.push(upperBin[2 - i] === '1' ? 7 : 8);
 
     if (lines[changingYao] === 7) lines[changingYao] = 9;
     else lines[changingYao] = 6;
