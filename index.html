@@ -3,413 +3,176 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="天衍 · EDESTINY — 基于易经六十四卦的在线占卜">
+    <meta name="description" content="天衍 · DESTINY — 基于易经六十四卦的在线占卜">
+    <meta name="theme-color" content="#0f0e12">
     <title>天衍 · DESTINY</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 核心字体：preload 优先加载 -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <!-- 装饰字体：延迟加载 -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap" media="print" onload="this.media='all'">
     <noscript>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap">
     </noscript>
     <link rel="stylesheet" href="style.css">
     <script src="html2canvas.min.js" defer></script>
 </head>
 <body>
-    <div class="velvet-bg" aria-hidden="true"></div>
-    <div class="incense-smoke" aria-hidden="true">
-        <div class="smoke-layer smoke-1"></div>
-        <div class="smoke-layer smoke-2"></div>
-        <div class="smoke-layer smoke-3"></div>
-    </div>
-    <svg class="embroidery-mat" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <g transform="translate(500 500)">
-            <g class="mat-l1">
-                <circle r="495" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.38"/>
-                <circle r="488" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.2"/>
-                <circle class="mat-flow-ring" r="492" fill="none" stroke-width="2" pointer-events="none"/>
-                <g opacity="0.35">
-                    <g id="vineGroup">
-                        <g id="vineUnit">
-                            <path d="M 0,-492 Q 12,-478 8,-462 Q 4,-448 -4,-440 Q -10,-434 -6,-425" fill="none" stroke="currentColor" stroke-width="0.8"/>
-                            <path d="M 8,-462 Q 16,-455 14,-445 Q 12,-438 6,-432" fill="none" stroke="currentColor" stroke-width="0.6"/>
-                            <path d="M -4,-440 Q -12,-435 -16,-442 Q -18,-448 -12,-454" fill="none" stroke="currentColor" stroke-width="0.5"/>
-                            <circle cx="0" cy="-492" r="1.2" fill="currentColor"/>
-                        </g>
-                        <use href="#vineUnit" transform="rotate(15)"/>
-                        <use href="#vineUnit" transform="rotate(30)"/>
-                        <use href="#vineUnit" transform="rotate(45)"/>
-                        <use href="#vineUnit" transform="rotate(60)"/>
-                        <use href="#vineUnit" transform="rotate(75)"/>
-                        <use href="#vineUnit" transform="rotate(90)"/>
-                        <use href="#vineUnit" transform="rotate(105)"/>
-                        <use href="#vineUnit" transform="rotate(120)"/>
-                        <use href="#vineUnit" transform="rotate(135)"/>
-                        <use href="#vineUnit" transform="rotate(150)"/>
-                        <use href="#vineUnit" transform="rotate(165)"/>
-                        <use href="#vineUnit" transform="rotate(180)"/>
-                        <use href="#vineUnit" transform="rotate(195)"/>
-                        <use href="#vineUnit" transform="rotate(210)"/>
-                        <use href="#vineUnit" transform="rotate(225)"/>
-                        <use href="#vineUnit" transform="rotate(240)"/>
-                        <use href="#vineUnit" transform="rotate(255)"/>
-                        <use href="#vineUnit" transform="rotate(270)"/>
-                        <use href="#vineUnit" transform="rotate(285)"/>
-                        <use href="#vineUnit" transform="rotate(300)"/>
-                        <use href="#vineUnit" transform="rotate(315)"/>
-                        <use href="#vineUnit" transform="rotate(330)"/>
-                        <use href="#vineUnit" transform="rotate(345)"/>
-                    </g>
-                </g>
-            </g>
-            <g class="mat-l2">
-                <circle r="415" fill="none" stroke="currentColor" stroke-width="1" opacity="0.32"/>
-                <circle r="409" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.18"/>
-                <text x="0" y="-422" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">朱</text>
-                <text x="0" y="435" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">玄</text>
-                <text x="-422" y="8" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">龙</text>
-                <text x="422" y="8" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">虎</text>
-                <g opacity="0.3">
-                    <circle cx="0" cy="-415" r="6" fill="currentColor"/>
-                    <circle cx="0" cy="415" r="6" fill="currentColor"/>
-                    <circle cx="-415" cy="0" r="6" fill="currentColor"/>
-                    <circle cx="415" cy="0" r="6" fill="currentColor"/>
-                </g>
-            </g>
-            <g class="mat-l3">
-                <circle r="320" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.28"/>
-                <circle r="315" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.15"/>
-                <text x="0" y="-296" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">天</text>
-                <text x="-256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">人</text>
-                <text x="256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">地</text>
-            </g>
-            <g class="mat-l4">
-                <circle r="228" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.28"/>
-                <circle r="220" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.15"/>
-                <g class="taiji-outer">
-                    <text x="0" y="-212" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☰</text>
-                    <text x="150" y="-150" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☱</text>
-                    <text x="212" y="8" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☲</text>
-                    <text x="150" y="166" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☳</text>
-                    <text x="0" y="228" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☷</text>
-                    <text x="-150" y="166" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☶</text>
-                    <text x="-212" y="8" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☵</text>
-                    <text x="-150" y="-150" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☴</text>
-                </g>
-            </g>
-            <g class="mat-l5">
-                <circle r="128" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
-                <circle r="120" fill="none" stroke="currentColor" stroke-width="0.25" opacity="0.2"/>
-                <g opacity="0.5">
-                    <polygon points="0,-110 95,-55 95,55 0,110 -95,55 -95,-55" fill="none" stroke="currentColor" stroke-width="0.4"/>
-                    <polygon points="0,-110 95,55 -95,55" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.6"/>
-                    <polygon points="0,110 -95,-55 95,-55" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.6"/>
-                </g>
-                <text x="0" y="-6" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="44" fill="currentColor" opacity="0.65" letter-spacing="4">天</text>
-                <text x="0" y="52" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="44" fill="currentColor" opacity="0.65" letter-spacing="4">衍</text>
-            </g>
-        </g>
-    </svg>
-    <svg class="candle-defs" width="0" height="0" aria-hidden="true" focusable="false">
-        <defs>
-            <symbol id="candlestick-body" viewBox="-50 0 100 500" overflow="visible">
-                <ellipse cx="0" cy="478" rx="48" ry="7" fill="url(#candle-groundShadow)"/>
-                <polygon points="-30,470 30,470 35,466 35,462 30,452 -30,452 -35,462 -35,466" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.5"/>
-                <line x1="-30" y1="452" x2="30" y2="452" stroke="#1a1008" stroke-width="0.4"/>
-                <path d="M -34 462 Q 0 460 34 462" fill="none" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-                <ellipse cx="0" cy="452" rx="22" ry="2.5" fill="#5a4a2a"/>
-                <rect x="-22" y="442" width="44" height="10" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-                <ellipse cx="0" cy="442" rx="22" ry="2" fill="url(#candle-brassDark)"/>
-                <ellipse cx="0" cy="441" rx="20" ry="0.8" fill="#fff4c4" opacity="0.45"/>
-                <ellipse cx="0" cy="442" rx="14" ry="2" fill="#1a1008" opacity="0.5"/>
-                <ellipse cx="0" cy="438" rx="14" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-                <ellipse cx="0" cy="434" rx="11" ry="2.2" fill="#fff4c4" opacity="0.5"/>
-                <ellipse cx="0" cy="443" rx="13" ry="1.5" fill="#1a1008" opacity="0.4"/>
-                <rect x="-10" y="420" width="20" height="12" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-                <line x1="-9" y1="421" x2="9" y2="421" stroke="#fff4c4" stroke-width="0.3" opacity="0.5"/>
-                <rect x="-3.5" y="304" width="7" height="116" fill="url(#candle-brass)"/>
-                <ellipse cx="0" cy="304" rx="11" ry="2.3" fill="#1a1008" opacity="0.5"/>
-                <ellipse cx="0" cy="300" rx="11" ry="8" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-                <ellipse cx="0" cy="296" rx="9" ry="2.2" fill="#fff4c4" opacity="0.55"/>
-                <ellipse cx="0" cy="305" rx="10" ry="1.5" fill="#1a1008" opacity="0.4"/>
-                <rect x="-3" y="236" width="6" height="64" fill="url(#candle-brass)"/>
-                <ellipse cx="0" cy="237" rx="10" ry="2" fill="#1a1008" opacity="0.5"/>
-                <ellipse cx="0" cy="232" rx="10" ry="6" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-                <ellipse cx="0" cy="229" rx="8" ry="1.8" fill="#fff4c4" opacity="0.6"/>
-                <polygon points="-7,228 7,228 18,214 -18,214" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.4"/>
-                <line x1="-15" y1="217" x2="-3" y2="227" stroke="#fff4c4" stroke-width="0.4" opacity="0.4"/>
-                <ellipse cx="0" cy="216" rx="22" ry="4.2" fill="#1a1008" opacity="0.7"/>
-                <ellipse cx="0" cy="214" rx="22" ry="3.5" fill="url(#candle-brass)" stroke="#1a1008" stroke-width="0.3"/>
-                <ellipse cx="0" cy="212.5" rx="18" ry="2.8" fill="url(#candle-brassDark)"/>
-                <path d="M -19 212.5 Q 0 210.5 19 212.5" fill="none" stroke="#fff4c4" stroke-width="0.5" opacity="0.7"/>
-                <rect x="-9" y="124" width="18" height="86" fill="url(#candle-wax)"/>
-                <ellipse cx="0" cy="210" rx="9" ry="2" fill="#5a4a2a"/>
-                <path d="M -14 213 Q -9 215.5 0 215.5 Q 9 215.5 14 213" fill="none" stroke="#3a2a14" stroke-width="0.7"/>
-                <path d="M -19 215 Q -20 222 -17 232 Q -15 235 -13 232 Q -11 224 -14 215 Z" fill="url(#candle-redwax)"/>
-                <line x1="-17" y1="218" x2="-15" y2="230" stroke="#e88898" stroke-width="0.5" opacity="0.65"/>
-                <path d="M -7 216 Q -8 228 -4 242 Q -2 246 0 242 Q 1 228 -2 216 Z" fill="url(#candle-redwax)"/>
-                <line x1="-5" y1="220" x2="-3" y2="240" stroke="#e88898" stroke-width="0.5" opacity="0.7"/>
-                <path d="M 13 215 Q 15 225 14 233 Q 12 236 10 233 Q 9 224 11 215 Z" fill="url(#candle-redwax)"/>
-                <line x1="14" y1="219" x2="13" y2="231" stroke="#e88898" stroke-width="0.4" opacity="0.6"/>
-                <path d="M 6 124 Q 8 145 6 162 Q 4 178 6 202 L 9 202 L 9 124 Z" fill="url(#candle-redwax)" opacity="0.9"/>
-                <line x1="7" y1="128" x2="7" y2="195" stroke="#e88898" stroke-width="0.4" opacity="0.5"/>
-                <path d="M -7 128 Q -8 142 -6 158 L -3 158 L -3 128 Z" fill="url(#candle-redwax)" opacity="0.85"/>
-                <line x1="-5" y1="130" x2="-4" y2="152" stroke="#e88898" stroke-width="0.3" opacity="0.45"/>
-                <ellipse cx="0" cy="170" rx="160" ry="130" fill="url(#candle-castLight)" pointer-events="none" style="mix-blend-mode: screen;"/>
-                <rect x="-9" y="124" width="18" height="40" fill="url(#candle-waxWarm)" pointer-events="none"/>
-                <ellipse cx="0" cy="124" rx="9" ry="3" fill="#3a2a1a"/>
-                <ellipse cx="0" cy="123" rx="8" ry="2.3" fill="#1a0a08"/>
-                <line x1="0" y1="124" x2="0" y2="112" stroke="#1a0a08" stroke-width="1.2"/>
-                <ellipse cx="0" cy="115" rx="1.2" ry="2.5" fill="#3a1a08"/>
-                <ellipse class="flame-halo" cx="0" cy="78" rx="48" ry="68" fill="url(#candle-haloGrad)"/>
-                <path class="flame" d="M 0 112 Q -9 92 -4 68 Q 0 50 0 42 Q 0 50 4 68 Q 9 92 0 112 Z" fill="url(#candle-flameGrad)"/>
-                <path class="flame-inner" d="M 0 108 Q -3.5 92 -1.5 78 Q 0 64 0 58 Q 0 64 1.5 78 Q 3.5 92 0 108 Z" fill="#fff4c4" opacity="0.9"/>
-                <ellipse cx="0" cy="92" rx="1.5" ry="7" fill="#1a4060" opacity="0.35"/>
-            </symbol>
-            <linearGradient id="candle-brass" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#3a2a14"/>
-                <stop offset="22%" stop-color="#8a6d3a"/>
-                <stop offset="50%" stop-color="#e8d4a8"/>
-                <stop offset="78%" stop-color="#8a6d3a"/>
-                <stop offset="100%" stop-color="#3a2a14"/>
-            </linearGradient>
-            <linearGradient id="candle-brassDark" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#2a1a08"/>
-                <stop offset="50%" stop-color="#a08550"/>
-                <stop offset="100%" stop-color="#2a1a08"/>
-            </linearGradient>
-            <linearGradient id="candle-wax" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#8a7a5a"/>
-                <stop offset="22%" stop-color="#d8c9a6"/>
-                <stop offset="50%" stop-color="#f4ead2"/>
-                <stop offset="78%" stop-color="#d8c9a6"/>
-                <stop offset="100%" stop-color="#8a7a5a"/>
-            </linearGradient>
-            <linearGradient id="candle-waxWarm" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#f4c47a" stop-opacity="0.55"/>
-                <stop offset="60%" stop-color="#f4c47a" stop-opacity="0.12"/>
-                <stop offset="100%" stop-color="#f4c47a" stop-opacity="0"/>
-            </linearGradient>
-            <linearGradient id="candle-redwax" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#a83248"/>
-                <stop offset="60%" stop-color="#7a2030"/>
-                <stop offset="100%" stop-color="#4a1020"/>
-            </linearGradient>
-            <radialGradient id="candle-flameGrad" cx="0.5" cy="0.75" r="0.7">
-                <stop offset="0%" stop-color="#fff4c4"/>
-                <stop offset="40%" stop-color="#f4c47a"/>
-                <stop offset="80%" stop-color="#d88a40" stop-opacity="0.7"/>
-                <stop offset="100%" stop-color="#a85020" stop-opacity="0"/>
-            </radialGradient>
-            <radialGradient id="candle-haloGrad">
-                <stop offset="0%" stop-color="#f4c47a" stop-opacity="0.45"/>
-                <stop offset="50%" stop-color="#d88a40" stop-opacity="0.18"/>
-                <stop offset="100%" stop-color="#f4c47a" stop-opacity="0"/>
-            </radialGradient>
-            <radialGradient id="candle-castLight" cx="0.5" cy="0" r="0.65">
-                <stop offset="0%" stop-color="#f4c47a" stop-opacity="0.42"/>
-                <stop offset="35%" stop-color="#d88a40" stop-opacity="0.22"/>
-                <stop offset="70%" stop-color="#a85020" stop-opacity="0.08"/>
-                <stop offset="100%" stop-color="#a85020" stop-opacity="0"/>
-            </radialGradient>
-            <radialGradient id="candle-groundShadow" cx="0.5" cy="0.5" r="0.5">
-                <stop offset="0%" stop-color="#000" stop-opacity="0.55"/>
-                <stop offset="60%" stop-color="#000" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="#000" stop-opacity="0"/>
-            </radialGradient>
-        </defs>
-    </svg>
-    <div class="candle candle-left" aria-hidden="true">
-        <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-            <use href="#candlestick-body"/>
-        </svg>
-    </div>
-    <div class="candle candle-right" aria-hidden="true">
-        <svg viewBox="-50 0 100 500" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-            <use href="#candlestick-body"/>
-        </svg>
-    </div>
-    <button class="settings-gear" id="settingsGear" aria-label="设置">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-    </button>
-    <canvas class="dust-layer" aria-hidden="true"></canvas>
+    <!-- 呼吸光晕:页面唯一的环境层 -->
+    <div class="veil" aria-hidden="true"></div>
+    <!-- 回到顶部的哨兵:IntersectionObserver 观察它代替 scroll 监听 -->
+    <div id="topSentinel" aria-hidden="true"></div>
 
-    <div class="container">
-        <header>
-            <div class="arcanum-header">
-                <span class="deco-line"></span>
-                <span class="deco-mark">✦</span>
-                <span class="deco-line"></span>
+    <header class="topbar">
+        <a class="topbar-brand" href="#" aria-label="天衍">天衍</a>
+        <nav class="topbar-nav">
+            <button class="topbar-link" id="historyBtn">卦册</button>
+            <button class="topbar-link" id="settingsGear">设置</button>
+        </nav>
+    </header>
+
+    <main class="shell">
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="hero-kicker">六十四卦 · 在线占卜</p>
+                <h1 class="brand">
+                    <span class="brand-char">天</span><span class="brand-char">衍</span>
+                </h1>
+                <p class="brand-latin">DESTINY</p>
+                <p class="hero-sub">问一事,得一卦。心之所念,卦之所示。</p>
+
+                <div class="ask">
+                    <label class="ask-label" for="question">所问之事</label>
+                    <div class="ask-row">
+                        <input type="text" id="question" placeholder="此刻心中所念" autocomplete="off" maxlength="60">
+                        <button class="btn-divine" id="divineBtn">
+                            <span class="btn-text">起卦</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="daily-gua" id="dailyGua" type="button"></button>
             </div>
-            <div class="title-seal">
-                <div class="title-main">天衍</div>
-                <div class="title-roman">DESTINY</div>
+
+            <div class="hero-glyph" aria-hidden="true">
+                <div class="glyph-lines" id="heroGlyph"></div>
+                <div class="glyph-caption" id="heroGlyphName"></div>
             </div>
-            <div class="subtitle">六十四卦 · 命之所向</div>
-            <div class="arcanum-header">
-                <span class="deco-line"></span>
-                <span class="deco-mark">✦</span>
-                <span class="deco-line"></span>
-            </div>
-        </header>
-        <div class="daily-gua" id="dailyGua"></div>
+        </section>
 
-        <div class="question-area">
-            <span class="question-label">INQUIRY · 所问之事</span>
-            <input type="text" id="question" placeholder="心之所念 · 卦之所示">
-        </div>
+        <section id="resultArea" aria-live="polite"></section>
 
-        <div class="btn-group">
-            <button class="btn-divine" id="divineBtn">
-                <span class="btn-spark" aria-hidden="true"></span>
-                <span class="btn-rune">✧</span>
-                <span class="btn-text">起卦</span>
-                <span class="btn-rune">✧</span>
-            </button>
-            <button class="btn-history" id="historyBtn">
-                <span class="btn-rune">◱</span>
-                <span class="btn-text">牌册</span>
-            </button>
-        </div>
-
-        <div id="resultArea"></div>
-
-        <footer>
+        <footer class="footer">
             <p>此为占卜游戏 · 命运系于自身</p>
-            <p>&copy; 2026 · 天衍 DESTINY</p>
+            <p class="footer-mark">© 2026 天衍 DESTINY</p>
         </footer>
-    </div>
-    <div class="history-overlay" id="settingsOverlay"></div>
-    <div class="history-panel settings-panel" id="settingsPanel">
-        <div class="history-head">
+    </main>
+
+    <!-- 设置抽屉 -->
+    <div class="drawer-overlay" id="settingsOverlay"></div>
+    <aside class="drawer" id="settingsPanel" aria-label="设置">
+        <div class="drawer-head">
             <h3>设置</h3>
-            <button class="btn-close" id="settingsCloseBtn">×</button>
+            <button class="drawer-close" id="settingsCloseBtn" aria-label="关闭">×</button>
         </div>
-        <div class="settings-content">
-            <div class="settings-group">
-                <div class="settings-label">算卦方式</div>
-                <select class="settings-select" id="settingMethod">
-                    <option value="coin">铜钱法（三枚铜钱）</option>
-                    <option value="bazi">八字起卦（生辰八字）</option>
+        <div class="drawer-body">
+            <div class="set-group">
+                <div class="set-label">起卦方式</div>
+                <select class="set-select" id="settingMethod">
+                    <option value="coin">铜钱法 · 三枚铜钱</option>
+                    <option value="bazi">八字起卦 · 生辰八字</option>
                 </select>
-                <div class="settings-hint">八字起卦需先填写生辰八字信息</div>
+                <div class="set-hint">八字起卦需先填写并保存生辰八字</div>
             </div>
-            <div class="settings-group">
-                <div class="settings-label">生辰八字</div>
-                <div class="bazi-seals">
-                    <label class="bazi-seal" for="baziYear">
-                        <span class="seal-label">年</span>
-                        <input type="number" id="baziYear" class="seal-input" placeholder="—" min="1900" max="2100" inputmode="numeric">
+            <div class="set-group">
+                <div class="set-label">生辰八字</div>
+                <div class="bazi-grid" id="baziGrid">
+                    <label class="bazi-cell" for="baziYear">
+                        <span class="bazi-cell-label">年</span>
+                        <input type="number" id="baziYear" class="bazi-input" placeholder="1996" min="1900" max="2100" inputmode="numeric">
                     </label>
-                    <label class="bazi-seal" for="baziMonth">
-                        <span class="seal-label">月</span>
-                        <select id="baziMonth" class="seal-input">
-                            <option value="">—</option>
-                            <option value="1">正</option>
-                            <option value="2">二</option>
-                            <option value="3">三</option>
-                            <option value="4">四</option>
-                            <option value="5">五</option>
-                            <option value="6">六</option>
-                            <option value="7">七</option>
-                            <option value="8">八</option>
-                            <option value="9">九</option>
-                            <option value="10">十</option>
-                            <option value="11">冬</option>
-                            <option value="12">腊</option>
+                    <label class="bazi-cell" for="baziMonth">
+                        <span class="bazi-cell-label">月</span>
+                        <select id="baziMonth" class="bazi-input">
+                            <option value="">选择</option>
+                            <option value="1">正</option><option value="2">二</option>
+                            <option value="3">三</option><option value="4">四</option>
+                            <option value="5">五</option><option value="6">六</option>
+                            <option value="7">七</option><option value="8">八</option>
+                            <option value="9">九</option><option value="10">十</option>
+                            <option value="11">冬</option><option value="12">腊</option>
                         </select>
                     </label>
-                    <label class="bazi-seal" for="baziDay">
-                        <span class="seal-label">日</span>
-                        <input type="number" id="baziDay" class="seal-input" placeholder="—" min="1" max="31" inputmode="numeric">
+                    <label class="bazi-cell" for="baziDay">
+                        <span class="bazi-cell-label">日</span>
+                        <input type="number" id="baziDay" class="bazi-input" placeholder="16" min="1" max="31" inputmode="numeric">
                     </label>
-                    <label class="bazi-seal bazi-seal-hour" for="baziHour">
-                        <span class="seal-label">时</span>
-                        <select id="baziHour" class="seal-input seal-input-hour">
-                            <option value="">—</option>
-                            <option value="0" data-range="23-1">子</option>
-                            <option value="1" data-range="1-3">丑</option>
-                            <option value="2" data-range="3-5">寅</option>
-                            <option value="3" data-range="5-7">卯</option>
-                            <option value="4" data-range="7-9">辰</option>
-                            <option value="5" data-range="9-11">巳</option>
-                            <option value="6" data-range="11-13">午</option>
-                            <option value="7" data-range="13-15">未</option>
-                            <option value="8" data-range="15-17">申</option>
-                            <option value="9" data-range="17-19">酉</option>
-                            <option value="10" data-range="19-21">戌</option>
-                            <option value="11" data-range="21-23">亥</option>
+                    <label class="bazi-cell" for="baziHour">
+                        <span class="bazi-cell-label">时</span>
+                        <select id="baziHour" class="bazi-input">
+                            <option value="">选择</option>
+                            <option value="0">子 23-1</option><option value="1">丑 1-3</option>
+                            <option value="2">寅 3-5</option><option value="3">卯 5-7</option>
+                            <option value="4">辰 7-9</option><option value="5">巳 9-11</option>
+                            <option value="6">午 11-13</option><option value="7">未 13-15</option>
+                            <option value="8">申 15-17</option><option value="9">酉 17-19</option>
+                            <option value="10">戌 19-21</option><option value="11">亥 21-23</option>
                         </select>
                     </label>
                 </div>
-                <button class="btn-save-bazi" id="saveBaziBtn">保存八字</button>
-                <div class="bazi-status" id="baziStatus"></div>
+                <button class="btn-line" id="saveBaziBtn">保存八字</button>
+                <div class="bazi-status" id="baziStatus" role="status"></div>
             </div>
-            <div class="settings-group">
-                <div class="settings-row-toggle">
-                    <span class="settings-label">每日启示</span>
-                    <label class="toggle-switch">
+            <div class="set-group">
+                <div class="set-row">
+                    <span class="set-label">每日一卦</span>
+                    <label class="toggle">
                         <input type="checkbox" id="settingDaily" checked>
-                        <span class="toggle-slider"></span>
+                        <span class="toggle-track"></span>
                     </label>
                 </div>
-                <div class="settings-hint">首页显示每日一卦与箴言</div>
-            </div>
-            <div class="settings-group">
-                <div class="settings-row-toggle">
-                    <span class="settings-label">蜡烛显示</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="settingCandle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="settings-hint">两侧烛台火焰效果</div>
+                <div class="set-hint">首页显示今日卦象与箴言</div>
             </div>
         </div>
-    </div>
-    <div class="history-overlay" id="historyOverlay"></div>
-    <div class="history-panel" id="historyPanel">
-        <div class="history-head">
-            <h3>牌册</h3>
-            <button class="btn-close" id="historyCloseBtn">×</button>
+    </aside>
+
+    <!-- 卦册抽屉 -->
+    <div class="drawer-overlay" id="historyOverlay"></div>
+    <aside class="drawer" id="historyPanel" aria-label="卦册">
+        <div class="drawer-head">
+            <h3>卦册</h3>
+            <button class="drawer-close" id="historyCloseBtn" aria-label="关闭">×</button>
         </div>
-        <div id="historyList"></div>
-        <button class="btn-clear" id="clearHistoryBtn">清空牌册</button>
-    </div>
+        <div class="drawer-body" id="historyList"></div>
+        <button class="btn-line btn-danger" id="clearHistoryBtn">清空卦册</button>
+    </aside>
+
+    <!-- 分享图弹层 -->
     <div class="share-overlay" id="shareImageContainer">
         <div class="share-box">
             <h3>分享卡片</h3>
-            <div class="share-preview" id="shareImagePreview">生成中…</div>
+            <div class="share-preview" id="shareImagePreview">生成中</div>
             <div class="share-actions">
-                <button class="btn-download" id="shareDownloadBtn">下载图片</button>
-                <button class="btn-copy" id="shareCopyBtn">复制图片</button>
-                <button class="btn-close-share" id="closeShareBtn">关闭</button>
+                <button class="btn-solid" id="shareDownloadBtn">下载图片</button>
+                <button class="btn-line" id="shareCopyBtn">复制图片</button>
+                <button class="btn-ghost" id="closeShareBtn">关闭</button>
             </div>
         </div>
     </div>
 
-    <!-- 回到顶部 -->
     <button class="back-to-top" id="backToTop" aria-label="回到顶部">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="18 15 12 9 6 15"/>
         </svg>
     </button>
 
-    <!-- Toast 提示 -->
     <div class="toast-container" id="toastContainer"></div>
-    <!-- Confirm 弹窗 -->
+
     <div class="confirm-overlay" id="confirmOverlay">
         <div class="confirm-box">
             <div class="confirm-msg" id="confirmMsg"></div>
             <div class="confirm-actions">
-                <button class="confirm-btn confirm-yes" id="confirmYes">确定</button>
-                <button class="confirm-btn confirm-no" id="confirmNo">取消</button>
+                <button class="btn-line" id="confirmNo">取消</button>
+                <button class="btn-solid" id="confirmYes">确定</button>
             </div>
         </div>
     </div>
