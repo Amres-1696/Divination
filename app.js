@@ -680,7 +680,186 @@ function getMainReading(gua, change) {
     return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」` };
 }
 
-function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
+/* ============ AI 解卦 ============ */
+const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '八字起卦（生辰八字）' };
+
+function buildAiContext(gua, change, question) {
+    const posCN = ['初', '二', '三', '四', '五', '上'];
+    const settings = loadSettings();
+    const changing = change.changingYaos || [];
+    const changePos = changing.length
+        ? changing.map(p => posCN[p]).join('、') + ' 爻动'
+        : '静卦无变';
+    // 主断之爻：复用既有取爻规则，只给 AI 主断指向的那一爻，而非六爻全丢
+    const main = getMainReading(gua, change);
+    const bianGua = (change.hasChange && change.changeGua)
+        ? `${change.changeGua[0]}（${change.changeGua[1]}）`
+        : '无（静卦）';
+    return {
+        question: (question && question.trim()) ? question.trim() : '未具问，泛问吉凶',
+        time: new Date().toLocaleString('zh-CN'),
+        method: AI_METHOD_LABEL[settings.method] || settings.method,
+        benGua: gua[0],
+        benTitle: gua[1],
+        symbol: gua[2],
+        bianGua,
+        changePos,
+        changeYao: main.text
+    };
+}
+
+function fillPrompt(tpl, ctx) {
+    return String(tpl).replace(/\{(\w+)\}/g, (m, k) => (k in ctx ? ctx[k] : m));
+}
+
+// 解读完成后写回最近一条匹配的牌册记录（按卦名+变卦+所问匹配，避免误写他条）
+function persistAiReading(reading, gua, change, question) {
+    const settings = loadSettings();
+    if (!settings.ai || !settings.ai.saveToHistory) return;
+    try {
+        const history = readHistorySafe();
+        const q = question || '心中所念';
+        const idx = history.findIndex(h =>
+            h.gua === gua[0] &&
+            (h.changeBinary || '') === (change.changeBinary || '') &&
+            (h.question || '心中所念') === q
+        );
+        if (idx !== -1) {
+            history[idx].aiReading = reading;
+            localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
+        }
+    } catch (e) {}
+}
+
+async function requestAiReading(gua, change, question, bodyEl) {
+    const ai = loadSettings().ai || {};
+    if (!ai.baseUrl || !ai.apiKey || !ai.model) {
+        bodyEl.innerHTML = '<div class="ai-error">请先在「设置 · AI 解卦」中填写完整配置（接口地址 / API Key / 模型）。</div>';
+        return;
+    }
+
+    const prompt = fillPrompt(ai.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question));
+    bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在叩问天机…</span></div>';
+
+    const url = ai.baseUrl.replace(/\/+$/, '') + '/chat/completions';
+    let acc = '';
+    let textEl = null;
+    const paint = (s) => {
+        if (!textEl) {
+            bodyEl.innerHTML = '<div class="ai-reading-text"></div>';
+            textEl = bodyEl.querySelector('.ai-reading-text');
+        }
+        textEl.textContent = s;
+    };
+    const fail = (msg) => {
+        bodyEl.innerHTML = `<div class="ai-error">${escHtml(msg)}</div><button class="btn-ai-run" id="aiRetryBtn"><span class="btn-rune">↺</span> 重试</button>`;
+        const rb = bodyEl.querySelector('#aiRetryBtn');
+        if (rb) rb.addEventListener('click', () => {
+            requestAiReading(gua, change, question, bodyEl).then(t => { if (t) persistAiReading(t, gua, change, question); });
+        });
+    };
+
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ai.apiKey },
+            body: JSON.stringify({
+                model: ai.model,
+                temperature: typeof ai.temperature === 'number' ? ai.temperature : 0.8,
+                stream: true,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        if (!resp.ok) {
+            let detail = '';
+            try { detail = (await resp.text()).slice(0, 240); } catch (e) {}
+            fail(`接口返回错误 ${resp.status}。${detail}`);
+            return;
+        }
+
+        // 回退为一次性解析：无可读流，或服务端无视 stream 直接返回整段 JSON
+        const ctype = (resp.headers.get('content-type') || '').toLowerCase();
+        const canStream = resp.body && typeof resp.body.getReader === 'function';
+        if (!canStream || ctype.indexOf('json') !== -1) {
+            const data = await resp.json();
+            acc = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '（接口未返回内容）';
+            paint(acc);
+            return acc;
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n');
+            buffer = parts.pop();
+            for (const raw of parts) {
+                const line = raw.trim();
+                if (!line || !line.startsWith('data:')) continue;
+                const payload = line.slice(5).trim();
+                if (payload === '[DONE]') continue;
+                try {
+                    const json = JSON.parse(payload);
+                    const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                    if (delta) { acc += delta; paint(acc); }
+                } catch (e) { /* 分片不完整，留待下一轮拼接 */ }
+            }
+        }
+        paint(acc || '（接口未返回内容）');
+        return acc;
+    } catch (err) {
+        fail('请求失败：' + (err && err.message ? err.message : String(err)) + '。可能是网络问题或接口被跨域(CORS)拦截。');
+    }
+}
+
+function setAiField(key, value) {
+    const settings = loadSettings();
+    settings.ai = { ...settings.ai, [key]: value };
+    saveSettings(settings);
+}
+
+function saveAiConfig() {
+    const settings = loadSettings();
+    const ai = { ...settings.ai };
+    const get = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+    ai.baseUrl = get('aiBaseUrl').trim();
+    ai.apiKey = get('aiApiKey').trim();
+    ai.model = get('aiModel').trim();
+    ai.prompt = get('aiPrompt') || DEFAULT_AI_PROMPT;
+    settings.ai = ai;
+    saveSettings(settings);
+    const status = document.getElementById('aiStatus');
+    if (status) {
+        status.textContent = '已保存 AI 配置';
+        status.className = 'bazi-status success';
+    }
+}
+
+async function testAiConnection() {
+    saveAiConfig();
+    const ai = loadSettings().ai || {};
+    const status = document.getElementById('aiStatus');
+    const setStatus = (txt, cls) => { if (status) { status.textContent = txt; status.className = 'bazi-status' + (cls ? ' ' + cls : ''); } };
+    if (!ai.baseUrl || !ai.apiKey || !ai.model) { setStatus('请先填写完整的接口配置', 'error'); return; }
+    setStatus('测试中…', '');
+    try {
+        const resp = await fetch(ai.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ai.apiKey },
+            body: JSON.stringify({ model: ai.model, stream: false, max_tokens: 8, messages: [{ role: 'user', content: '回复一个字：通' }] })
+        });
+        if (resp.ok) { setStatus('连接成功 ✓', 'success'); }
+        else { let t = ''; try { t = (await resp.text()).slice(0, 160); } catch (e) {} setStatus(`失败 ${resp.status}：${t}`, 'error'); }
+    } catch (e) {
+        setStatus('连接失败：' + (e && e.message ? e.message : String(e)) + '（或被跨域拦截）', 'error');
+    }
+}
+
+function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi) {
     const resultArea = document.getElementById('resultArea');
     const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
     const roman = toRoman(guaIndex(gua));
@@ -724,6 +903,12 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
 <div class="change-details"><p>变爻位置：第 ${pos.join('、')} 爻</p><p>${change.changeGua[4]}</p></div></section>`;
     }
 
+    const aiSettings = loadSettings().ai || {};
+    const showAiCard = !!savedAi || aiSettings.enabled;
+    const aiHtml = showAiCard
+        ? `<section class="card card-ai" id="aiReadingCard"><h3>天机 · AI 详解 <span class="hex-tag">灵犀一点</span></h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
+        : '';
+
     resultArea.innerHTML = `
 <section class="card result-header">
     <div class="chosen-card-wrap" id="chosenCardWrap"></div>
@@ -739,6 +924,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard) {
 <section class="card card-primary"><h3>卦象奥义</h3><div class="analysis-list">${analysisHtml}</div></section>
 <section class="card card-secondary"><h3>六爻之辞</h3><div class="yao-list">${yaoHtml}</div></section>
 ${changeHtml}
+${aiHtml}
 <section class="result-actions">
     <button class="btn-action btn-action-secondary" id="newDivineBtn">
         <span class="btn-rune">↺</span><span>再问一卦</span>
@@ -761,6 +947,24 @@ ${changeHtml}
     });
     const viewBtn = resultArea.querySelector('#viewHistoryBtn');
     if (viewBtn) viewBtn.addEventListener('click', toggleHistory);
+
+    const aiBody = resultArea.querySelector('#aiReadingBody');
+    if (aiBody) {
+        const runAi = () => {
+            requestAiReading(gua, change, question, aiBody).then(text => {
+                if (text) persistAiReading(text, gua, change, question);
+            });
+        };
+        if (savedAi) {
+            aiBody.innerHTML = '<div class="ai-reading-text"></div>';
+            aiBody.querySelector('.ai-reading-text').textContent = savedAi;
+        } else if (aiSettings.autoRun) {
+            runAi();
+        } else {
+            aiBody.innerHTML = '<button class="btn-ai-run" id="aiRunBtn"><span class="btn-rune">✧</span> 请神解卦 <span class="btn-rune">✧</span></button>';
+            aiBody.querySelector('#aiRunBtn').addEventListener('click', runAi);
+        }
+    }
 
     const wrap = resultArea.querySelector('#chosenCardWrap');
     let bigCard;
@@ -1285,10 +1489,10 @@ function loadHistoryItem(index) {
         changeGua: item.changeBinary ? lookupGua(item.changeBinary) : null
     };
     if (item.hexagramLines && item.hexagramLines.length === 6) {
-        renderResult(gua, item.hexagramLines, change, item.question, item.binary);
+        renderResult(gua, item.hexagramLines, change, item.question, item.binary, null, item.aiReading);
     } else {
         const hex = binToHexLines(item.binary || '000000');
-        renderResult(gua, hex, change, item.question, item.binary || '000000');
+        renderResult(gua, hex, change, item.question, item.binary || '000000', null, item.aiReading);
     }
     toggleHistory();
 }
@@ -1573,19 +1777,50 @@ function applyHourTheme() {
 }
 
 // 设置
+const DEFAULT_AI_PROMPT = `你是一位精通易经的解卦师。请结合以下卦象，为问卦者给出详尽、温暖而有条理的解读。
+
+【所问之事】{question}
+【起卦时间】{time}
+【起卦方式】{method}
+【本卦】{benGua}（{benTitle}）
+【卦象】{symbol}
+【变卦】{bianGua}
+【变爻位置】{changePos}
+【主断之爻】{changeYao}
+
+请分四段：卦象总览 / 针对所问的具体指引 / 变爻提示 / 一句箴言。语气古雅而不晦涩。`;
+
+const DEFAULT_AI = {
+    enabled: false,
+    baseUrl: '',
+    apiKey: '',
+    model: '',
+    temperature: 0.8,
+    autoRun: false,
+    saveToHistory: true,
+    prompt: DEFAULT_AI_PROMPT
+};
+
 const DEFAULT_SETTINGS = {
     method: 'coin',
     showDaily: true,
     showCandle: true,
-    bazi: null
+    bazi: null,
+    ai: DEFAULT_AI
 };
 
 function loadSettings() {
     try {
         const raw = localStorage.getItem('tianyan_settings');
-        if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            const merged = { ...DEFAULT_SETTINGS, ...parsed };
+            // ai 子对象深合并：老配置缺字段时用默认补齐，避免 undefined
+            merged.ai = { ...DEFAULT_AI, ...(parsed.ai || {}) };
+            return merged;
+        }
     } catch(e) {}
-    return { ...DEFAULT_SETTINGS };
+    return { ...DEFAULT_SETTINGS, ai: { ...DEFAULT_AI } };
 }
 
 function saveSettings(settings) {
@@ -1658,6 +1893,19 @@ function restoreSettingsUI() {
 
     const candleEl = document.getElementById('settingCandle');
     if (candleEl) candleEl.checked = settings.showCandle;
+
+    // AI 解卦回填
+    const ai = settings.ai || {};
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+    setChk('settingAiEnabled', ai.enabled);
+    setVal('aiBaseUrl', ai.baseUrl || '');
+    setVal('aiApiKey', ai.apiKey || '');
+    setVal('aiModel', ai.model || '');
+    setChk('settingAiAuto', ai.autoRun);
+    setVal('aiPrompt', ai.prompt || DEFAULT_AI_PROMPT);
+    const aiConfig = document.getElementById('aiConfig');
+    if (aiConfig) aiConfig.style.display = ai.enabled ? '' : 'none';
 
     // 恢复八字
     if (settings.bazi) {
@@ -1832,6 +2080,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
     document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
+
+    // AI 解卦设置
+    const aiEnabledEl = document.getElementById('settingAiEnabled');
+    if (aiEnabledEl) aiEnabledEl.addEventListener('change', function() {
+        setAiField('enabled', this.checked);
+        const cfg = document.getElementById('aiConfig');
+        if (cfg) cfg.style.display = this.checked ? '' : 'none';
+    });
+    const aiAutoEl = document.getElementById('settingAiAuto');
+    if (aiAutoEl) aiAutoEl.addEventListener('change', function() { setAiField('autoRun', this.checked); });
+    const saveAiBtn = document.getElementById('saveAiBtn');
+    if (saveAiBtn) saveAiBtn.addEventListener('click', saveAiConfig);
+    const testAiBtn = document.getElementById('testAiBtn');
+    if (testAiBtn) testAiBtn.addEventListener('click', testAiConnection);
+    const resetPromptBtn = document.getElementById('resetPromptBtn');
+    if (resetPromptBtn) resetPromptBtn.addEventListener('click', function() {
+        const el = document.getElementById('aiPrompt');
+        if (el) el.value = DEFAULT_AI_PROMPT;
+    });
 
     // Esc 关闭当前打开的弹层（按层级优先级，从最上层往下）
     document.addEventListener('keydown', (e) => {

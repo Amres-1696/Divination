@@ -371,6 +371,49 @@
                 </div>
                 <div class="settings-hint">两侧烛台火焰效果</div>
             </div>
+            <div class="settings-group">
+                <div class="settings-row-toggle">
+                    <span class="settings-label">AI 解卦</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingAiEnabled">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="settings-hint">起卦后由 AI 详解卦象，需填写兼容 OpenAI 格式的接口</div>
+                <div class="ai-config" id="aiConfig">
+                    <label class="ai-field">
+                        <span class="ai-field-label">接口地址</span>
+                        <input type="text" id="aiBaseUrl" class="settings-input" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">
+                    </label>
+                    <label class="ai-field">
+                        <span class="ai-field-label">API Key</span>
+                        <input type="password" id="aiApiKey" class="settings-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
+                    </label>
+                    <label class="ai-field">
+                        <span class="ai-field-label">模型名称</span>
+                        <input type="text" id="aiModel" class="settings-input" placeholder="如 deepseek-chat / gpt-4o-mini" autocomplete="off" spellcheck="false">
+                    </label>
+                    <div class="settings-row-toggle ai-auto-row">
+                        <span class="settings-label">起卦后自动解卦</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingAiAuto">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="settings-hint">关闭则在结果页点「请神解卦」手动触发</div>
+                    <label class="ai-field ai-field-block">
+                        <span class="ai-field-label">提示词模板</span>
+                        <textarea id="aiPrompt" class="settings-textarea" rows="9" spellcheck="false"></textarea>
+                    </label>
+                    <button class="btn-reset-prompt" id="resetPromptBtn">恢复默认提示词</button>
+                    <div class="ai-actions">
+                        <button class="btn-save-bazi btn-save-ai" id="saveAiBtn">保存配置</button>
+                        <button class="btn-save-bazi btn-test-ai" id="testAiBtn">测试连接</button>
+                    </div>
+                    <div class="bazi-status" id="aiStatus"></div>
+                    <div class="settings-hint ai-warn">密钥仅保存在本机浏览器中，不会上传。浏览器直连接口若被跨域(CORS)拦截，请改用支持跨域的服务或自建代理。</div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="history-overlay" id="historyOverlay"></div>
