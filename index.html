@@ -381,6 +381,20 @@
                 </div>
                 <div class="settings-hint">起卦后由 AI 详解卦象，需填写兼容 OpenAI 格式的接口</div>
                 <div class="ai-config" id="aiConfig">
+                    <div class="ai-profile-bar">
+                        <div class="ai-profile-row">
+                            <select id="aiProfileSelect" class="settings-select ai-profile-select" aria-label="选择配置"></select>
+                            <span class="ai-profile-count" id="aiProfileCount">1/5</span>
+                        </div>
+                        <div class="ai-profile-actions">
+                            <button type="button" class="btn-profile" id="aiProfileNew">＋ 新建</button>
+                            <button type="button" class="btn-profile btn-profile-del" id="aiProfileDelete">删除</button>
+                        </div>
+                        <label class="ai-field ai-field-block">
+                            <span class="ai-field-label">配置名称</span>
+                            <input type="text" id="aiProfileName" class="settings-input" placeholder="如 本地 Claude 桥接 / DeepSeek" autocomplete="off" spellcheck="false">
+                        </label>
+                    </div>
                     <label class="ai-field">
                         <span class="ai-field-label">接口地址</span>
                         <input type="text" id="aiBaseUrl" class="settings-input" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">

@@ -822,21 +822,110 @@ function setAiField(key, value) {
     saveSettings(settings);
 }
 
+function setAiStatus(txt, cls) {
+    const status = document.getElementById('aiStatus');
+    if (status) { status.textContent = txt; status.className = 'bazi-status' + (cls ? ' ' + cls : ''); }
+}
+
+// 读表单 → 写入当前激活档案（不落盘、不提示），并镜像到 ai 顶层
+function writeFormToActiveProfile(ai) {
+    const get = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
+    const p = ai.profiles[ai.activeProfile];
+    if (!p) return;
+    const nameEl = document.getElementById('aiProfileName');
+    if (nameEl && nameEl.value.trim()) p.name = nameEl.value.trim();
+    p.baseUrl = get('aiBaseUrl').trim();
+    p.apiKey = get('aiApiKey').trim();
+    p.model = get('aiModel').trim();
+    p.prompt = get('aiPrompt') || DEFAULT_AI_PROMPT;
+    mirrorActiveProfile(ai);
+}
+
+// 当前激活档案 → 回填表单
+function loadActiveProfileToForm(ai) {
+    const p = ai.profiles[ai.activeProfile] || {};
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    setVal('aiProfileName', p.name || '');
+    setVal('aiBaseUrl', p.baseUrl || '');
+    setVal('aiApiKey', p.apiKey || '');
+    setVal('aiModel', p.model || '');
+    setVal('aiPrompt', p.prompt || DEFAULT_AI_PROMPT);
+}
+
+// 重建下拉、计数、按钮可用态
+function renderAiProfileSelect(ai) {
+    const sel = document.getElementById('aiProfileSelect');
+    if (sel) {
+        sel.innerHTML = ai.profiles.map((p, i) =>
+            `<option value="${i}">${escHtml(p.name || ('配置 ' + (i + 1)))}</option>`
+        ).join('');
+        sel.value = String(ai.activeProfile);
+    }
+    const countEl = document.getElementById('aiProfileCount');
+    if (countEl) countEl.textContent = ai.profiles.length + '/' + AI_PROFILE_MAX;
+    const newBtn = document.getElementById('aiProfileNew');
+    if (newBtn) newBtn.disabled = ai.profiles.length >= AI_PROFILE_MAX;
+    const delBtn = document.getElementById('aiProfileDelete');
+    if (delBtn) delBtn.disabled = ai.profiles.length <= 1;
+}
+
 function saveAiConfig() {
     const settings = loadSettings();
-    const ai = { ...settings.ai };
-    const get = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
-    ai.baseUrl = get('aiBaseUrl').trim();
-    ai.apiKey = get('aiApiKey').trim();
-    ai.model = get('aiModel').trim();
-    ai.prompt = get('aiPrompt') || DEFAULT_AI_PROMPT;
-    settings.ai = ai;
+    writeFormToActiveProfile(settings.ai);
     saveSettings(settings);
-    const status = document.getElementById('aiStatus');
-    if (status) {
-        status.textContent = '已保存 AI 配置';
-        status.className = 'bazi-status success';
-    }
+    renderAiProfileSelect(settings.ai);
+    setAiStatus('已保存「' + (settings.ai.profiles[settings.ai.activeProfile].name) + '」', 'success');
+}
+
+function switchAiProfile(index) {
+    const settings = loadSettings();
+    const ai = settings.ai;
+    writeFormToActiveProfile(ai); // 切走前先把当前编辑留在原档案
+    index = parseInt(index, 10);
+    if (isNaN(index) || index < 0 || index >= ai.profiles.length) index = 0;
+    ai.activeProfile = index;
+    mirrorActiveProfile(ai);
+    saveSettings(settings);
+    loadActiveProfileToForm(ai);
+    renderAiProfileSelect(ai);
+    setAiStatus('已切换到「' + (ai.profiles[index].name) + '」', 'success');
+}
+
+function newAiProfile() {
+    const settings = loadSettings();
+    const ai = settings.ai;
+    if (ai.profiles.length >= AI_PROFILE_MAX) { setAiStatus('最多保存 ' + AI_PROFILE_MAX + ' 套配置', 'error'); return; }
+    writeFormToActiveProfile(ai); // 保住当前编辑
+    const p = makeAiProfile('配置 ' + (ai.profiles.length + 1), {});
+    ai.profiles.push(p);
+    ai.activeProfile = ai.profiles.length - 1;
+    mirrorActiveProfile(ai);
+    saveSettings(settings);
+    loadActiveProfileToForm(ai);
+    renderAiProfileSelect(ai);
+    setAiStatus('已新建「' + p.name + '」，填写后保存', 'success');
+}
+
+function deleteAiProfile() {
+    const settings = loadSettings();
+    const ai = settings.ai;
+    if (ai.profiles.length <= 1) { setAiStatus('至少保留一套配置', 'error'); return; }
+    const idx = ai.activeProfile;
+    const removed = ai.profiles[idx];
+    showConfirm('确定删除配置「' + (removed.name || ('配置 ' + (idx + 1))) + '」？').then(ok => {
+        if (!ok) return;
+        const fresh = loadSettings();
+        const fAi = fresh.ai;
+        if (fAi.profiles.length <= 1) return;
+        const rmIdx = Math.min(idx, fAi.profiles.length - 1);
+        fAi.profiles.splice(rmIdx, 1);
+        fAi.activeProfile = Math.max(0, rmIdx - 1);
+        mirrorActiveProfile(fAi);
+        saveSettings(fresh);
+        loadActiveProfileToForm(fAi);
+        renderAiProfileSelect(fAi);
+        setAiStatus('已删除', 'success');
+    });
 }
 
 async function testAiConnection() {
@@ -1811,6 +1900,44 @@ const DEFAULT_AI = {
     prompt: DEFAULT_AI_PROMPT
 };
 
+// 一套配置最多保存数量
+const AI_PROFILE_MAX = 5;
+// 仅档案私有的连接字段（全局偏好如 enabled/autoRun/temperature 不入档案）
+const AI_PROFILE_FIELDS = ['baseUrl', 'apiKey', 'model', 'prompt'];
+
+function makeAiProfile(name, src) {
+    src = src || {};
+    return {
+        id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: name || '新配置',
+        baseUrl: src.baseUrl || '',
+        apiKey: src.apiKey || '',
+        model: src.model || '',
+        prompt: src.prompt || DEFAULT_AI_PROMPT
+    };
+}
+
+// 把激活档案的连接字段镜像回 ai 顶层，让下游解卦/测试逻辑零改动
+function mirrorActiveProfile(ai) {
+    const p = ai.profiles[ai.activeProfile] || ai.profiles[0];
+    if (!p) return;
+    AI_PROFILE_FIELDS.forEach(k => { ai[k] = p[k]; });
+}
+
+// 迁移 + 校正：老的单套配置自动包成「配置 1」；越界回正；同步镜像
+function ensureAiProfiles(ai) {
+    if (!Array.isArray(ai.profiles) || ai.profiles.length === 0) {
+        ai.profiles = [ makeAiProfile('配置 1', ai) ];
+        ai.activeProfile = 0;
+    }
+    if (ai.profiles.length > AI_PROFILE_MAX) ai.profiles = ai.profiles.slice(0, AI_PROFILE_MAX);
+    if (typeof ai.activeProfile !== 'number' || ai.activeProfile < 0 || ai.activeProfile >= ai.profiles.length) {
+        ai.activeProfile = 0;
+    }
+    mirrorActiveProfile(ai);
+    return ai;
+}
+
 const DEFAULT_SETTINGS = {
     method: 'coin',
     showDaily: true,
@@ -1827,10 +1954,11 @@ function loadSettings() {
             const merged = { ...DEFAULT_SETTINGS, ...parsed };
             // ai 子对象深合并：老配置缺字段时用默认补齐，避免 undefined
             merged.ai = { ...DEFAULT_AI, ...(parsed.ai || {}) };
+            ensureAiProfiles(merged.ai);
             return merged;
         }
     } catch(e) {}
-    return { ...DEFAULT_SETTINGS, ai: { ...DEFAULT_AI } };
+    return { ...DEFAULT_SETTINGS, ai: ensureAiProfiles({ ...DEFAULT_AI }) };
 }
 
 function saveSettings(settings) {
@@ -1909,11 +2037,16 @@ function restoreSettingsUI() {
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
     setChk('settingAiEnabled', ai.enabled);
-    setVal('aiBaseUrl', ai.baseUrl || '');
-    setVal('aiApiKey', ai.apiKey || '');
-    setVal('aiModel', ai.model || '');
+    if (ai.profiles) {
+        renderAiProfileSelect(ai);
+        loadActiveProfileToForm(ai);
+    } else {
+        setVal('aiBaseUrl', ai.baseUrl || '');
+        setVal('aiApiKey', ai.apiKey || '');
+        setVal('aiModel', ai.model || '');
+        setVal('aiPrompt', ai.prompt || DEFAULT_AI_PROMPT);
+    }
     setChk('settingAiAuto', ai.autoRun);
-    setVal('aiPrompt', ai.prompt || DEFAULT_AI_PROMPT);
     const aiConfig = document.getElementById('aiConfig');
     if (aiConfig) aiConfig.style.display = ai.enabled ? '' : 'none';
 
@@ -2104,6 +2237,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveAiBtn) saveAiBtn.addEventListener('click', saveAiConfig);
     const testAiBtn = document.getElementById('testAiBtn');
     if (testAiBtn) testAiBtn.addEventListener('click', testAiConnection);
+
+    // 多配置档案：切换 / 新建 / 删除
+    const aiProfileSel = document.getElementById('aiProfileSelect');
+    if (aiProfileSel) aiProfileSel.addEventListener('change', function() { switchAiProfile(this.value); });
+    const aiProfileNewBtn = document.getElementById('aiProfileNew');
+    if (aiProfileNewBtn) aiProfileNewBtn.addEventListener('click', newAiProfile);
+    const aiProfileDelBtn = document.getElementById('aiProfileDelete');
+    if (aiProfileDelBtn) aiProfileDelBtn.addEventListener('click', deleteAiProfile);
+    // 改名即时反映到下拉
+    const aiProfileNameEl = document.getElementById('aiProfileName');
+    if (aiProfileNameEl) aiProfileNameEl.addEventListener('input', function() {
+        const opt = aiProfileSel && aiProfileSel.selectedOptions[0];
+        if (opt) opt.textContent = this.value.trim() || ('配置 ' + (aiProfileSel.selectedIndex + 1));
+    });
     const resetPromptBtn = document.getElementById('resetPromptBtn');
     if (resetPromptBtn) resetPromptBtn.addEventListener('click', function() {
         const el = document.getElementById('aiPrompt');

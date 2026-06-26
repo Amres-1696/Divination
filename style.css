@@ -3291,6 +3291,62 @@ select:focus-visible {
 .ai-actions .btn-save-bazi { letter-spacing: 0.25em; }
 .ai-warn { color: var(--gold-hint); opacity: 0.7; line-height: 1.6; }
 
+/* ============ AI 解卦 · 多配置档案 ============ */
+.ai-profile-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(26,15,30,0.45);
+    border: 1px solid rgba(201,169,110,0.22);
+    border-radius: 3px;
+}
+.ai-profile-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ai-profile-select { flex: 1; }
+.ai-profile-count {
+    flex: none;
+    font-family: var(--font-roman);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-label);
+    padding: 4px 10px;
+    border: 1px solid rgba(201,169,110,0.25);
+    border-radius: 2px;
+    min-width: 3em;
+    text-align: center;
+}
+.ai-profile-actions { display: flex; gap: 8px; }
+.btn-profile {
+    flex: 1;
+    padding: 7px 10px;
+    background: linear-gradient(135deg, rgba(74,22,40,0.4), rgba(26,20,30,0.6));
+    color: var(--gold-pale);
+    border: 1px solid rgba(201,169,110,0.4);
+    border-radius: 2px;
+    font-family: var(--font-eastern);
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.btn-profile:hover:not(:disabled) {
+    border-color: var(--arcana-gold);
+    box-shadow: 0 0 10px rgba(244,196,122,0.2);
+}
+.btn-profile:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+.btn-profile-del:hover:not(:disabled) {
+    border-color: var(--aura-xiong);
+    color: #e8a0a0;
+    box-shadow: 0 0 10px rgba(168,72,72,0.25);
+}
+
 /* ============ AI 解卦 · 结果卡片 ============ */
 .card-ai {
     border-top: 2px solid var(--aura-shen);
