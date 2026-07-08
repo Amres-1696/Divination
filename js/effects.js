@@ -167,15 +167,6 @@ function triggerIgnitionChain() {
     document.body.appendChild(ring);
     setTimeout(() => ring.remove(), 1200);
 
-    setTimeout(() => {
-        document.querySelectorAll('.candle').forEach(c => {
-            c.classList.remove('flare');
-            void c.offsetWidth;
-            c.classList.add('flare');
-            setTimeout(() => c.classList.remove('flare'), 2000);
-        });
-    }, 320);
-
     const layers = ['.mat-l1', '.mat-l2', '.mat-l3', '.mat-l4', '.mat-l5'];
     layers.forEach((sel, i) => {
         setTimeout(() => {

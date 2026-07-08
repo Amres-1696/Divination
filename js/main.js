@@ -33,16 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Intersection Observer：暂停不可见元素的动画
     if ('IntersectionObserver' in window) {
-        // 烛台：不可见时暂停 CSS 动画
-        const candleObserver = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                e.target.style.animationPlayState = e.isIntersecting ? 'running' : 'paused';
-                const flames = e.target.querySelectorAll('.flame, .flame-inner, .flame-halo');
-                flames.forEach(f => f.style.animationPlayState = e.isIntersecting ? 'running' : 'paused');
-            });
-        }, { threshold: 0 });
-        document.querySelectorAll('.candle').forEach(c => candleObserver.observe(c));
-
         // 牌垫：不可见时暂停呼吸动画
         const mat = document.querySelector('.embroidery-mat');
         if (mat) {
@@ -86,7 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
-    document.getElementById('settingCandle').addEventListener('change', function() { saveSetting('showCandle', this.checked); });
 
     // AI 解卦设置
     const aiEnabledEl = document.getElementById('settingAiEnabled');

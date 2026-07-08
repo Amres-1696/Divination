@@ -5,7 +5,6 @@
 const DEFAULT_SETTINGS = {
     method: 'coin',
     showDaily: true,
-    showCandle: true,
     bazi: null,
     ai: DEFAULT_AI
 };
@@ -77,11 +76,6 @@ function applySettings(settings) {
     // 每日启示
     const dailyEl = document.getElementById('dailyGua');
     if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';
-
-    // 蜡烛
-    document.querySelectorAll('.candle').forEach(c => {
-        c.style.display = settings.showCandle ? '' : 'none';
-    });
 }
 
 function restoreSettingsUI() {
@@ -92,9 +86,6 @@ function restoreSettingsUI() {
 
     const dailyEl = document.getElementById('settingDaily');
     if (dailyEl) dailyEl.checked = settings.showDaily;
-
-    const candleEl = document.getElementById('settingCandle');
-    if (candleEl) candleEl.checked = settings.showCandle;
 
     // AI 解卦回填
     const ai = settings.ai || {};

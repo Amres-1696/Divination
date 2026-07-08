@@ -33,7 +33,7 @@ class ArcanaRitual {
         this.statusEl.classList.add('show');
     }
     async actAwaken() {
-        this.setStatus('Ⅰ · AWAKENING', '展台燃烛');
+        this.setStatus('Ⅰ · AWAKENING', '牌垫苏醒');
         await sleep(1200);
     }
     async actRiffle() {
@@ -203,24 +203,10 @@ class ArcanaRitual {
     }
     async actFlip() {
         this.setStatus('Ⅴ · REVELATION', '翻开显影');
-        // 屏息时刻：暴风雨前的宁静（章节 2.5.1）
-        const flames = document.querySelectorAll('.candle .flame, .candle .flame-inner, .candle .flame-halo');
         this.chosenCard.style.transition = 'transform 0.65s ease, filter 0.65s ease';
         this.chosenCard.style.transform = 'translate3d(0, -10px, 60px) rotate(0deg) scale(1.10)';
         this.chosenCard.style.filter = 'drop-shadow(0 0 6px rgba(244,196,122,0.4))';
-        flames.forEach(f => {
-            f._origTransform = f.style.transform;
-            f.style.transition = 'transform 0.65s ease, opacity 0.65s ease';
-            f.style.transform = 'scale(0.7)';
-            f.style.opacity = '0.6';
-        });
         await sleep(800);
-        flames.forEach(f => {
-            f.style.transform = f._origTransform || '';
-            f.style.opacity = '';
-            // 让原 keyframe 动画接管
-            setTimeout(() => { f.style.transition = ''; }, 700);
-        });
         this.chosenCard.style.transform = 'translate3d(0, -20px, 60px) rotate(0deg) scale(1.15)';
         this.chosenCard.style.filter = '';
         haptic(25);
