@@ -1342,12 +1342,74 @@ footer {
     padding-top: 20px;
     border-top: 1px solid rgba(201,169,110,0.15);
     color: var(--parchment-dark);
-    opacity: 0.8;
     font-family: var(--font-eastern);
     font-size: 0.85rem;
     letter-spacing: 0.25em;
 }
 footer p { margin: 4px 0; }
+.github-support {
+    width: min(100%, 440px);
+    margin: 0 auto 22px;
+    padding: 18px;
+    border: 1px solid rgba(201,169,110,.25);
+    border-radius: 5px;
+    background: #181315;
+    box-shadow: 0 12px 34px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.015);
+    letter-spacing: normal;
+    text-align: left;
+}
+.github-support-copy {
+    margin: 0 0 14px;
+    color: rgba(232,220,192,.72);
+    font-size: .82rem;
+    line-height: 1.75;
+    letter-spacing: .08em;
+}
+.github-support-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 0 18px;
+    border: 1px solid rgba(201,169,110,.5);
+    border-radius: 3px;
+    background: #211719;
+    color: var(--parchment);
+    font-size: .9rem;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-decoration: none;
+    transition: color 180ms ease, border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+.github-support-link:hover,
+.github-support-link:focus-visible {
+    color: #f2d49b;
+    border-color: rgba(232,196,126,.86);
+    background: #2a1b1d;
+    box-shadow: 0 8px 24px rgba(0,0,0,.22), inset 0 0 18px rgba(201,169,110,.04);
+    transform: translateY(-2px);
+    outline: none;
+}
+.github-support-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+.github-support-star {
+    color: #d8ae61;
+    font-size: .78rem;
+    transition: color 180ms ease, transform 180ms ease;
+}
+.github-support-link:hover .github-support-star,
+.github-support-link:focus-visible .github-support-star {
+    color: #f1c86e;
+    transform: rotate(12deg) scale(1.16);
+}
+.footer-meta {
+    color: var(--parchment-dark);
+    opacity: .8;
+}
 
 /* ============ 历史面板（牌册）============ */
 body.dialog-open { overflow: hidden; }
@@ -2692,7 +2754,11 @@ body.mood-xiong .card h3 {
     .gold-streak-container,
     .ritual-stage { display: none; }
     .history-overlay,
-    .history-panel { transition-duration: .01ms; }
+    .history-panel,
+    .github-support-link,
+    .github-support-star { transition-duration: .01ms; }
+    .github-support-link:hover,
+    .github-support-link:focus-visible { transform: none; }
 }
 
 
@@ -3311,4 +3377,7 @@ select:focus-visible {
     .ai-actions,
     .ai-warn,
     .ai-config > .bazi-status { grid-column: 1; }
+    .github-support { padding: 15px; }
+    .github-support-copy { font-size: .78rem; }
+    .github-support-link { padding: 0 12px; font-size: .84rem; }
 }
