@@ -166,11 +166,11 @@
             <p>&copy; 2026 · 天衍 DESTINY</p>
         </footer>
     </div>
-    <div class="history-overlay" id="settingsOverlay"></div>
-    <div class="history-panel settings-panel" id="settingsPanel">
+    <div class="history-overlay" id="settingsOverlay" aria-hidden="true"></div>
+    <div class="history-panel settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
         <div class="history-head">
-            <h3>设置</h3>
-            <button class="btn-close" id="settingsCloseBtn">×</button>
+            <h3 id="settingsPanelTitle">设置</h3>
+            <button class="btn-close" id="settingsCloseBtn" aria-label="关闭设置">×</button>
         </div>
         <div class="settings-content">
             <div class="settings-group">
@@ -301,11 +301,11 @@
             </div>
         </div>
     </div>
-    <div class="history-overlay" id="historyOverlay"></div>
-    <div class="history-panel" id="historyPanel">
+    <div class="history-overlay" id="historyOverlay" aria-hidden="true"></div>
+    <div class="history-panel" id="historyPanel" role="dialog" aria-modal="true" aria-labelledby="historyPanelTitle" aria-hidden="true">
         <div class="history-head">
-            <h3>牌册</h3>
-            <button class="btn-close" id="historyCloseBtn">×</button>
+            <h3 id="historyPanelTitle">牌册</h3>
+            <button class="btn-close" id="historyCloseBtn" aria-label="关闭牌册">×</button>
         </div>
         <div id="historyList"></div>
         <button class="btn-clear" id="clearHistoryBtn">清空牌册</button>

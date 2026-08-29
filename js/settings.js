@@ -140,9 +140,40 @@ function syncHourSealRange() {
     seal.dataset.range = (opt && opt.dataset && opt.dataset.range) || '';
 }
 
-function toggleSettings() {
+function setFloatingPanelState(panelId, overlayId, shouldOpen) {
+    const panel = document.getElementById(panelId);
+    const overlay = document.getElementById(overlayId);
+    if (!panel || !overlay) return false;
+
+    if (shouldOpen) {
+        const peerPanelId = panelId === 'settingsPanel' ? 'historyPanel' : 'settingsPanel';
+        const peerOverlayId = overlayId === 'settingsOverlay' ? 'historyOverlay' : 'settingsOverlay';
+        const peerPanel = document.getElementById(peerPanelId);
+        const peerOverlay = document.getElementById(peerOverlayId);
+        if (peerPanel) {
+            peerPanel.classList.remove('show');
+            peerPanel.setAttribute('aria-hidden', 'true');
+        }
+        if (peerOverlay) {
+            peerOverlay.classList.remove('show');
+            peerOverlay.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    panel.classList.toggle('show', shouldOpen);
+    overlay.classList.toggle('show', shouldOpen);
+    panel.setAttribute('aria-hidden', String(!shouldOpen));
+    overlay.setAttribute('aria-hidden', String(!shouldOpen));
+    document.body.classList.toggle('dialog-open', Boolean(document.querySelector('.history-panel.show')));
+
+    if (shouldOpen) {
+        window.setTimeout(() => panel.querySelector('.btn-close')?.focus({ preventScroll: true }), 180);
+    }
+    return shouldOpen;
+}
+
+function toggleSettings(force) {
     const panel = document.getElementById('settingsPanel');
-    const overlay = document.getElementById('settingsOverlay');
-    panel.classList.toggle('show');
-    overlay.classList.toggle('show');
+    const shouldOpen = typeof force === 'boolean' ? force : !panel.classList.contains('show');
+    return setFloatingPanelState('settingsPanel', 'settingsOverlay', shouldOpen);
 }

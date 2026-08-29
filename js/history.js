@@ -30,12 +30,10 @@ function saveToHistory(question, gua, fullBin, hexLines, change) {
     }
 }
 
-function toggleHistory() {
+function toggleHistory(force) {
     const panel = document.getElementById('historyPanel');
-    const overlay = document.getElementById('historyOverlay');
-    panel.classList.toggle('show');
-    overlay.classList.toggle('show');
-    if (panel.classList.contains('show')) loadHistory();
+    const shouldOpen = typeof force === 'boolean' ? force : !panel.classList.contains('show');
+    if (setFloatingPanelState('historyPanel', 'historyOverlay', shouldOpen)) loadHistory();
 }
 
 function loadHistory() {

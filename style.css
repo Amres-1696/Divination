@@ -3273,3 +3273,391 @@ select:focus-visible {
     0%, 100% { opacity: 0.25; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1.15); }
 }
+
+/* ============ 2026-08：日课卡面与浮层重构 ============ */
+body.dialog-open { overflow: hidden; }
+
+/* 日课采用哑光墨绢与朱砂印，不再使用棕色渐变。 */
+.daily-gua {
+    isolation: isolate;
+    min-height: 112px;
+    margin-bottom: 30px;
+    padding: 20px 24px 18px;
+    overflow: visible;
+    background: #181315;
+    border: 1px solid rgba(201, 169, 110, 0.24);
+    border-radius: 4px;
+    box-shadow:
+        0 12px 30px rgba(8, 4, 5, 0.18),
+        inset 0 0 0 1px rgba(255, 239, 204, 0.02);
+    transition: transform 260ms cubic-bezier(.2,.8,.2,1), border-color 260ms ease, box-shadow 260ms ease;
+}
+.daily-gua::before {
+    inset: 4px;
+    border: 1px dashed rgba(201, 169, 110, 0.13);
+    border-radius: 2px;
+}
+.daily-gua::after {
+    content: none;
+}
+.daily-gua:hover {
+    transform: translateY(-1px);
+    border-color: rgba(225, 191, 127, 0.44);
+    box-shadow:
+        0 16px 34px rgba(8, 4, 5, 0.25),
+        inset 0 0 0 1px rgba(255, 239, 204, 0.035);
+    filter: none;
+}
+.daily-today-seal {
+    top: -10px;
+    left: 24px;
+    padding: 2px 10px 3px;
+    color: #f2d9ad;
+    background: #91413d;
+    border: 1px solid rgba(224, 183, 111, 0.68);
+    border-radius: 2px;
+    box-shadow: 0 3px 9px rgba(79, 24, 26, 0.34);
+}
+.daily-label {
+    margin: 3px 0 13px 66px;
+    color: #a78b60;
+    font-size: 0.61rem;
+    letter-spacing: 0.34em;
+}
+.daily-content {
+    display: grid;
+    grid-template-columns: auto auto auto auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+}
+.daily-roman {
+    min-width: 56px;
+    padding: 4px 9px;
+    color: #b89a68;
+    background: transparent;
+    border-color: rgba(207, 173, 111, 0.26);
+    border-radius: 3px;
+    font-variant-numeric: tabular-nums;
+}
+.daily-symbol {
+    color: #ead6ae;
+    font-size: 1.72rem;
+    line-height: 1;
+}
+.daily-name {
+    color: #eee0c2;
+    font-size: 1.12rem;
+    white-space: nowrap;
+}
+.daily-divider { color: #8b6b3d; opacity: 0.72; }
+.daily-motto {
+    min-width: 0;
+    color: #b9a88b;
+    opacity: 0.9;
+    text-wrap: balance;
+}
+.daily-gua:hover .daily-symbol { text-shadow: none; }
+
+/* 设置与牌册改为居中的案卷式浮层，彻底取消右侧抽屉。 */
+.history-overlay {
+    display: block;
+    z-index: 190;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: rgba(8, 5, 6, 0.76);
+    backdrop-filter: blur(7px) saturate(.75);
+    transition: opacity 240ms ease, visibility 240ms ease;
+}
+.history-overlay.show {
+    display: block;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    animation: none;
+}
+.history-panel,
+.settings-panel {
+    position: fixed;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    z-index: 200;
+    display: flex;
+    width: min(860px, calc(100vw - 48px));
+    height: auto;
+    max-height: min(84dvh, 780px);
+    padding: 0;
+    overflow: hidden;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: #171113;
+    border: 1px solid rgba(207, 173, 111, 0.3);
+    border-radius: 5px;
+    box-shadow:
+        0 34px 90px rgba(5, 2, 3, 0.64),
+        0 0 0 6px rgba(72, 39, 35, 0.16),
+        inset 0 0 0 1px rgba(255, 239, 204, 0.025);
+    transform: translate(-50%, calc(-50% + 18px)) scale(.985);
+    transform-origin: 50% 45%;
+    transition:
+        transform 360ms cubic-bezier(.18,.86,.22,1),
+        opacity 220ms ease,
+        visibility 220ms ease;
+}
+.settings-panel { width: min(920px, calc(100vw - 48px)); }
+.history-panel.show,
+.settings-panel.show {
+    right: auto;
+    left: 50%;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+.history-head {
+    flex: 0 0 auto;
+    min-height: 74px;
+    margin: 0;
+    padding: 18px 22px 16px 26px;
+    background: #171113;
+    border-bottom: 1px dashed rgba(207, 173, 111, 0.2);
+}
+.history-head::before {
+    content: '◆';
+    width: auto;
+    height: auto;
+    margin-right: 13px;
+    color: #9a7944;
+    background: transparent;
+    font-size: 0.55rem;
+}
+.history-head h3 {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: 13px;
+    color: #ead7af;
+    font-size: 1.3rem;
+    letter-spacing: 0.26em;
+}
+#settingsPanel .history-head h3::after,
+#historyPanel .history-head h3::after {
+    color: #8f7957;
+    font-family: var(--font-roman);
+    font-size: .58rem;
+    font-weight: 400;
+    letter-spacing: .24em;
+}
+#settingsPanel .history-head h3::after { content: 'PREFERENCES'; }
+#historyPanel .history-head h3::after { content: 'COLLECTION'; }
+.btn-close {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    color: #bda478;
+    background: #120e0f;
+    border-color: rgba(207, 173, 111, 0.28);
+    border-radius: 3px;
+    font-size: 1.1rem;
+}
+.btn-close:hover {
+    color: #f1ddb5;
+    background: #743532;
+    border-color: #a95a52;
+    transform: rotate(4deg);
+}
+.btn-close:active { transform: scale(.96); }
+.history-panel .btn-close:focus-visible {
+    outline: 1px solid rgba(244, 196, 122, .72);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+
+#historyList {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 22px 24px 8px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(118px, auto);
+    align-content: start;
+    gap: 12px;
+    scrollbar-color: rgba(207, 173, 111, .35) transparent;
+}
+.history-empty { grid-column: 1 / -1; min-height: 310px; justify-content: center; }
+.history-item {
+    min-width: 0;
+    min-height: 118px;
+    margin: 0;
+    padding: 13px 14px;
+    background: #1a1416;
+    border-color: rgba(207, 173, 111, 0.14);
+    border-radius: 3px;
+}
+.history-item:hover {
+    background: #21191b;
+    border-color: rgba(207, 173, 111, 0.42);
+    transform: translateY(-2px);
+}
+.btn-clear {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 14px 24px 22px;
+    padding: 11px 18px;
+    background: #181113;
+    border-color: rgba(168, 72, 72, 0.34);
+    border-radius: 5px;
+}
+.btn-clear:hover { background: #271517; }
+
+.settings-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 22px 24px 26px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    scrollbar-color: rgba(207, 173, 111, .35) transparent;
+}
+.settings-group {
+    position: relative;
+    min-width: 0;
+    padding: 18px;
+    background: #191315;
+    border-color: rgba(207, 173, 111, 0.14);
+    border-radius: 4px;
+}
+.settings-group::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed rgba(201, 169, 110, .07);
+    border-radius: 2px;
+    pointer-events: none;
+}
+.settings-content > .settings-group:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+}
+.settings-content > .settings-group:nth-child(2),
+.settings-content > .settings-group:nth-child(4) { grid-column: 1 / -1; }
+.settings-label { color: #d9bc87; }
+.settings-hint { color: #a5967e; opacity: .82; line-height: 1.6; }
+.settings-select,
+.settings-input,
+.settings-textarea {
+    background: #100c0d;
+    border-color: rgba(207, 173, 111, 0.22);
+    border-radius: 5px;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.settings-select:hover,
+.settings-input:hover,
+.settings-textarea:hover { border-color: rgba(207, 173, 111, .4); }
+.settings-select:focus,
+.settings-input:focus,
+.settings-textarea:focus {
+    background: #130f10;
+    border-color: #b69661;
+    box-shadow: 0 0 0 3px rgba(182, 150, 97, .1);
+}
+.settings-panel .bazi-seal {
+    background: #120e0f;
+    border-color: rgba(207, 173, 111, 0.34);
+    box-shadow: inset 0 0 0 1px rgba(255, 239, 204, .025), 0 4px 12px rgba(5, 2, 3, .18);
+}
+.settings-panel .bazi-seal .seal-label {
+    color: #edd5a6;
+    background: #813936;
+}
+.settings-panel .btn-save-bazi,
+.settings-panel .btn-profile {
+    background: #201719;
+    border-color: rgba(207, 173, 111, .34);
+    border-radius: 5px;
+}
+.settings-panel .btn-save-bazi:hover,
+.settings-panel .btn-profile:hover:not(:disabled) { background: #2b1d20; }
+.settings-panel .ai-config {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+}
+.settings-panel .ai-profile-bar,
+.settings-panel .ai-field-block,
+.settings-panel .ai-actions,
+.settings-panel .ai-warn,
+.settings-panel .bazi-status { grid-column: 1 / -1; }
+.settings-panel .ai-profile-bar {
+    background: #120e0f;
+    border-color: rgba(207, 173, 111, .16);
+    border-radius: 6px;
+}
+.settings-panel .btn-reset-prompt { align-self: center; justify-self: start; }
+
+@media (max-width: 700px) {
+    .daily-gua { padding: 19px 18px 18px; }
+    .daily-content { grid-template-columns: auto auto minmax(0, 1fr); gap: 11px; }
+    .daily-name { font-size: 1rem; }
+    .daily-divider { display: none; }
+    .daily-motto { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid rgba(207,173,111,.12); }
+
+    .history-panel,
+    .settings-panel {
+        top: 12px;
+        right: 12px;
+        bottom: 12px;
+        left: 12px;
+        width: auto;
+        max-height: none;
+        border-radius: 5px;
+        transform: translateY(16px) scale(.985);
+    }
+    .history-panel.show,
+    .settings-panel.show {
+        right: 12px;
+        left: 12px;
+        transform: translateY(0) scale(1);
+    }
+    .history-head { min-height: 66px; padding: 14px 14px 13px 18px; }
+    .history-head h3 { font-size: 1.15rem; }
+    #historyList {
+        grid-template-columns: 1fr;
+        grid-auto-rows: minmax(116px, auto);
+        padding: 16px 14px 6px;
+    }
+    .history-item { min-height: 116px; }
+    .history-empty { min-height: 50vh; }
+    .btn-clear { margin: 12px 14px 16px; }
+    .settings-content { grid-template-columns: 1fr; padding: 16px 14px 20px; }
+    .settings-content > .settings-group:nth-child(2),
+    .settings-content > .settings-group:nth-child(3),
+    .settings-content > .settings-group:nth-child(4) { grid-column: 1; grid-row: auto; }
+}
+
+@media (max-width: 480px) {
+    .daily-label { margin-left: 61px; letter-spacing: .25em; }
+    .daily-roman { min-width: 50px; }
+    .daily-symbol { font-size: 1.5rem; }
+    .history-head h3::after { display: none; }
+    .settings-group { padding: 15px; }
+    .bazi-seals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 8px; }
+    .settings-panel .ai-config { grid-template-columns: 1fr; }
+    .settings-panel .ai-profile-bar,
+    .settings-panel .ai-field-block,
+    .settings-panel .ai-actions,
+    .settings-panel .ai-warn,
+    .settings-panel .bazi-status { grid-column: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .history-overlay,
+    .history-panel,
+    .settings-panel { transition-duration: .01ms; }
+}
