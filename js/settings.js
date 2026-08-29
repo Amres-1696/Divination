@@ -89,18 +89,10 @@ function restoreSettingsUI() {
 
     // AI 解卦回填
     const ai = settings.ai || {};
-    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
     const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
     setChk('settingAiEnabled', ai.enabled);
-    if (ai.profiles) {
-        renderAiProfileSelect(ai);
-        loadActiveProfileToForm(ai);
-    } else {
-        setVal('aiBaseUrl', ai.baseUrl || '');
-        setVal('aiApiKey', ai.apiKey || '');
-        setVal('aiModel', ai.model || '');
-        setVal('aiPrompt', ai.prompt || DEFAULT_AI_PROMPT);
-    }
+    renderAiProfileSelect(ai);
+    loadActiveProfileToForm(ai);
     setChk('settingAiAuto', ai.autoRun);
     const aiConfig = document.getElementById('aiConfig');
     if (aiConfig) aiConfig.style.display = ai.enabled ? '' : 'none';

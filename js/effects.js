@@ -124,11 +124,6 @@ class DustParticles {
         setTimeout(() => { if (this.running) this.spawnFirefly(); }, 4000);
         this.scheduleFirefly();
     }
-    stop() {
-        this.running = false;
-        if (this._rafId) { clearTimeout(this._rafId); this._rafId = null; }
-        if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
-    }
     pause() {
         this.running = false;
         if (this._rafId) { clearTimeout(this._rafId); this._rafId = null; }

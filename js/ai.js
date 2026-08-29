@@ -54,15 +54,16 @@ function persistAiReading(reading, gua, change, question) {
 
 async function requestAiReading(gua, change, question, bodyEl) {
     const ai = loadSettings().ai || {};
-    if (!ai.baseUrl || !ai.apiKey || !ai.model) {
+    const profile = getActiveAiProfile(ai);
+    if (!profile.baseUrl || !profile.apiKey || !profile.model) {
         bodyEl.innerHTML = '<div class="ai-error">请先在「设置 · AI 解卦」中填写完整配置（接口地址 / API Key / 模型）。</div>';
         return;
     }
 
-    const prompt = fillPrompt(ai.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question));
+    const prompt = fillPrompt(profile.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question));
     bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在叩问天机…</span></div>';
 
-    const url = ai.baseUrl.replace(/\/+$/, '') + '/chat/completions';
+    const url = profile.baseUrl.replace(/\/+$/, '') + '/chat/completions';
     let acc = '';
     let textEl = null;
     const paint = (s) => {
@@ -83,9 +84,9 @@ async function requestAiReading(gua, change, question, bodyEl) {
     try {
         const resp = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ai.apiKey },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + profile.apiKey },
             body: JSON.stringify({
-                model: ai.model,
+                model: profile.model,
                 temperature: typeof ai.temperature === 'number' ? ai.temperature : 0.8,
                 stream: true,
                 messages: [{ role: 'user', content: prompt }]
@@ -148,7 +149,7 @@ function setAiStatus(txt, cls) {
     if (status) { status.textContent = txt; status.className = 'bazi-status' + (cls ? ' ' + cls : ''); }
 }
 
-// 读表单 → 写入当前激活档案（不落盘、不提示），并镜像到 ai 顶层
+// 读表单 → 写入当前激活档案（不落盘、不提示）
 function writeFormToActiveProfile(ai) {
     const get = (id) => { const el = document.getElementById(id); return el ? el.value : ''; };
     const p = ai.profiles[ai.activeProfile];
@@ -159,7 +160,6 @@ function writeFormToActiveProfile(ai) {
     p.apiKey = get('aiApiKey').trim();
     p.model = get('aiModel').trim();
     p.prompt = get('aiPrompt') || DEFAULT_AI_PROMPT;
-    mirrorActiveProfile(ai);
 }
 
 // 当前激活档案 → 回填表单
@@ -205,7 +205,6 @@ function switchAiProfile(index) {
     index = parseInt(index, 10);
     if (isNaN(index) || index < 0 || index >= ai.profiles.length) index = 0;
     ai.activeProfile = index;
-    mirrorActiveProfile(ai);
     saveSettings(settings);
     loadActiveProfileToForm(ai);
     renderAiProfileSelect(ai);
@@ -220,7 +219,6 @@ function newAiProfile() {
     const p = makeAiProfile('配置 ' + (ai.profiles.length + 1), {});
     ai.profiles.push(p);
     ai.activeProfile = ai.profiles.length - 1;
-    mirrorActiveProfile(ai);
     saveSettings(settings);
     loadActiveProfileToForm(ai);
     renderAiProfileSelect(ai);
@@ -241,7 +239,6 @@ function deleteAiProfile() {
         const rmIdx = Math.min(idx, fAi.profiles.length - 1);
         fAi.profiles.splice(rmIdx, 1);
         fAi.activeProfile = Math.max(0, rmIdx - 1);
-        mirrorActiveProfile(fAi);
         saveSettings(fresh);
         loadActiveProfileToForm(fAi);
         renderAiProfileSelect(fAi);
@@ -252,15 +249,16 @@ function deleteAiProfile() {
 async function testAiConnection() {
     saveAiConfig();
     const ai = loadSettings().ai || {};
+    const profile = getActiveAiProfile(ai);
     const status = document.getElementById('aiStatus');
     const setStatus = (txt, cls) => { if (status) { status.textContent = txt; status.className = 'bazi-status' + (cls ? ' ' + cls : ''); } };
-    if (!ai.baseUrl || !ai.apiKey || !ai.model) { setStatus('请先填写完整的接口配置', 'error'); return; }
+    if (!profile.baseUrl || !profile.apiKey || !profile.model) { setStatus('请先填写完整的接口配置', 'error'); return; }
     setStatus('测试中…', '');
     try {
-        const resp = await fetch(ai.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
+        const resp = await fetch(profile.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ai.apiKey },
-            body: JSON.stringify({ model: ai.model, stream: false, max_tokens: 8, messages: [{ role: 'user', content: '回复一个字：通' }] })
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + profile.apiKey },
+            body: JSON.stringify({ model: profile.model, stream: false, max_tokens: 8, messages: [{ role: 'user', content: '回复一个字：通' }] })
         });
         if (resp.ok) { setStatus('连接成功 ✓', 'success'); }
         else { let t = ''; try { t = (await resp.text()).slice(0, 160); } catch (e) {} setStatus(`失败 ${resp.status}：${t}`, 'error'); }
@@ -294,20 +292,13 @@ const DEFAULT_AI_PROMPT = `你是一位精通《周易》象数与义理的解�
 
 const DEFAULT_AI = {
     enabled: false,
-    baseUrl: '',
-    apiKey: '',
-    model: '',
     temperature: 0.8,
     autoRun: false,
-    saveToHistory: true,
-    prompt: DEFAULT_AI_PROMPT
+    saveToHistory: true
 };
 
 // 一套配置最多保存数量
 const AI_PROFILE_MAX = 5;
-// 仅档案私有的连接字段（全局偏好如 enabled/autoRun/temperature 不入档案）
-const AI_PROFILE_FIELDS = ['baseUrl', 'apiKey', 'model', 'prompt'];
-
 function makeAiProfile(name, src) {
     src = src || {};
     return {
@@ -320,14 +311,11 @@ function makeAiProfile(name, src) {
     };
 }
 
-// 把激活档案的连接字段镜像回 ai 顶层，让下游解卦/测试逻辑零改动
-function mirrorActiveProfile(ai) {
-    const p = ai.profiles[ai.activeProfile] || ai.profiles[0];
-    if (!p) return;
-    AI_PROFILE_FIELDS.forEach(k => { ai[k] = p[k]; });
+function getActiveAiProfile(ai) {
+    return ai.profiles[ai.activeProfile] || ai.profiles[0];
 }
 
-// 迁移 + 校正：老的单套配置自动包成「配置 1」；越界回正；同步镜像
+// 迁移 + 校正：老的单套配置自动包成「配置 1」，此后只保留 profiles 数据源
 function ensureAiProfiles(ai) {
     if (!Array.isArray(ai.profiles) || ai.profiles.length === 0) {
         ai.profiles = [ makeAiProfile('配置 1', ai) ];
@@ -337,6 +325,9 @@ function ensureAiProfiles(ai) {
     if (typeof ai.activeProfile !== 'number' || ai.activeProfile < 0 || ai.activeProfile >= ai.profiles.length) {
         ai.activeProfile = 0;
     }
-    mirrorActiveProfile(ai);
+    delete ai.baseUrl;
+    delete ai.apiKey;
+    delete ai.model;
+    delete ai.prompt;
     return ai;
 }

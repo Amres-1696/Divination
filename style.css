@@ -2,7 +2,6 @@
 
 /* ============ 变量 ============ */
 :root {
-    --velvet: #1a0f1e;
     --velvet-deep: #0d0714;
     --burgundy: #4a1628;
     --parchment: #e8dcc0;
@@ -13,10 +12,6 @@
     --gold-deep: #8a6d3a;
     --ritual-warm: #f4c47a;
     --ritual-core: #fff4c4;
-    --line-dormant: #5a4a3a;
-    --line-active: #c9a96e;
-    --line-peak: #f4c47a;
-    --line-corrupt: #8a3a4a;
     --aura-shen: #7aa8c9;
     --aura-ji: #e8b865;
     --aura-xiong: #a84848;
@@ -32,11 +27,8 @@
     --font-future: 'Cinzel', serif; /* 原 Orbitron 替换为已有字体，减少一次字体下载 */
 
     /* spacing scale（章节 1.4） */
-    --sp-1: 4px;
-    --sp-2: 8px;
     --sp-3: 12px;
     --sp-4: 16px;
-    --sp-5: 24px;
     --sp-6: 32px;
     --sp-7: 48px;
     --sp-8: 64px;
@@ -209,96 +201,105 @@ header .subtitle {
 
 /* ============ 每日一卦 ============ */
 .daily-gua {
+    isolation: isolate;
     position: relative;
-    border: 1px dashed rgba(201,169,110,0.2);
-    border-radius: 4px;
-    padding: 16px 18px 14px;
-    margin-bottom: 28px;
-    cursor: pointer;
-    background: linear-gradient(180deg,
-        rgba(244,196,122,0.05) 0%,
-        rgba(26,20,18,0.72) 30%,
-        rgba(74,22,40,0.18) 100%);
-    /* backdrop-filter 移除：用更浓的背景色模拟，节省 GPU */
-    transition: all 0.4s ease;
+    min-height: 112px;
+    margin-bottom: 30px;
+    padding: 20px 24px 18px;
     overflow: visible;
+    background: #181315;
+    border: 1px solid rgba(201,169,110,0.24);
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow:
+        0 12px 30px rgba(8,4,5,0.18),
+        inset 0 0 0 1px rgba(255,239,204,0.02);
+    transition: transform 260ms cubic-bezier(.2,.8,.2,1), border-color 260ms ease, box-shadow 260ms ease;
 }
 .daily-gua::before {
     content: '';
     position: absolute;
-    inset: 3px;
-    border: 1px solid rgba(201,169,110,0.08);
-    border-radius: 3px;
+    inset: 4px;
+    border: 1px dashed rgba(201,169,110,0.13);
+    border-radius: 2px;
     pointer-events: none;
 }
 .daily-gua:hover {
-    border-color: var(--arcana-gold);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(244,196,122,0.18);
+    transform: translateY(-1px);
+    border-color: rgba(225,191,127,0.44);
+    box-shadow:
+        0 16px 34px rgba(8,4,5,0.25),
+        inset 0 0 0 1px rgba(255,239,204,0.035);
+    filter: none;
 }
 /* "今日"印泥小标签 */
 .daily-today-seal {
     position: absolute;
-    top: -8px;
-    left: 16px;
+    top: -10px;
+    left: 24px;
     font-family: var(--font-eastern);
     font-size: 10px;
-    color: #f0d8b0;
-    background: linear-gradient(180deg, #b04848 0%, #8a3838 100%);
-    border: 1px solid var(--arcana-gold);
+    color: #f2d9ad;
+    background: #91413d;
+    border: 1px solid rgba(224,183,111,0.68);
     border-radius: 2px;
-    padding: 3px 9px;
+    padding: 2px 10px 3px;
     letter-spacing: 0.2em;
-    box-shadow: 0 2px 6px rgba(176,72,72,0.45),
-                inset 0 0 0 1px rgba(244,196,122,0.18);
+    box-shadow: 0 3px 9px rgba(79,24,26,0.34);
     z-index: 2;
 }
 .daily-label {
     font-family: var(--font-display);
-    color: var(--gold-label);
-    font-size: 0.65rem;
-    letter-spacing: 0.4em;
-    margin-bottom: 10px;
+    margin: 3px 0 13px 66px;
+    color: #a78b60;
+    font-size: 0.61rem;
+    letter-spacing: 0.34em;
 }
 .daily-content {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto auto auto auto minmax(0,1fr);
     align-items: center;
     gap: 14px;
-    flex-wrap: wrap;
 }
 .daily-roman {
     font-family: var(--font-roman);
-    color: var(--gold-label);
+    min-width: 56px;
+    padding: 4px 9px;
+    color: #b89a68;
+    background: transparent;
+    border: 1px solid rgba(207,173,111,0.26);
+    border-radius: 3px;
     font-size: 0.65rem;
     letter-spacing: 0.18em;
-    padding: 2px 10px;
-    border: 1px solid rgba(201,169,110,0.35);
-    border-radius: 2px;
-    min-width: 52px;
     text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 .daily-symbol {
-    font-size: 1.8rem;
-    color: var(--parchment);
+    color: #ead6ae;
+    font-size: 1.72rem;
+    line-height: 1;
     letter-spacing: 0.05em;
 }
 .daily-name {
     font-family: var(--font-eastern);
-    font-size: 1.15rem;
-    color: var(--parchment);
+    color: #eee0c2;
+    font-size: 1.12rem;
     letter-spacing: 0.2em;
+    white-space: nowrap;
 }
 .daily-divider {
-    color: var(--gold-deep);
-    opacity: 0.6;
+    color: #8b6b3d;
+    opacity: 0.72;
     font-size: 0.7em;
 }
 .daily-motto {
     font-family: var(--font-eastern);
-    color: var(--parchment-dark);
+    min-width: 0;
+    color: #b9a88b;
     font-size: 0.95rem;
     letter-spacing: 0.12em;
-    opacity: 0.82;
+    opacity: 0.9;
+    text-wrap: balance;
 }
 
 /* ============ 问题输入 ============ */
@@ -727,11 +728,6 @@ header .subtitle {
 }
 
 /* ============ 卡牌状态 ============ */
-.arcana-card.dust {
-    opacity: 0;
-    transform: translate3d(0, 200px, -800px) rotate(-8deg);
-}
-.arcana-card.dormant { opacity: 0.85; }
 .arcana-card.awake {
     filter: drop-shadow(0 0 6px rgba(244,196,122,0.4));
     transition-duration: 0.8s;
@@ -748,59 +744,6 @@ header .subtitle {
     transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), filter 0.35s ease;
     z-index: 60;
 }
-/* 选牌倒计时 */
-.choose-countdown {
-    position: absolute;
-    bottom: -48px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 40px;
-    z-index: 70;
-}
-.choose-countdown svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-}
-.countdown-track {
-    fill: none;
-    stroke: rgba(201,169,110,0.2);
-    stroke-width: 2;
-}
-.countdown-ring {
-    fill: none;
-    stroke: var(--arcana-gold);
-    stroke-width: 2;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 0.15s linear;
-}
-.choose-countdown.warn .countdown-ring {
-    stroke: var(--aura-xiong);
-}
-.countdown-num {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-roman);
-    font-size: 14px;
-    color: var(--arcana-gold);
-    letter-spacing: 0;
-}
-.choose-countdown.warn .countdown-num {
-    color: var(--aura-xiong);
-}
-/* 最后 3 秒牌面闪烁 */
-.arcana-card.choose-blink {
-    animation: chooseBlink 0.8s ease-in-out infinite;
-}
-@keyframes chooseBlink {
-    0%, 100% { filter: drop-shadow(0 0 4px rgba(244,196,122,0.2)); }
-    50% { filter: drop-shadow(0 0 16px rgba(244,196,122,0.6)); }
-}
-
 /* 「由天意定之」从容出口按钮 */
 .choose-fate-btn {
     position: absolute;
@@ -859,9 +802,6 @@ header .subtitle {
 .arcana-card.peak {
     filter: drop-shadow(0 0 24px rgba(244,196,122,0.9))
             drop-shadow(0 0 40px rgba(244,196,122,0.45));
-}
-.arcana-card.corrupted {
-    filter: drop-shadow(0 0 14px rgba(168,72,72,0.65)) hue-rotate(-15deg);
 }
 .arcana-card.rare-gilded .card-face.front {
     background: linear-gradient(135deg, #f4d47a 0%, #e8dcc0 40%, #d9c99f 100%);
@@ -1410,18 +1350,25 @@ footer {
 footer p { margin: 4px 0; }
 
 /* ============ 历史面板（牌册）============ */
+body.dialog-open { overflow: hidden; }
+
 .history-overlay {
-    display: none;
+    display: block;
     position: fixed;
     inset: 0;
-    background: rgba(13,7,20,0.6);
-    z-index: 99;
-    backdrop-filter: blur(3px);
-    transition: opacity 0.4s ease;
+    z-index: 190;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: rgba(8,5,6,0.76);
+    backdrop-filter: blur(7px) saturate(.75);
+    transition: opacity 240ms ease, visibility 240ms ease;
 }
 .history-overlay.show {
     display: block;
-    animation: overlayFadeIn 0.3s ease forwards;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 @keyframes overlayFadeIn {
     from { opacity: 0; }
@@ -1430,42 +1377,88 @@ footer p { margin: 4px 0; }
 
 .history-panel {
     position: fixed;
-    top: 0;
-    right: -420px;
-    width: min(90vw, 400px);
-    height: 100vh;
-    background: linear-gradient(180deg, #1a0f1e 0%, #2a1525 100%);
-    border-left: 1px solid var(--arcana-gold);
-    box-shadow: -8px 0 40px rgba(0,0,0,0.55);
-    z-index: 100;
-    padding: 24px;
-    overflow-y: auto;
-    transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    z-index: 200;
+    display: flex;
+    width: min(860px, calc(100vw - 48px));
+    height: auto;
+    max-height: min(84dvh, 780px);
+    padding: 0;
+    overflow: hidden;
+    flex-direction: column;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: #171113;
+    border: 1px solid rgba(207,173,111,0.3);
+    border-radius: 5px;
+    box-shadow: 0 34px 90px rgba(5,2,3,0.64), 0 0 0 6px rgba(72,39,35,0.16), inset 0 0 0 1px rgba(255,239,204,0.025);
+    transform: translate(-50%, calc(-50% + 18px)) scale(.985);
+    transform-origin: 50% 45%;
+    transition: transform 360ms cubic-bezier(.18,.86,.22,1), opacity 220ms ease, visibility 220ms ease;
 }
-.history-panel.show { right: 0; }
+.history-panel.show {
+    right: auto;
+    left: 50%;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
 .history-head {
+    flex: 0 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(201,169,110,0.25);
+    min-height: 74px;
+    margin: 0;
+    padding: 18px 22px 16px 26px;
+    background: #171113;
+    border-bottom: 1px dashed rgba(207,173,111,0.2);
+}
+.history-head::before {
+    content: '◆';
+    width: auto;
+    height: auto;
+    margin-right: 13px;
+    color: #9a7944;
+    background: transparent;
+    font-size: 0.55rem;
 }
 .history-head h3 {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    gap: 13px;
     font-family: var(--font-eastern);
-    color: var(--arcana-gold);
-    font-size: 1.4rem;
-    letter-spacing: 0.2em;
+    color: #ead7af;
+    font-size: 1.3rem;
+    letter-spacing: 0.26em;
 }
+#settingsPanel .history-head h3::after,
+#historyPanel .history-head h3::after {
+    color: #8f7957;
+    font-family: var(--font-roman);
+    font-size: .58rem;
+    font-weight: 400;
+    letter-spacing: .24em;
+}
+#settingsPanel .history-head h3::after { content: 'PREFERENCES'; }
+#historyPanel .history-head h3::after { content: 'COLLECTION'; }
 .btn-close {
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    color: var(--arcana-gold);
-    border: 1px solid var(--arcana-gold);
-    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    background: #120e0f;
+    color: #bda478;
+    border: 1px solid rgba(207,173,111,0.28);
+    border-radius: 3px;
     cursor: pointer;
     font-family: var(--font-eastern);
+    font-size: 1.1rem;
     transition: all 0.3s;
     position: relative;
 }
@@ -1477,8 +1470,28 @@ footer p { margin: 4px 0; }
     border-radius: 50%;
 }
 .btn-close:hover {
-    background: var(--arcana-gold);
-    color: var(--velvet-deep);
+    color: #f1ddb5;
+    background: #743532;
+    border-color: #a95a52;
+    transform: rotate(4deg);
+}
+.btn-close:active { transform: scale(.96); }
+.history-panel .btn-close:focus-visible {
+    outline: 1px solid rgba(244,196,122,.72);
+    outline-offset: 2px;
+    box-shadow: none;
+}
+#historyList {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 22px 24px 8px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    grid-auto-rows: minmax(118px, auto);
+    align-content: start;
+    gap: 12px;
+    scrollbar-color: rgba(207,173,111,.35) transparent;
 }
 .history-empty {
     text-align: center;
@@ -1491,6 +1504,8 @@ footer p { margin: 4px 0; }
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    grid-column: 1 / -1;
+    min-height: 310px;
 }
 .history-empty-card {
     width: 48px;
@@ -1505,13 +1520,17 @@ footer p { margin: 4px 0; }
     letter-spacing: 0.3em;
 }
 .history-item {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    background: rgba(232,220,192,0.04);
-    border: 1px solid rgba(201,169,110,0.18);
+    min-width: 0;
+    min-height: 118px;
+    padding: 13px 14px;
+    margin: 0;
+    background: #1a1416;
+    border: 1px solid rgba(207,173,111,0.14);
     border-radius: 3px;
     cursor: pointer;
     transition: all 0.3s;
@@ -1637,9 +1656,10 @@ footer p { margin: 4px 0; }
     min-width: 0;
 }
 .history-item:hover {
-    background: rgba(232,220,192,0.08);
-    border-color: var(--arcana-gold);
-    transform: translateX(-3px);
+    background: linear-gradient(90deg, rgba(201,169,110,0.14), rgba(201,169,110,0.03) 60%, transparent);
+    border-color: rgba(207,173,111,0.42);
+    transform: translateX(6px);
+    box-shadow: 0 0 18px rgba(201,169,110,0.18);
 }
 .history-q {
     color: var(--parchment);
@@ -1673,13 +1693,14 @@ footer p { margin: 4px 0; }
 }
 .btn-clear {
     display: block;
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    background: transparent;
+    flex: 0 0 auto;
+    width: auto;
+    margin: 14px 24px 22px;
+    padding: 11px 18px;
+    background: #181113;
     color: var(--aura-xiong);
-    border: 1px solid rgba(168,72,72,0.4);
-    border-radius: 2px;
+    border: 1px solid rgba(168,72,72,0.34);
+    border-radius: 5px;
     font-family: var(--font-eastern);
     font-size: 0.9rem;
     letter-spacing: 0.35em;
@@ -1687,7 +1708,7 @@ footer p { margin: 4px 0; }
     transition: all 0.3s;
 }
 .btn-clear:hover {
-    background: rgba(168,72,72,0.15);
+    background: #271517;
     border-color: var(--aura-xiong);
 }
 
@@ -1980,6 +2001,8 @@ footer p { margin: 4px 0; }
     .detail-symbol { font-size: 2rem; }
 }
 
+
+
 /* ============ 时辰彩蛋 ============ */
 body.hour-zi .velvet-bg {
     background:
@@ -2031,43 +2054,59 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
 
 /* ============ 设置面板 ============ */
 .settings-panel {
-    /* 与历史面板统一：从右侧滑入 */
-    right: -420px;
-    left: auto;
+    width: min(920px, calc(100vw - 48px));
 }
-.settings-panel.show { right: 0; left: auto; }
 
 .settings-content {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 22px 24px 26px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 14px;
+    scrollbar-color: rgba(207,173,111,.35) transparent;
 }
 .settings-group {
-    padding: 16px;
-    background: rgba(232,220,192,0.04);
-    border: 1px solid rgba(201,169,110,0.15);
-    border-radius: 3px;
+    position: relative;
+    min-width: 0;
+    padding: 18px;
+    background: #191315;
+    border: 1px solid rgba(207,173,111,0.14);
+    border-radius: 4px;
 }
+.settings-group::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed rgba(201,169,110,.07);
+    border-radius: 2px;
+    pointer-events: none;
+}
+.settings-content > .settings-group:nth-child(3) { grid-column: 2; grid-row: 1; }
+.settings-content > .settings-group:nth-child(2),
+.settings-content > .settings-group:nth-child(4) { grid-column: 1 / -1; }
 .settings-label {
     font-family: var(--font-eastern);
-    color: var(--arcana-gold);
+    color: #d9bc87;
     font-size: 0.9rem;
     letter-spacing: 0.3em;
     margin-bottom: 10px;
 }
 .settings-hint {
     font-size: 0.75rem;
-    color: var(--parchment-dark);
-    opacity: 0.75;
+    color: #a5967e;
+    opacity: 0.82;
     margin-top: 8px;
     letter-spacing: 0.05em;
+    line-height: 1.6;
 }
 .settings-select {
     width: 100%;
     padding: 10px 12px;
-    background: rgba(26,15,30,0.6);
-    border: 1px solid rgba(201,169,110,0.3);
-    border-radius: 2px;
+    background: #100c0d;
+    border: 1px solid rgba(207,173,111,0.22);
+    border-radius: 5px;
     color: var(--parchment);
     font-family: var(--font-eastern);
     font-size: 0.9rem;
@@ -2076,8 +2115,14 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
-.settings-select:focus { border-color: var(--arcana-gold); }
+.settings-select:hover { border-color: rgba(207,173,111,.4); }
+.settings-select:focus {
+    background: #130f10;
+    border-color: #b69661;
+    box-shadow: 0 0 0 3px rgba(182,150,97,.1);
+}
 .settings-select option {
     background: #1a0f1e;
     color: var(--parchment);
@@ -2100,13 +2145,10 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
 .bazi-seal {
     position: relative;
     height: 88px;
-    background: linear-gradient(180deg, rgba(74,22,40,0.6) 0%, rgba(50,12,28,0.85) 100%);
-    border: 1px solid var(--arcana-gold);
+    background: #120e0f;
+    border: 1px solid rgba(207,173,111,0.34);
     border-radius: 3px;
-    box-shadow:
-        inset 0 0 0 1px rgba(232,220,192,0.08),
-        inset 0 0 0 4px transparent,
-        0 2px 6px rgba(0,0,0,0.35);
+    box-shadow: inset 0 0 0 1px rgba(255,239,204,.025), 0 4px 12px rgba(5,2,3,.18);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -2134,8 +2176,8 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     transform: translateX(-50%);
     font-family: var(--font-eastern);
     font-size: 11px;
-    color: var(--gold-pale);
-    background: linear-gradient(180deg, #b04848 0%, #8a3838 100%);
+    color: #edd5a6;
+    background: #813936;
     border: 1px solid var(--arcana-gold);
     border-radius: 2px;
     padding: 1px 8px;
@@ -2207,10 +2249,10 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     display: block;
     width: 100%;
     padding: 10px;
-    background: linear-gradient(135deg, rgba(74,22,40,0.5), rgba(26,20,30,0.7));
+    background: #201719;
     color: var(--gold-pale);
-    border: 1px solid var(--arcana-gold);
-    border-radius: 2px;
+    border: 1px solid rgba(207,173,111,.34);
+    border-radius: 5px;
     font-family: var(--font-eastern);
     font-size: 0.9rem;
     letter-spacing: 0.35em;
@@ -2218,7 +2260,7 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     transition: all 0.3s;
 }
 .btn-save-bazi:hover {
-    background: linear-gradient(135deg, rgba(74,22,40,0.8), rgba(74,22,40,0.4));
+    background: #2b1d20;
     box-shadow: 0 0 12px rgba(244,196,122,0.25);
 }
 .bazi-status {
@@ -2278,17 +2320,6 @@ body.hour-wu .embroidery-mat { filter: drop-shadow(0 0 18px rgba(244,196,122,0.2
     transform: translateX(22px);
     background: var(--arcana-gold);
 }
-
-/* ============ 淡入类 ============ */
-.fade-in {
-    animation: fadeInUp 0.7s ease forwards;
-    opacity: 0;
-}
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 
 /* 按下起卦按钮时从中心爆出的光环 */
 .ignition-ring {
@@ -2566,7 +2597,6 @@ body.mood-xiong .card h3 {
 }
 
 /* 牌册 */
-.history-item { position: relative; overflow: hidden; }
 .history-item::before {
     content: '';
     position: absolute;
@@ -2577,11 +2607,6 @@ body.mood-xiong .card h3 {
     z-index: 1;
 }
 .history-item:hover::before { width: 3px; }
-.history-item:hover {
-    background: linear-gradient(90deg, rgba(201,169,110,0.14), rgba(201,169,110,0.03) 60%, transparent) !important;
-    transform: translateX(6px) !important;
-    box-shadow: 0 0 18px rgba(201,169,110,0.18);
-}
 .history-del {
     flex-shrink: 0;
     width: 28px;
@@ -2614,11 +2639,6 @@ body.mood-xiong .card h3 {
     background: rgba(168,72,72,0.1);
 }
 
-/* 每日启示 */
-.daily-gua { transition: filter 0.35s ease; cursor: pointer; }
-.daily-gua:hover { filter: drop-shadow(0 0 12px rgba(244,196,122,0.3)); }
-.daily-gua:hover .daily-symbol { text-shadow: 0 0 8px rgba(244,196,122,0.7); }
-
 /* Page Visibility：后台暂停所有 CSS 动画 */
 .embroidery-mat,
 .deco-mark,
@@ -2629,6 +2649,21 @@ body.mood-xiong .card h3 {
 @media (prefers-reduced-motion: reduce) {
     .ignition-ring,
     .embroidery-mat g.mat-ignite,
+    .embroidery-mat .mat-l5,
+    .embroidery-mat .mat-l5 > circle:first-of-type,
+    .gold-streak-beam,
+    .embroidery-mat .mat-flow-ring,
+    .velvet-bg,
+    .velvet-bg::before,
+    .embroidery-mat,
+    .deco-mark,
+    .title-main,
+    .embroidery-mat .mat-l4 .taiji-outer,
+    .chosen-card-wrap,
+    .chosen-card-wrap::before,
+    .chosen-card-wrap::after,
+    .card-drama::before,
+    .btn-spark,
     .hex-name-art .hex-char,
     .verdict-seal.stamp-in,
     .yao-list.scroll-open,
@@ -2644,47 +2679,22 @@ body.mood-xiong .card h3 {
     .gold-sparkle,
     .change-arrow,
     .btn-divine.charged,
-    .btn-divine.charged .btn-rune {
+    .btn-divine.charged .btn-rune,
+    .arcana-card.yao-animate .card-art .yao-svg-line,
+    .arcana-card.yao-animate .card-art .yao-svg-line.changing,
+    .invocation,
+    .invocation span {
         animation: none !important;
     }
     .hex-name-art .hex-char { opacity: 1; transform: none; filter: none; }
     .yao-list.scroll-open .yao-item { opacity: 1; transform: none; }
     .arcana-card.yao-animate .card-art .yao-svg-line { stroke-dashoffset: 0 !important; }
+    .gold-streak-container,
+    .ritual-stage { display: none; }
+    .history-overlay,
+    .history-panel { transition-duration: .01ms; }
 }
 
-
-
-.incense-smoke {
-    position: fixed;
-    inset: 0;
-    z-index: -6;              
-    pointer-events: none;
-    overflow: hidden;
-}
-.smoke-layer {
-    display: none; /* 所有 smoke 层禁用：blur(80px) 极其昂贵且 opacity<0.12 肉眼不可见 */
-    position: absolute;
-    width: 60vmax;
-    height: 60vmax;
-    border-radius: 50%;
-    filter: blur(80px);
-    will-change: transform, opacity;
-}
-/* smoke-1, smoke-2 已移除（display:none 仍占 DOM，CSS 清理） */
-.smoke-1, .smoke-2 { display: none; }
-.smoke-3 {
-    width: 80vmax; height: 80vmax;
-    background: radial-gradient(circle, rgba(160,185,210,0.4) 0%, rgba(120,145,175,0.18) 35%, transparent 70%);
-    top: 20%; left: 40%;
-    animation: smokeDrift3 65s ease-in-out infinite alternate;
-    animation-delay: -18s;
-}
-/* smokeDrift1, smokeDrift2 keyframes removed (unused) */
-@keyframes smokeDrift3 {
-    0%   { transform: translate(0, 0) scale(1);          opacity: 0.08; }
-    50%  { transform: translate(-15vw, 10vh) scale(1.1); opacity: 0.12; }
-    100% { transform: translate(10vw, 20vh) scale(0.95); opacity: 0.10; }
-}
 
 
 /* matSealPulse 合并到 matBreath，减少并发 GPU 动画 */
@@ -2693,15 +2703,6 @@ body.mood-xiong .card h3 {
 }
 
 /* matSealRing 移除：stroke-width 0.5→0.9 肉眼不可见 */
-
-@media (prefers-reduced-motion: reduce) {
-    .smoke-layer,
-    .embroidery-mat .mat-l5,
-    .embroidery-mat .mat-l5 > circle:first-of-type {
-        animation: none !important;
-    }
-}
-
 
 .gold-streak-container {
     position: fixed;
@@ -2748,38 +2749,6 @@ body.mood-xiong .card h3 {
     stroke-linecap: round;
     opacity: 0.6;
     /* filter drop-shadow 和 matOuterFlow 均移除：节省 GPU */
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .gold-streak-beam,
-    .embroidery-mat .mat-flow-ring {
-        animation: none !important;
-    }
-    .gold-streak-container { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .velvet-bg,
-    .velvet-bg::before,
-    .embroidery-mat,
-    .deco-mark,
-    .title-main,
-    .embroidery-mat .mat-l4 .taiji-outer,
-    .chosen-card-wrap,
-    .chosen-card-wrap::before,
-    .chosen-card-wrap::after,
-    .card-drama::before,
-    .btn-spark,
-    .btn-divine.charged,
-    .btn-divine.charged .btn-rune,
-    .arcana-card.yao-animate .card-art .yao-svg-line,
-    .arcana-card.yao-animate .card-art .yao-svg-line.changing {
-        animation: none !important;
-    }
-    /* 仪式过程：不播 6 幕，直接渲染结果（JS 也会跳过 ArcanaRitual） */
-    .ritual-stage { display: none; }
-    /* 心若不诚浮层：保留但不闪 */
-    .invocation, .invocation span { animation: none !important; }
 }
 
 /* ============ 焦点可见性（无障碍） ============ */
@@ -3070,9 +3039,9 @@ select:focus-visible {
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(201,169,110,0.18);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 13px;
 }
 .ai-field {
     display: flex;
@@ -3090,17 +3059,24 @@ select:focus-visible {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
-    background: rgba(26,15,30,0.6);
-    border: 1px solid rgba(201,169,110,0.3);
-    border-radius: 2px;
+    background: #100c0d;
+    border: 1px solid rgba(207,173,111,0.22);
+    border-radius: 5px;
     color: var(--parchment);
     font-family: var(--font-eastern);
     font-size: 0.88rem;
     letter-spacing: 0.05em;
     outline: none;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
+.settings-input:hover,
+.settings-textarea:hover { border-color: rgba(207,173,111,.4); }
 .settings-input:focus,
-.settings-textarea:focus { border-color: var(--arcana-gold); }
+.settings-textarea:focus {
+    background: #130f10;
+    border-color: #b69661;
+    box-shadow: 0 0 0 3px rgba(182,150,97,.1);
+}
 .settings-input::placeholder,
 .settings-textarea::placeholder { color: rgba(232,212,168,0.32); }
 .settings-textarea {
@@ -3112,7 +3088,8 @@ select:focus-visible {
 }
 .ai-auto-row { margin-top: 2px; }
 .btn-reset-prompt {
-    align-self: flex-start;
+    align-self: center;
+    justify-self: start;
     background: transparent;
     border: 1px solid rgba(201,169,110,0.35);
     color: var(--gold-label);
@@ -3135,9 +3112,9 @@ select:focus-visible {
     flex-direction: column;
     gap: 10px;
     padding: 12px;
-    background: rgba(26,15,30,0.45);
-    border: 1px solid rgba(201,169,110,0.22);
-    border-radius: 3px;
+    background: #120e0f;
+    border: 1px solid rgba(207,173,111,.16);
+    border-radius: 6px;
 }
 .ai-profile-row {
     display: flex;
@@ -3161,10 +3138,10 @@ select:focus-visible {
 .btn-profile {
     flex: 1;
     padding: 7px 10px;
-    background: linear-gradient(135deg, rgba(74,22,40,0.4), rgba(26,20,30,0.6));
+    background: #201719;
     color: var(--gold-pale);
-    border: 1px solid rgba(201,169,110,0.4);
-    border-radius: 2px;
+    border: 1px solid rgba(207,173,111,.34);
+    border-radius: 5px;
     font-family: var(--font-eastern);
     font-size: 0.8rem;
     letter-spacing: 0.18em;
@@ -3172,6 +3149,7 @@ select:focus-visible {
     transition: all 0.3s;
 }
 .btn-profile:hover:not(:disabled) {
+    background: #2b1d20;
     border-color: var(--arcana-gold);
     box-shadow: 0 0 10px rgba(244,196,122,0.2);
 }
@@ -3273,343 +3251,23 @@ select:focus-visible {
     0%, 100% { opacity: 0.25; transform: scale(0.8); }
     50% { opacity: 1; transform: scale(1.15); }
 }
-
-/* ============ 2026-08：日课卡面与浮层重构 ============ */
-body.dialog-open { overflow: hidden; }
-
-/* 日课采用哑光墨绢与朱砂印，不再使用棕色渐变。 */
-.daily-gua {
-    isolation: isolate;
-    min-height: 112px;
-    margin-bottom: 30px;
-    padding: 20px 24px 18px;
-    overflow: visible;
-    background: #181315;
-    border: 1px solid rgba(201, 169, 110, 0.24);
-    border-radius: 4px;
-    box-shadow:
-        0 12px 30px rgba(8, 4, 5, 0.18),
-        inset 0 0 0 1px rgba(255, 239, 204, 0.02);
-    transition: transform 260ms cubic-bezier(.2,.8,.2,1), border-color 260ms ease, box-shadow 260ms ease;
-}
-.daily-gua::before {
-    inset: 4px;
-    border: 1px dashed rgba(201, 169, 110, 0.13);
-    border-radius: 2px;
-}
-.daily-gua::after {
-    content: none;
-}
-.daily-gua:hover {
-    transform: translateY(-1px);
-    border-color: rgba(225, 191, 127, 0.44);
-    box-shadow:
-        0 16px 34px rgba(8, 4, 5, 0.25),
-        inset 0 0 0 1px rgba(255, 239, 204, 0.035);
-    filter: none;
-}
-.daily-today-seal {
-    top: -10px;
-    left: 24px;
-    padding: 2px 10px 3px;
-    color: #f2d9ad;
-    background: #91413d;
-    border: 1px solid rgba(224, 183, 111, 0.68);
-    border-radius: 2px;
-    box-shadow: 0 3px 9px rgba(79, 24, 26, 0.34);
-}
-.daily-label {
-    margin: 3px 0 13px 66px;
-    color: #a78b60;
-    font-size: 0.61rem;
-    letter-spacing: 0.34em;
-}
-.daily-content {
-    display: grid;
-    grid-template-columns: auto auto auto auto minmax(0, 1fr);
-    align-items: center;
-    gap: 14px;
-}
-.daily-roman {
-    min-width: 56px;
-    padding: 4px 9px;
-    color: #b89a68;
-    background: transparent;
-    border-color: rgba(207, 173, 111, 0.26);
-    border-radius: 3px;
-    font-variant-numeric: tabular-nums;
-}
-.daily-symbol {
-    color: #ead6ae;
-    font-size: 1.72rem;
-    line-height: 1;
-}
-.daily-name {
-    color: #eee0c2;
-    font-size: 1.12rem;
-    white-space: nowrap;
-}
-.daily-divider { color: #8b6b3d; opacity: 0.72; }
-.daily-motto {
-    min-width: 0;
-    color: #b9a88b;
-    opacity: 0.9;
-    text-wrap: balance;
-}
-.daily-gua:hover .daily-symbol { text-shadow: none; }
-
-/* 设置与牌册改为居中的案卷式浮层，彻底取消右侧抽屉。 */
-.history-overlay {
-    display: block;
-    z-index: 190;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    background: rgba(8, 5, 6, 0.76);
-    backdrop-filter: blur(7px) saturate(.75);
-    transition: opacity 240ms ease, visibility 240ms ease;
-}
-.history-overlay.show {
-    display: block;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    animation: none;
-}
-.history-panel,
-.settings-panel {
-    position: fixed;
-    top: 50%;
-    right: auto;
-    bottom: auto;
-    left: 50%;
-    z-index: 200;
-    display: flex;
-    width: min(860px, calc(100vw - 48px));
-    height: auto;
-    max-height: min(84dvh, 780px);
-    padding: 0;
-    overflow: hidden;
-    flex-direction: column;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    background: #171113;
-    border: 1px solid rgba(207, 173, 111, 0.3);
-    border-radius: 5px;
-    box-shadow:
-        0 34px 90px rgba(5, 2, 3, 0.64),
-        0 0 0 6px rgba(72, 39, 35, 0.16),
-        inset 0 0 0 1px rgba(255, 239, 204, 0.025);
-    transform: translate(-50%, calc(-50% + 18px)) scale(.985);
-    transform-origin: 50% 45%;
-    transition:
-        transform 360ms cubic-bezier(.18,.86,.22,1),
-        opacity 220ms ease,
-        visibility 220ms ease;
-}
-.settings-panel { width: min(920px, calc(100vw - 48px)); }
-.history-panel.show,
-.settings-panel.show {
-    right: auto;
-    left: 50%;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translate(-50%, -50%) scale(1);
-}
-.history-head {
-    flex: 0 0 auto;
-    min-height: 74px;
-    margin: 0;
-    padding: 18px 22px 16px 26px;
-    background: #171113;
-    border-bottom: 1px dashed rgba(207, 173, 111, 0.2);
-}
-.history-head::before {
-    content: '◆';
-    width: auto;
-    height: auto;
-    margin-right: 13px;
-    color: #9a7944;
-    background: transparent;
-    font-size: 0.55rem;
-}
-.history-head h3 {
-    display: flex;
-    flex: 1;
-    align-items: baseline;
-    gap: 13px;
-    color: #ead7af;
-    font-size: 1.3rem;
-    letter-spacing: 0.26em;
-}
-#settingsPanel .history-head h3::after,
-#historyPanel .history-head h3::after {
-    color: #8f7957;
-    font-family: var(--font-roman);
-    font-size: .58rem;
-    font-weight: 400;
-    letter-spacing: .24em;
-}
-#settingsPanel .history-head h3::after { content: 'PREFERENCES'; }
-#historyPanel .history-head h3::after { content: 'COLLECTION'; }
-.btn-close {
-    width: 38px;
-    height: 38px;
-    flex: 0 0 38px;
-    color: #bda478;
-    background: #120e0f;
-    border-color: rgba(207, 173, 111, 0.28);
-    border-radius: 3px;
-    font-size: 1.1rem;
-}
-.btn-close:hover {
-    color: #f1ddb5;
-    background: #743532;
-    border-color: #a95a52;
-    transform: rotate(4deg);
-}
-.btn-close:active { transform: scale(.96); }
-.history-panel .btn-close:focus-visible {
-    outline: 1px solid rgba(244, 196, 122, .72);
-    outline-offset: 2px;
-    box-shadow: none;
-}
-
-#historyList {
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 22px 24px 8px;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: minmax(118px, auto);
-    align-content: start;
-    gap: 12px;
-    scrollbar-color: rgba(207, 173, 111, .35) transparent;
-}
-.history-empty { grid-column: 1 / -1; min-height: 310px; justify-content: center; }
-.history-item {
-    min-width: 0;
-    min-height: 118px;
-    margin: 0;
-    padding: 13px 14px;
-    background: #1a1416;
-    border-color: rgba(207, 173, 111, 0.14);
-    border-radius: 3px;
-}
-.history-item:hover {
-    background: #21191b;
-    border-color: rgba(207, 173, 111, 0.42);
-    transform: translateY(-2px);
-}
-.btn-clear {
-    flex: 0 0 auto;
-    width: auto;
-    margin: 14px 24px 22px;
-    padding: 11px 18px;
-    background: #181113;
-    border-color: rgba(168, 72, 72, 0.34);
-    border-radius: 5px;
-}
-.btn-clear:hover { background: #271517; }
-
-.settings-content {
-    flex: 1 1 auto;
-    min-height: 0;
-    padding: 22px 24px 26px;
-    overflow-y: auto;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    scrollbar-color: rgba(207, 173, 111, .35) transparent;
-}
-.settings-group {
-    position: relative;
-    min-width: 0;
-    padding: 18px;
-    background: #191315;
-    border-color: rgba(207, 173, 111, 0.14);
-    border-radius: 4px;
-}
-.settings-group::before {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border: 1px dashed rgba(201, 169, 110, .07);
-    border-radius: 2px;
-    pointer-events: none;
-}
-.settings-content > .settings-group:nth-child(3) {
-    grid-column: 2;
-    grid-row: 1;
-}
-.settings-content > .settings-group:nth-child(2),
-.settings-content > .settings-group:nth-child(4) { grid-column: 1 / -1; }
-.settings-label { color: #d9bc87; }
-.settings-hint { color: #a5967e; opacity: .82; line-height: 1.6; }
-.settings-select,
-.settings-input,
-.settings-textarea {
-    background: #100c0d;
-    border-color: rgba(207, 173, 111, 0.22);
-    border-radius: 5px;
-    transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
-}
-.settings-select:hover,
-.settings-input:hover,
-.settings-textarea:hover { border-color: rgba(207, 173, 111, .4); }
-.settings-select:focus,
-.settings-input:focus,
-.settings-textarea:focus {
-    background: #130f10;
-    border-color: #b69661;
-    box-shadow: 0 0 0 3px rgba(182, 150, 97, .1);
-}
-.settings-panel .bazi-seal {
-    background: #120e0f;
-    border-color: rgba(207, 173, 111, 0.34);
-    box-shadow: inset 0 0 0 1px rgba(255, 239, 204, .025), 0 4px 12px rgba(5, 2, 3, .18);
-}
-.settings-panel .bazi-seal .seal-label {
-    color: #edd5a6;
-    background: #813936;
-}
-.settings-panel .btn-save-bazi,
-.settings-panel .btn-profile {
-    background: #201719;
-    border-color: rgba(207, 173, 111, .34);
-    border-radius: 5px;
-}
-.settings-panel .btn-save-bazi:hover,
-.settings-panel .btn-profile:hover:not(:disabled) { background: #2b1d20; }
-.settings-panel .ai-config {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 13px;
-}
-.settings-panel .ai-profile-bar,
-.settings-panel .ai-field-block,
-.settings-panel .ai-actions,
-.settings-panel .ai-warn,
-.settings-panel .bazi-status { grid-column: 1 / -1; }
-.settings-panel .ai-profile-bar {
-    background: #120e0f;
-    border-color: rgba(207, 173, 111, .16);
-    border-radius: 6px;
-}
-.settings-panel .btn-reset-prompt { align-self: center; justify-self: start; }
+.ai-profile-bar,
+.ai-field-block,
+.ai-actions,
+.ai-warn,
+.ai-config > .bazi-status { grid-column: 1 / -1; }
 
 @media (max-width: 700px) {
     .daily-gua { padding: 19px 18px 18px; }
-    .daily-content { grid-template-columns: auto auto minmax(0, 1fr); gap: 11px; }
+    .daily-content { grid-template-columns: auto auto minmax(0,1fr); gap: 11px; }
     .daily-name { font-size: 1rem; }
     .daily-divider { display: none; }
-    .daily-motto { grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid rgba(207,173,111,.12); }
-
-    .history-panel,
-    .settings-panel {
+    .daily-motto {
+        grid-column: 1 / -1;
+        padding-top: 10px;
+        border-top: 1px solid rgba(207,173,111,.12);
+    }
+    .history-panel {
         top: 12px;
         right: 12px;
         bottom: 12px;
@@ -3619,8 +3277,7 @@ body.dialog-open { overflow: hidden; }
         border-radius: 5px;
         transform: translateY(16px) scale(.985);
     }
-    .history-panel.show,
-    .settings-panel.show {
+    .history-panel.show {
         right: 12px;
         left: 12px;
         transform: translateY(0) scale(1);
@@ -3647,17 +3304,11 @@ body.dialog-open { overflow: hidden; }
     .daily-symbol { font-size: 1.5rem; }
     .history-head h3::after { display: none; }
     .settings-group { padding: 15px; }
-    .bazi-seals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 8px; }
-    .settings-panel .ai-config { grid-template-columns: 1fr; }
-    .settings-panel .ai-profile-bar,
-    .settings-panel .ai-field-block,
-    .settings-panel .ai-actions,
-    .settings-panel .ai-warn,
-    .settings-panel .bazi-status { grid-column: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .history-overlay,
-    .history-panel,
-    .settings-panel { transition-duration: .01ms; }
+    .bazi-seals { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px 8px; }
+    .ai-config { grid-template-columns: 1fr; }
+    .ai-profile-bar,
+    .ai-field-block,
+    .ai-actions,
+    .ai-warn,
+    .ai-config > .bazi-status { grid-column: 1; }
 }

@@ -31,19 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Intersection Observer：暂停不可见元素的动画
-    if ('IntersectionObserver' in window) {
-        // 牌垫：不可见时暂停呼吸动画
-        const mat = document.querySelector('.embroidery-mat');
-        if (mat) {
-            const matObserver = new IntersectionObserver((entries) => {
-                entries.forEach(e => {
-                    e.target.style.animationPlayState = e.isIntersecting ? 'running' : 'paused';
-                });
-            }, { threshold: 0 });
-            matObserver.observe(mat);
-        }
-    }
     loadHistory();
     renderDailyGua();
     restoreSettingsUI();
