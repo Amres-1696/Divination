@@ -1392,9 +1392,14 @@ footer p { margin: 4px 0; }
     outline: none;
 }
 .github-support-icon {
-    width: 18px;
-    height: 18px;
-    flex: 0 0 auto;
+    display: block;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    max-width: 16px;
+    min-height: 16px;
+    max-height: 16px;
+    flex: 0 0 16px;
 }
 .github-support-star {
     color: #d8ae61;
