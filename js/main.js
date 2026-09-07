@@ -3,7 +3,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // 入场动画区分新老用户（章节 3.2）
-    const hasVisited = localStorage.getItem('tianyan_visited');
+    let hasVisited = null;
+    try { hasVisited = localStorage.getItem('tianyan_visited'); } catch (e) {}
     if (hasVisited) {
         document.body.classList.add('intro-fast');
     } else {
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (dust) dust.resume();
             document.documentElement.style.setProperty('--anim-state', 'running');
+            refreshDailyGuaIfNeeded();
         }
     });
 
@@ -50,7 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('saveBaziBtn').addEventListener('click', saveBazi);
     document.getElementById('closeShareBtn').addEventListener('click', closeShare);
     document.getElementById('settingMethod').addEventListener('change', function() {
-        saveSetting('method', this.value);
+        if (!saveSetting('method', this.value)) {
+            this.value = loadSettings().method;
+            return;
+        }
         // 选八字起卦但尚未填八字：就地提示并高亮表单，避免回到主页起卦时才报错
         if (this.value === 'bazi' && !loadSettings().bazi) {
             showToast('八字起卦需先填写并保存生辰八字', 'error');
@@ -62,17 +67,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
-    document.getElementById('settingDaily').addEventListener('change', function() { saveSetting('showDaily', this.checked); });
+    document.getElementById('settingDaily').addEventListener('change', function() {
+        if (!saveSetting('showDaily', this.checked)) this.checked = loadSettings().showDaily;
+    });
 
     // AI 解卦设置
     const aiEnabledEl = document.getElementById('settingAiEnabled');
     if (aiEnabledEl) aiEnabledEl.addEventListener('change', function() {
-        setAiField('enabled', this.checked);
+        if (!setAiField('enabled', this.checked)) {
+            this.checked = loadSettings().ai.enabled;
+            return;
+        }
         const cfg = document.getElementById('aiConfig');
         if (cfg) cfg.style.display = this.checked ? '' : 'none';
     });
     const aiAutoEl = document.getElementById('settingAiAuto');
-    if (aiAutoEl) aiAutoEl.addEventListener('change', function() { setAiField('autoRun', this.checked); });
+    if (aiAutoEl) aiAutoEl.addEventListener('change', function() {
+        if (!setAiField('autoRun', this.checked)) this.checked = loadSettings().ai.autoRun;
+    });
     const saveAiBtn = document.getElementById('saveAiBtn');
     if (saveAiBtn) saveAiBtn.addEventListener('click', saveAiConfig);
     const testAiBtn = document.getElementById('testAiBtn');
@@ -138,6 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 每分钟检查一次时辰(到点切换子时/午时主题)
-    setInterval(applyHourTheme, 60 * 1000);
+    // 同步时辰与跨日启示；后台恢复时另做即时检查。
+    setInterval(() => {
+        applyHourTheme();
+        refreshDailyGuaIfNeeded();
+    }, 60 * 1000);
 });

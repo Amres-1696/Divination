@@ -27,15 +27,19 @@ function loadSettings() {
 function saveSettings(settings) {
     try {
         localStorage.setItem('tianyan_settings', JSON.stringify(settings));
+        return true;
     } catch (e) {
+        showToast('设置保存失败：浏览器存储空间不足或禁止写入，请检查后重试', 'error');
+        return false;
     }
 }
 
 function saveSetting(key, value) {
     const settings = loadSettings();
     settings[key] = value;
-    saveSettings(settings);
+    if (!saveSettings(settings)) return false;
     applySettings(settings);
+    return true;
 }
 
 function saveBazi() {
@@ -65,10 +69,16 @@ function saveBazi() {
     const bazi = { year: parseInt(year), month: parseInt(month), day: parseInt(day), hour: parseInt(hour) };
     const settings = loadSettings();
     settings.bazi = bazi;
-    saveSettings(settings);
+    if (!saveSettings(settings)) {
+        status.textContent = '保存失败，生辰内容已保留，请检查浏览器存储后重试';
+        status.className = 'bazi-status error';
+        return;
+    }
+    renderDailyGua();
 
     const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-    status.textContent = `已保存：${year}年${month}月${day}日 ${shiChen[hour]}时`;
+    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
+    status.textContent = `已保存：${year}年${month}月${day}日 ${shiChen[hour]}时` + (lunar ? ` · ${formatLunar(lunar)}` : '');
     status.className = 'bazi-status success';
 }
 
@@ -107,7 +117,8 @@ function restoreSettingsUI() {
         const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
         const status = document.getElementById('baziStatus');
         if (status) {
-            status.textContent = `当前：${b.year}年${b.month}月${b.day}日 ${shiChen[b.hour]}时`;
+            const lunar = solarToLunar(b.year, b.month, b.day);
+            status.textContent = `当前：${b.year}年${b.month}月${b.day}日 ${shiChen[b.hour]}时` + (lunar ? ` · ${formatLunar(lunar)}` : '');
             status.className = 'bazi-status success';
         }
     }

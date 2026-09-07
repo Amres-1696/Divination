@@ -15,17 +15,21 @@ function getUserSeed() {
     }
 }
 
-function getDailyGua() {
-    const d = new Date();
+function getDailyGua(d = new Date()) {
     const dateStr = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
     const settings = loadSettings();
 
     if (settings.bazi) {
         const b = settings.bazi;
-        const yearNum = b.year % 100 || 100;
-        const nowDay = d.getDate();
-        const nowMonth = d.getMonth() + 1;
-        const sumUpper = yearNum + b.month + b.day + nowDay;
+        // 与八字起卦同规：生辰与今日皆换算农历（年取地支数），换算失败退回公历数值
+        const lunarBazi = solarToLunar(b.year, b.month, b.day);
+        const yearNum = lunarBazi ? lunarYearBranch(lunarBazi.year) : (b.year % 100 || 100);
+        const bMonth = lunarBazi ? lunarBazi.month : b.month;
+        const bDay = lunarBazi ? lunarBazi.day : b.day;
+        const nowLunar = solarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        const nowDay = nowLunar ? nowLunar.day : d.getDate();
+        const nowMonth = nowLunar ? nowLunar.month : (d.getMonth() + 1);
+        const sumUpper = yearNum + bMonth + bDay + nowDay;
         const sumLower = sumUpper + (b.hour + 1) + nowMonth;
         const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
         const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
@@ -42,8 +46,7 @@ function getDailyGua() {
     return GUA[Math.abs(seed) % 64];
 }
 
-function getDailyMotto() {
-    const d = new Date();
+function getDailyMotto(d = new Date()) {
     const uid = getUserSeed();
     const str = d.getDate() + uid;
     let seed = 0;
@@ -51,11 +54,21 @@ function getDailyMotto() {
     return DAILY_MOTTOS[Math.abs(seed) % DAILY_MOTTOS.length];
 }
 
-function renderDailyGua() {
+let _dailyDateKey = '';
+function dailyDateKey(d) {
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+function refreshDailyGuaIfNeeded() {
+    const now = new Date();
+    if (_dailyDateKey !== dailyDateKey(now)) renderDailyGua(now);
+}
+
+function renderDailyGua(now = new Date()) {
     const el = document.getElementById('dailyGua');
     if (!el) return;
-    const gua = getDailyGua();
-    const motto = getDailyMotto();
+    const gua = getDailyGua(now);
+    const motto = getDailyMotto(now);
     const roman = toRoman(guaIndex(gua));
     el.innerHTML = `
 <span class="daily-today-seal">今日</span>
@@ -67,7 +80,9 @@ function renderDailyGua() {
     <span class="daily-divider">◆</span>
     <span class="daily-motto">${motto}</span>
 </div>`;
-    el.onclick = () => showGuaDetail(getDailyGua());
+    _dailyDateKey = dailyDateKey(now);
+    // 详情与可见卡片共用快照，避免跨日/设置变化时点击到另一卦。
+    el.onclick = () => showGuaDetail(gua);
 }
 
 // 卦象详解 

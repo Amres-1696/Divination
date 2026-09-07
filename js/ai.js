@@ -4,9 +4,8 @@
 /* ============ AI 解卦 ============ */
 const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '八字起卦（生辰八字）' };
 
-function buildAiContext(gua, change, question) {
+function buildAiContext(gua, change, question, readingContext = {}) {
     const posCN = ['初', '二', '三', '四', '五', '上'];
-    const settings = loadSettings();
     const changing = change.changingYaos || [];
     const changePos = changing.length
         ? changing.map(p => posCN[p]).join('、') + ' 爻动'
@@ -18,8 +17,9 @@ function buildAiContext(gua, change, question) {
         : '无（静卦）';
     return {
         question: (question && question.trim()) ? question.trim() : '未具问，泛问吉凶',
-        time: new Date().toLocaleString('zh-CN'),
-        method: AI_METHOD_LABEL[settings.method] || settings.method,
+        time: readingContext.date || readingContext.createdAt || '未知（原记录未保存起卦时间）',
+        readingTime: new Date().toLocaleString('zh-CN'),
+        method: AI_METHOD_LABEL[readingContext.method] || '未知（原记录未保存起卦方式）',
         benGua: gua[0],
         benTitle: gua[1],
         symbol: gua[2],
@@ -33,26 +33,24 @@ function fillPrompt(tpl, ctx) {
     return String(tpl).replace(/\{(\w+)\}/g, (m, k) => (k in ctx ? ctx[k] : m));
 }
 
-// 解读完成后写回最近一条匹配的牌册记录（按卦名+变卦+所问匹配，避免误写他条）
-function persistAiReading(reading, gua, change, question) {
+// 按唯一 ID 写回；记录已删除/未能保存时不猜测，也不写入相似记录。
+function persistAiReading(reading, historyId) {
+    if (!historyId) return;
     const settings = loadSettings();
     if (!settings.ai || !settings.ai.saveToHistory) return;
     try {
         const history = readHistorySafe();
-        const q = question || '心中所念';
-        const idx = history.findIndex(h =>
-            h.gua === gua[0] &&
-            (h.changeBinary || '') === (change.changeBinary || '') &&
-            (h.question || '心中所念') === q
-        );
+        const idx = history.findIndex(h => h.id === historyId);
         if (idx !== -1) {
             history[idx].aiReading = reading;
             localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
         }
-    } catch (e) {}
+    } catch (e) {
+        showToast('解读已生成，但未能保存到牌册，请先复制留存', 'error');
+    }
 }
 
-async function requestAiReading(gua, change, question, bodyEl) {
+async function requestAiReading(gua, change, question, bodyEl, readingContext = {}) {
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
     if (!profile.baseUrl || !profile.apiKey || !profile.model) {
@@ -60,7 +58,7 @@ async function requestAiReading(gua, change, question, bodyEl) {
         return;
     }
 
-    const prompt = fillPrompt(profile.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question));
+    const prompt = fillPrompt(profile.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question, readingContext));
     bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在叩问天机…</span></div>';
 
     const url = profile.baseUrl.replace(/\/+$/, '') + '/chat/completions';
@@ -77,7 +75,7 @@ async function requestAiReading(gua, change, question, bodyEl) {
         bodyEl.innerHTML = `<div class="ai-error">${escHtml(msg)}</div><button class="btn-ai-run" id="aiRetryBtn"><span class="btn-rune">↺</span> 重试</button>`;
         const rb = bodyEl.querySelector('#aiRetryBtn');
         if (rb) rb.addEventListener('click', () => {
-            requestAiReading(gua, change, question, bodyEl).then(t => { if (t) persistAiReading(t, gua, change, question); });
+            requestAiReading(gua, change, question, bodyEl, readingContext).then(t => { if (t) persistAiReading(t, readingContext.historyId); });
         });
     };
 
@@ -141,7 +139,7 @@ async function requestAiReading(gua, change, question, bodyEl) {
 function setAiField(key, value) {
     const settings = loadSettings();
     settings.ai = { ...settings.ai, [key]: value };
-    saveSettings(settings);
+    return saveSettings(settings);
 }
 
 function setAiStatus(txt, cls) {
@@ -193,9 +191,13 @@ function renderAiProfileSelect(ai) {
 function saveAiConfig() {
     const settings = loadSettings();
     writeFormToActiveProfile(settings.ai);
-    saveSettings(settings);
+    if (!saveSettings(settings)) {
+        setAiStatus('保存失败，表单内容已保留，请检查浏览器存储后重试', 'error');
+        return false;
+    }
     renderAiProfileSelect(settings.ai);
     setAiStatus('已保存「' + (settings.ai.profiles[settings.ai.activeProfile].name) + '」', 'success');
+    return true;
 }
 
 function switchAiProfile(index) {
@@ -205,7 +207,12 @@ function switchAiProfile(index) {
     index = parseInt(index, 10);
     if (isNaN(index) || index < 0 || index >= ai.profiles.length) index = 0;
     ai.activeProfile = index;
-    saveSettings(settings);
+    if (!saveSettings(settings)) {
+        const sel = document.getElementById('aiProfileSelect');
+        if (sel) sel.value = String(loadSettings().ai.activeProfile);
+        setAiStatus('切换失败，当前编辑已保留，请重试', 'error');
+        return;
+    }
     loadActiveProfileToForm(ai);
     renderAiProfileSelect(ai);
     setAiStatus('已切换到「' + (ai.profiles[index].name) + '」', 'success');
@@ -219,7 +226,10 @@ function newAiProfile() {
     const p = makeAiProfile('配置 ' + (ai.profiles.length + 1), {});
     ai.profiles.push(p);
     ai.activeProfile = ai.profiles.length - 1;
-    saveSettings(settings);
+    if (!saveSettings(settings)) {
+        setAiStatus('新建失败，当前编辑已保留，请重试', 'error');
+        return;
+    }
     loadActiveProfileToForm(ai);
     renderAiProfileSelect(ai);
     setAiStatus('已新建「' + p.name + '」，填写后保存', 'success');
@@ -239,7 +249,10 @@ function deleteAiProfile() {
         const rmIdx = Math.min(idx, fAi.profiles.length - 1);
         fAi.profiles.splice(rmIdx, 1);
         fAi.activeProfile = Math.max(0, rmIdx - 1);
-        saveSettings(fresh);
+        if (!saveSettings(fresh)) {
+            setAiStatus('删除失败，配置未删除，请重试', 'error');
+            return;
+        }
         loadActiveProfileToForm(fAi);
         renderAiProfileSelect(fAi);
         setAiStatus('已删除', 'success');
@@ -247,7 +260,7 @@ function deleteAiProfile() {
 }
 
 async function testAiConnection() {
-    saveAiConfig();
+    if (!saveAiConfig()) return;
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
     const status = document.getElementById('aiStatus');

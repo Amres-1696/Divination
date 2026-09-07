@@ -9,6 +9,9 @@ class DustParticles {
         this.running = false;
         this.fireflyTimer = null;
         this._rafId = null;
+        this._tickTimer = null;
+        this._initialFireflyTimer = null;
+        this._generation = 0;
         this._resizeTimer = null;
         this.resize();
         window.addEventListener('resize', () => {
@@ -58,9 +61,11 @@ class DustParticles {
     }
     scheduleFirefly() {
         if (!this.running) return;
+        const generation = this._generation;
         const delay = 9000 + Math.random() * 11000; // 9–20s
         this.fireflyTimer = setTimeout(() => {
-            if (this.running) {
+            if (this.running && generation === this._generation) {
+                this.fireflyTimer = null;
                 this.spawnFirefly();
                 this.scheduleFirefly();
             }
@@ -114,24 +119,42 @@ class DustParticles {
         }
         ctx.globalAlpha = 1;
         // 用 setTimeout 30fps 限帧，避免空跑 rAF 回调
-        this._rafId = setTimeout(() => requestAnimationFrame(() => this.tick()), 33);
+        const generation = this._generation;
+        this._tickTimer = setTimeout(() => {
+            if (!this.running || generation !== this._generation) return;
+            this._tickTimer = null;
+            this._rafId = requestAnimationFrame(() => {
+                if (!this.running || generation !== this._generation) return;
+                this._rafId = null;
+                this.tick();
+            });
+        }, 33);
     }
     start() {
         if (this.running) return;
         this.running = true;
+        const generation = ++this._generation;
         this.spawn(8);
         this.tick();
-        setTimeout(() => { if (this.running) this.spawnFirefly(); }, 4000);
+        this._initialFireflyTimer = setTimeout(() => {
+            if (!this.running || generation !== this._generation) return;
+            this._initialFireflyTimer = null;
+            this.spawnFirefly();
+        }, 4000);
         this.scheduleFirefly();
     }
     pause() {
         this.running = false;
-        if (this._rafId) { clearTimeout(this._rafId); this._rafId = null; }
-        if (this.fireflyTimer) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
+        this._generation++;
+        if (this._tickTimer !== null) { clearTimeout(this._tickTimer); this._tickTimer = null; }
+        if (this._rafId !== null) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+        if (this._initialFireflyTimer !== null) { clearTimeout(this._initialFireflyTimer); this._initialFireflyTimer = null; }
+        if (this.fireflyTimer !== null) { clearTimeout(this.fireflyTimer); this.fireflyTimer = null; }
     }
     resume() {
         if (this.running) return;
         this.running = true;
+        this._generation++;
         this.tick();
         this.scheduleFirefly();
     }

@@ -49,7 +49,7 @@ function getCurrentGuaData() {
     return {
         name: nameEl.textContent, title: titleEl ? titleEl.textContent : '',
         symbol: symbolEl ? symbolEl.textContent : '',
-        question: document.getElementById('question').value.trim(),
+        question: (r.dataset.question || '').trim(),
         analysisList: list, changingYaoTexts, changingYaos, hexagramLines,
         hasChange, cgName, cgSymbol, cgExplain, changePos,
         date: new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })

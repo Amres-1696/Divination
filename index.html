@@ -186,7 +186,7 @@
                     <option value="coin">铜钱法（三枚铜钱）</option>
                     <option value="bazi">八字起卦（生辰八字）</option>
                 </select>
-                <div class="settings-hint">八字起卦需先填写生辰八字信息</div>
+                <div class="settings-hint">生辰按公历填写，起卦时自动换算农历（梅花易数）</div>
             </div>
             <div class="settings-group">
                 <div class="settings-label">生辰八字</div>
@@ -352,6 +352,7 @@
     <script src="data.js"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
     <script src="js/core.js"></script>
+    <script src="js/lunar.js"></script>
     <script src="js/cards.js"></script>
     <script src="js/effects.js"></script>
     <script src="js/ritual.js"></script>

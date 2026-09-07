@@ -12,6 +12,12 @@ async function divine() {
     const originalText = btnText ? btnText.textContent : '起卦';
 
     const settings = loadSettings();
+    const startedAt = new Date();
+    const readingContext = {
+        method: settings.method,
+        createdAt: startedAt.toISOString(),
+        date: startedAt.toLocaleString('zh-CN')
+    };
 
     // 八字起卦需要检查八字数据
     if (settings.method === 'bazi' && !settings.bazi) {
@@ -55,8 +61,9 @@ async function divine() {
             chosenCard = skipped ? null : ritual.chosenCard;
         }
 
-        renderResult(gua, hexLines, change, question, fullBin, chosenCard);
-        saveToHistory(question, gua, fullBin, hexLines, change);
+        // 先落库拿到唯一 ID，自动 AI 解读和重试都绑定本条记录。
+        readingContext.historyId = saveToHistory(question, gua, fullBin, hexLines, change, readingContext);
+        renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
     } finally {
         btn.disabled = false;
         if (btnText) btnText.textContent = originalText;
@@ -99,7 +106,7 @@ function getMainReading(gua, change) {
     return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」` };
 }
 
-function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi) {
+function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi, readingContext = {}) {
     const resultArea = document.getElementById('resultArea');
     const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
     const roman = toRoman(guaIndex(gua));
@@ -149,6 +156,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         ? `<section class="card card-ai" id="aiReadingCard"><h3>天机 · AI 详解 <span class="hex-tag">灵犀一点</span></h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
         : '';
 
+    // 记录本卦所问，供分享卡读取（不读实时输入框：回看历史或起卦后改输入会导致分享卡答非所问）
+    resultArea.dataset.question = question || '';
+
     resultArea.innerHTML = `
 <section class="card result-header">
     <div class="chosen-card-wrap" id="chosenCardWrap"></div>
@@ -191,8 +201,8 @@ ${aiHtml}
     const aiBody = resultArea.querySelector('#aiReadingBody');
     if (aiBody) {
         const runAi = () => {
-            requestAiReading(gua, change, question, aiBody).then(text => {
-                if (text) persistAiReading(text, gua, change, question);
+            requestAiReading(gua, change, question, aiBody, readingContext).then(text => {
+                if (text) persistAiReading(text, readingContext.historyId);
             });
         };
         if (savedAi) {
@@ -340,15 +350,23 @@ function generateHexagramBazi(bazi, question) {
     const qn = normalizeQuestion(question);
     const qNum = qn ? simpleHash(qn) : 0;        // 稳定非负整数，同问题恒定
 
-    const yearNum = bazi.year % 100 || 100;
-    // 梅花易数：以八字「年月日」起上卦，「年月日时」起下卦——八字即先天之命
-    const baseUpper = yearNum + bazi.month + bazi.day;
+    // 梅花易数以农历起卦：年取地支数（子1…亥12）、月日取农历月日（闰月按其月数计）
+    // 公历生辰先换算；早于1900年正月初一换算失败时退回公历数值，确定性不变
+    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
+    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
+    const monthNum = lunar ? lunar.month : bazi.month;
+    const dayNum = lunar ? lunar.day : bazi.day;
+
+    // 梅花易数：以「年月日」起上卦，「年月日时」起下卦——八字即先天之命
+    const baseUpper = yearNum + monthNum + dayNum;
     const baseLower = baseUpper + (bazi.hour + 1);
 
     // 融入所问之事（确定性：同一问题恒定，不同问题分散；取质数模以打散分布）
     const sumUpper = baseUpper + (qNum % 97);
     const sumLower = baseLower + (Math.floor(qNum / 97) % 89);
-    const sumYao   = sumUpper + sumLower;        // 动爻＝上下卦总数 mod 6（梅花传统）
+    // 动爻＝年月日时总数 mod 6（梅花传统，同下卦总数；问题项随下卦总数自然融入，
+    // 观梅占原例：34 起兑为上、43 起离为下，动爻 43%6=1 取初爻——总数只计一次）
+    const sumYao   = sumLower;
 
     const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
     const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
