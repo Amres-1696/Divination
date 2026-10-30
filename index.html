@@ -3,348 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="天衍 · EDESTINY — 基于易经六十四卦的在线占卜">
-    <title>天衍 · DESTINY</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+    <meta name="description" content="天衍：用《周易》六十四卦起卦。六爻是六次二选一，掷完六次，六十四卦只剩一卦。">
+    <meta name="theme-color" content="#1A3D72">
+    <title>天衍 · 周易起卦</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 核心字体：preload 优先加载 -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <!-- 装饰字体：延迟加载 -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap" media="print" onload="this.media='all'">
-    <noscript>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&display=swap">
-    </noscript>
-    <link rel="stylesheet" href="style.css?v=20260829-2">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.1.0/style.css">
+    <link rel="stylesheet" href="style.css?v=20261030-4">
     <script src="html2canvas.min.js" defer></script>
 </head>
 <body>
-    <div class="velvet-bg" aria-hidden="true"></div>
-    <svg class="embroidery-mat" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <g transform="translate(500 500)">
-            <g class="mat-l1">
-                <circle r="495" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.38"/>
-                <circle r="488" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.2"/>
-                <circle class="mat-flow-ring" r="492" fill="none" stroke-width="2" pointer-events="none"/>
-                <g opacity="0.35">
-                    <g id="vineGroup">
-                        <g id="vineUnit">
-                            <path d="M 0,-492 Q 12,-478 8,-462 Q 4,-448 -4,-440 Q -10,-434 -6,-425" fill="none" stroke="currentColor" stroke-width="0.8"/>
-                            <path d="M 8,-462 Q 16,-455 14,-445 Q 12,-438 6,-432" fill="none" stroke="currentColor" stroke-width="0.6"/>
-                            <path d="M -4,-440 Q -12,-435 -16,-442 Q -18,-448 -12,-454" fill="none" stroke="currentColor" stroke-width="0.5"/>
-                            <circle cx="0" cy="-492" r="1.2" fill="currentColor"/>
-                        </g>
-                        <use href="#vineUnit" transform="rotate(15)"/>
-                        <use href="#vineUnit" transform="rotate(30)"/>
-                        <use href="#vineUnit" transform="rotate(45)"/>
-                        <use href="#vineUnit" transform="rotate(60)"/>
-                        <use href="#vineUnit" transform="rotate(75)"/>
-                        <use href="#vineUnit" transform="rotate(90)"/>
-                        <use href="#vineUnit" transform="rotate(105)"/>
-                        <use href="#vineUnit" transform="rotate(120)"/>
-                        <use href="#vineUnit" transform="rotate(135)"/>
-                        <use href="#vineUnit" transform="rotate(150)"/>
-                        <use href="#vineUnit" transform="rotate(165)"/>
-                        <use href="#vineUnit" transform="rotate(180)"/>
-                        <use href="#vineUnit" transform="rotate(195)"/>
-                        <use href="#vineUnit" transform="rotate(210)"/>
-                        <use href="#vineUnit" transform="rotate(225)"/>
-                        <use href="#vineUnit" transform="rotate(240)"/>
-                        <use href="#vineUnit" transform="rotate(255)"/>
-                        <use href="#vineUnit" transform="rotate(270)"/>
-                        <use href="#vineUnit" transform="rotate(285)"/>
-                        <use href="#vineUnit" transform="rotate(300)"/>
-                        <use href="#vineUnit" transform="rotate(315)"/>
-                        <use href="#vineUnit" transform="rotate(330)"/>
-                        <use href="#vineUnit" transform="rotate(345)"/>
-                    </g>
-                </g>
-            </g>
-            <g class="mat-l2">
-                <circle r="415" fill="none" stroke="currentColor" stroke-width="1" opacity="0.32"/>
-                <circle r="409" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.18"/>
-                <text x="0" y="-422" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">朱</text>
-                <text x="0" y="435" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">玄</text>
-                <text x="-422" y="8" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">龙</text>
-                <text x="422" y="8" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="24" fill="currentColor" opacity="0.48">虎</text>
-                <g opacity="0.3">
-                    <circle cx="0" cy="-415" r="6" fill="currentColor"/>
-                    <circle cx="0" cy="415" r="6" fill="currentColor"/>
-                    <circle cx="-415" cy="0" r="6" fill="currentColor"/>
-                    <circle cx="415" cy="0" r="6" fill="currentColor"/>
-                </g>
-            </g>
-            <g class="mat-l3">
-                <circle r="320" fill="none" stroke="currentColor" stroke-width="0.7" opacity="0.28"/>
-                <circle r="315" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.15"/>
-                <text x="0" y="-296" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">天</text>
-                <text x="-256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">人</text>
-                <text x="256" y="160" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="14" fill="currentColor" opacity="0.5">地</text>
-            </g>
-            <g class="mat-l4">
-                <circle r="228" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.28"/>
-                <circle r="220" fill="none" stroke="currentColor" stroke-width="0.4" opacity="0.15"/>
-                <g class="taiji-outer">
-                    <text x="0" y="-212" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☰</text>
-                    <text x="150" y="-150" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☱</text>
-                    <text x="212" y="8" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☲</text>
-                    <text x="150" y="166" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☳</text>
-                    <text x="0" y="228" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☷</text>
-                    <text x="-150" y="166" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☶</text>
-                    <text x="-212" y="8" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☵</text>
-                    <text x="-150" y="-150" text-anchor="middle" font-size="22" fill="currentColor" opacity="0.5">☴</text>
-                </g>
-            </g>
-            <g class="mat-l5">
-                <circle r="128" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.35"/>
-                <circle r="120" fill="none" stroke="currentColor" stroke-width="0.25" opacity="0.2"/>
-                <g opacity="0.5">
-                    <polygon points="0,-110 95,-55 95,55 0,110 -95,55 -95,-55" fill="none" stroke="currentColor" stroke-width="0.4"/>
-                    <polygon points="0,-110 95,55 -95,55" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.6"/>
-                    <polygon points="0,110 -95,-55 95,-55" fill="none" stroke="currentColor" stroke-width="0.3" opacity="0.6"/>
-                </g>
-                <text x="0" y="-6" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="44" fill="currentColor" opacity="0.65" letter-spacing="4">天</text>
-                <text x="0" y="52" text-anchor="middle" font-family="ZCOOL XiaoWei, serif" font-size="44" fill="currentColor" opacity="0.65" letter-spacing="4">衍</text>
-            </g>
-        </g>
-    </svg>
-    <button class="settings-gear" id="settingsGear" aria-label="设置">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-    </button>
-    <canvas class="dust-layer" aria-hidden="true"></canvas>
-
-    <div class="container">
-        <header>
-            <div class="arcanum-header">
-                <span class="deco-line"></span>
-                <span class="deco-mark">✦</span>
-                <span class="deco-line"></span>
-            </div>
-            <div class="title-seal">
-                <div class="title-main">天衍</div>
-                <div class="title-roman">DESTINY</div>
-            </div>
-            <div class="subtitle">六十四卦 · 命之所向</div>
-            <div class="arcanum-header">
-                <span class="deco-line"></span>
-                <span class="deco-mark">✦</span>
-                <span class="deco-line"></span>
-            </div>
-        </header>
-        <div class="daily-gua" id="dailyGua"></div>
-
-        <div class="question-area">
-            <span class="question-label">INQUIRY · 所问之事</span>
-            <input type="text" id="question" placeholder="心之所念 · 卦之所示">
-        </div>
-
-        <div class="btn-group">
-            <button class="btn-divine" id="divineBtn">
-                <span class="btn-spark" aria-hidden="true"></span>
-                <span class="btn-rune">✧</span>
-                <span class="btn-text">起卦</span>
-                <span class="btn-rune">✧</span>
-            </button>
-            <button class="btn-history" id="historyBtn">
-                <span class="btn-rune">◱</span>
-                <span class="btn-text">牌册</span>
-            </button>
-        </div>
-
-        <div id="resultArea"></div>
-
-        <footer>
-            <aside class="github-support" aria-label="支持天衍开源项目">
-                <p class="github-support-copy">天衍完全免费并开源。若它对你有所启发，欢迎在 GitHub 点亮一颗星，或留下建议，让它继续生长。</p>
-                <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
-                    <svg class="github-support-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                        <path fill="currentColor" d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.1 1.2A10.8 10.8 0 0 1 12 6.2c1.1 0 2.1.1 3.1.4 2.2-1.5 3.1-1.2 3.1-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.4 5.7.4.4.8 1.1.8 2.1v3c0 .3.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/>
-                    </svg>
-                    <span>在 GitHub 上加星</span>
-                    <span class="github-support-star" aria-hidden="true">★</span>
-                </a>
-            </aside>
-            <div class="footer-meta">
-                <p>此为占卜游戏 · 命运系于自身</p>
-                <p>&copy; 2026 · 天衍 DESTINY</p>
-            </div>
-        </footer>
+<div class="cosmos" id="cosmos" aria-hidden="true"></div>
+<div class="mat" aria-hidden="true"></div>
+<div class="frame" aria-hidden="true">
+  <div class="frame-zones frame-top"><span>甲</span><span>乙</span><span>丙</span><span>丁</span><span>戊</span><span>己</span><span>庚</span><span>辛</span><span>壬</span><span>癸</span></div>
+  <div class="frame-zones frame-left"><span>子</span><span>丑</span><span>寅</span><span>卯</span><span>辰</span><span>巳</span><span>午</span><span>未</span><span>申</span><span>酉</span><span>戌</span><span>亥</span></div>
+  <div class="frame-scroll" id="frameScroll"><i></i></div>
+  <i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i>
+</div>
+<header class="masthead">
+  <button class="brand" id="homeBtn" aria-label="回到首页"><b>天衍</b><span>周易六十四卦图</span></button>
+  <nav class="masthead-nav" aria-label="主要导航">
+    <button id="historyBtn">牌册<sup id="historyCount"></sup></button>
+    <button id="settingsGear">设置</button>
+  </nav>
+</header>
+<div class="site">
+  <main class="container">
+    <section id="homeView" class="view home-view" aria-labelledby="homeTitle">
+      <div class="home-main">
+        <h1 class="home-title" id="homeTitle" style="--k:0">天衍</h1>
+        <p class="home-lede" style="--k:1">六爻是六次二选一。<br>掷满六次，六十四卦只剩一卦。</p>
+        <form id="questionForm" class="question-area" style="--k:2">
+          <label class="field-label" for="question">想问什么</label>
+          <div class="q-field">
+            <input id="question" type="text" autocomplete="off" placeholder="比如：这份工作要不要换" maxlength="80">
+            <span class="q-count" id="questionCount" aria-hidden="true"></span>
+          </div>
+          <div class="form-row">
+            <div class="method-label"><select id="homeMethod" aria-label="起卦方式"><option value="coin">铜钱起卦</option><option value="bazi">生辰起卦</option></select></div>
+            <button type="button" id="divineBtn" class="btn-divine"><span class="btn-text">起卦</span></button>
+          </div>
+        </form>
+        <div class="daily-gua" id="dailyGua" role="button" tabindex="0" aria-label="查看今日一卦" style="--k:3"></div>
+      </div>
+    </section>
+    <div id="resultArea" aria-live="polite"></div>
+  </main>
+  <footer class="site-footer">
+    <p>天衍免费开源，按占卜游戏来做，不保证预测结果。</p>
+    <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
+      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.1 1.2A10.8 10.8 0 0 1 12 6.2c1.1 0 2.1.1 3.1.4 2.2-1.5 3.1-1.2 3.1-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.4 5.7.4.4.8 1.1.8 2.1v3c0 .3.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/></svg>
+      在 GitHub 上加星或提建议
+    </a>
+    <p class="footer-copy">&copy; 2026 天衍</p>
+  </footer>
+</div>
+<div class="history-overlay" id="settingsOverlay" aria-hidden="true"></div>
+<div class="history-panel settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
+  <div class="history-head">
+    <div class="panel-title"><h3 id="settingsPanelTitle">设置</h3><span>只存在这台设备的浏览器里</span></div>
+    <button class="btn-close" id="settingsCloseBtn" aria-label="关闭设置"></button>
+  </div>
+  <div class="settings-content">
+    <div class="settings-group" style="--k:0">
+      <div class="settings-row">
+        <span class="settings-label">起卦方式</span>
+        <select class="settings-select" id="settingMethod" aria-label="起卦方式">
+          <option value="coin">铜钱法（三枚铜钱）</option>
+          <option value="bazi">生辰起卦（公历生日）</option>
+        </select>
+      </div>
+      <div class="settings-hint">生辰按公历填写，起卦时自动换算成农历（梅花易数取数）。</div>
     </div>
-    <div class="history-overlay" id="settingsOverlay" aria-hidden="true"></div>
-    <div class="history-panel settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
-        <div class="history-head">
-            <h3 id="settingsPanelTitle">设置</h3>
-            <button class="btn-close" id="settingsCloseBtn" aria-label="关闭设置">×</button>
+    <div class="settings-group" id="baziSettings" style="--k:1">
+      <div class="settings-label">公历生辰</div>
+      <div class="bazi-seals birth">
+        <div class="birth-year" id="rulerSlot"></div>
+        <div class="birth-row">
+          <div class="birth-cal" id="calSlot"></div>
+          <div class="birth-dial" id="dialSlot"></div>
         </div>
-        <div class="settings-content">
-            <div class="settings-group">
-                <div class="settings-label">算卦方式</div>
-                <select class="settings-select" id="settingMethod">
-                    <option value="coin">铜钱法（三枚铜钱）</option>
-                    <option value="bazi">八字起卦（生辰八字）</option>
-                </select>
-                <div class="settings-hint">生辰按公历填写，起卦时自动换算农历（梅花易数）</div>
-            </div>
-            <div class="settings-group">
-                <div class="settings-label">生辰八字</div>
-                <div class="bazi-seals">
-                    <label class="bazi-seal" for="baziYear">
-                        <span class="seal-label">年</span>
-                        <input type="number" id="baziYear" class="seal-input" placeholder="—" min="1900" max="2100" inputmode="numeric">
-                    </label>
-                    <label class="bazi-seal" for="baziMonth">
-                        <span class="seal-label">月</span>
-                        <select id="baziMonth" class="seal-input">
-                            <option value="">—</option>
-                            <option value="1">正</option>
-                            <option value="2">二</option>
-                            <option value="3">三</option>
-                            <option value="4">四</option>
-                            <option value="5">五</option>
-                            <option value="6">六</option>
-                            <option value="7">七</option>
-                            <option value="8">八</option>
-                            <option value="9">九</option>
-                            <option value="10">十</option>
-                            <option value="11">冬</option>
-                            <option value="12">腊</option>
-                        </select>
-                    </label>
-                    <label class="bazi-seal" for="baziDay">
-                        <span class="seal-label">日</span>
-                        <input type="number" id="baziDay" class="seal-input" placeholder="—" min="1" max="31" inputmode="numeric">
-                    </label>
-                    <label class="bazi-seal bazi-seal-hour" for="baziHour">
-                        <span class="seal-label">时</span>
-                        <select id="baziHour" class="seal-input seal-input-hour">
-                            <option value="">—</option>
-                            <option value="0" data-range="23-1">子</option>
-                            <option value="1" data-range="1-3">丑</option>
-                            <option value="2" data-range="3-5">寅</option>
-                            <option value="3" data-range="5-7">卯</option>
-                            <option value="4" data-range="7-9">辰</option>
-                            <option value="5" data-range="9-11">巳</option>
-                            <option value="6" data-range="11-13">午</option>
-                            <option value="7" data-range="13-15">未</option>
-                            <option value="8" data-range="15-17">申</option>
-                            <option value="9" data-range="17-19">酉</option>
-                            <option value="10" data-range="19-21">戌</option>
-                            <option value="11" data-range="21-23">亥</option>
-                        </select>
-                    </label>
-                </div>
-                <button class="btn-save-bazi" id="saveBaziBtn">保存八字</button>
-                <div class="bazi-status" id="baziStatus"></div>
-            </div>
-            <div class="settings-group">
-                <div class="settings-row-toggle">
-                    <span class="settings-label">每日启示</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="settingDaily" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="settings-hint">首页显示每日一卦与箴言</div>
-            </div>
-            <div class="settings-group">
-                <div class="settings-row-toggle">
-                    <span class="settings-label">AI 解卦</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="settingAiEnabled">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="settings-hint">起卦后由 AI 详解卦象，需填写兼容 OpenAI 格式的接口</div>
-                <div class="ai-config" id="aiConfig">
-                    <div class="ai-profile-bar">
-                        <div class="ai-profile-row">
-                            <select id="aiProfileSelect" class="settings-select ai-profile-select" aria-label="选择配置"></select>
-                            <span class="ai-profile-count" id="aiProfileCount">1/5</span>
-                        </div>
-                        <div class="ai-profile-actions">
-                            <button type="button" class="btn-profile" id="aiProfileNew">＋ 新建</button>
-                            <button type="button" class="btn-profile btn-profile-del" id="aiProfileDelete">删除</button>
-                        </div>
-                        <label class="ai-field ai-field-block">
-                            <span class="ai-field-label">配置名称</span>
-                            <input type="text" id="aiProfileName" class="settings-input" placeholder="如 本地 Claude 桥接 / DeepSeek" autocomplete="off" spellcheck="false">
-                        </label>
-                    </div>
-                    <label class="ai-field">
-                        <span class="ai-field-label">接口地址</span>
-                        <input type="text" id="aiBaseUrl" class="settings-input" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">
-                    </label>
-                    <label class="ai-field">
-                        <span class="ai-field-label">API Key</span>
-                        <input type="password" id="aiApiKey" class="settings-input" placeholder="sk-..." autocomplete="off" spellcheck="false">
-                    </label>
-                    <label class="ai-field">
-                        <span class="ai-field-label">模型名称</span>
-                        <input type="text" id="aiModel" class="settings-input" placeholder="如 deepseek-chat / gpt-4o-mini" autocomplete="off" spellcheck="false">
-                    </label>
-                    <div class="settings-row-toggle ai-auto-row">
-                        <span class="settings-label">起卦后自动解卦</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="settingAiAuto">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    <div class="settings-hint">关闭则在结果页点「请神解卦」手动触发</div>
-                    <label class="ai-field ai-field-block">
-                        <span class="ai-field-label">提示词模板</span>
-                        <textarea id="aiPrompt" class="settings-textarea" rows="9" spellcheck="false"></textarea>
-                    </label>
-                    <button class="btn-reset-prompt" id="resetPromptBtn">恢复默认提示词</button>
-                    <div class="ai-actions">
-                        <button class="btn-save-bazi btn-save-ai" id="saveAiBtn">保存配置</button>
-                        <button class="btn-save-bazi btn-test-ai" id="testAiBtn">测试连接</button>
-                    </div>
-                    <div class="bazi-status" id="aiStatus"></div>
-                    <div class="settings-hint ai-warn">密钥仅保存在本机浏览器中，不会上传。浏览器直连接口若被跨域(CORS)拦截，请改用支持跨域的服务或自建代理。</div>
-                </div>
-            </div>
-        </div>
+      </div>
+      <div class="sr-native" aria-hidden="true">
+        <input type="number" id="baziYear" min="1900" max="2100" tabindex="-1">
+        <select id="baziMonth" tabindex="-1"><option value="">—</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+        <input type="number" id="baziDay" min="1" max="31" tabindex="-1">
+        <select id="baziHour" tabindex="-1"><option value="">—</option><option value="0" data-range="23-1">子时</option><option value="1" data-range="1-3">丑时</option><option value="2" data-range="3-5">寅时</option><option value="3" data-range="5-7">卯时</option><option value="4" data-range="7-9">辰时</option><option value="5" data-range="9-11">巳时</option><option value="6" data-range="11-13">午时</option><option value="7" data-range="13-15">未时</option><option value="8" data-range="15-17">申时</option><option value="9" data-range="17-19">酉时</option><option value="10" data-range="19-21">戌时</option><option value="11" data-range="21-23">亥时</option></select>
+      </div>
+      <button class="btn btn-small btn-save-bazi" id="saveBaziBtn">保存生辰</button>
+      <div class="bazi-status" id="baziStatus"></div>
     </div>
-    <div class="history-overlay" id="historyOverlay" aria-hidden="true"></div>
-    <div class="history-panel" id="historyPanel" role="dialog" aria-modal="true" aria-labelledby="historyPanelTitle" aria-hidden="true">
-        <div class="history-head">
-            <h3 id="historyPanelTitle">牌册</h3>
-            <button class="btn-close" id="historyCloseBtn" aria-label="关闭牌册">×</button>
-        </div>
-        <div id="historyList"></div>
-        <button class="btn-clear" id="clearHistoryBtn">清空牌册</button>
+    <div class="settings-group" style="--k:2">
+      <div class="settings-row">
+        <span class="settings-label">每日启示</span>
+        <label class="toggle-switch"><input type="checkbox" id="settingDaily" checked aria-label="每日启示"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-hint">首页显示今日一卦与一句箴言。</div>
     </div>
-    <div class="share-overlay" id="shareImageContainer">
-        <div class="share-box">
-            <h3>分享卡片</h3>
-            <div class="share-preview" id="shareImagePreview">生成中…</div>
+    <div class="settings-group" style="--k:3">
+      <div class="settings-row">
+        <span class="settings-label">AI 解卦</span>
+        <label class="toggle-switch"><input type="checkbox" id="settingAiEnabled" aria-label="AI 解卦"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-hint">起卦后由 AI 详解卦象，需要填写兼容 OpenAI 格式的接口。</div>
+      <div class="ai-config" id="aiConfig">
+        <div class="ai-profile-bar">
+          <div class="ai-profile-row">
+            <select id="aiProfileSelect" class="settings-select ai-profile-select" aria-label="选择配置"></select>
+            <span class="ai-profile-count" id="aiProfileCount">1/5</span>
+          </div>
+          <div class="ai-profile-actions">
+            <button type="button" class="btn-profile" id="aiProfileNew">新建配置</button>
+            <button type="button" class="btn-profile btn-profile-del" id="aiProfileDelete">删除</button>
+          </div>
+          <label class="ai-field"><span class="ai-field-label">配置名称</span><input type="text" id="aiProfileName" class="settings-input" placeholder="如 本地 Claude 桥接 / DeepSeek" autocomplete="off" spellcheck="false"></label>
+        </div>
+        <label class="ai-field"><span class="ai-field-label">接口地址</span><input type="text" id="aiBaseUrl" class="settings-input" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false"></label>
+        <label class="ai-field"><span class="ai-field-label">API Key</span><input type="password" id="aiApiKey" class="settings-input" placeholder="sk-..." autocomplete="off" spellcheck="false"></label>
+        <label class="ai-field"><span class="ai-field-label">模型名称</span><input type="text" id="aiModel" class="settings-input" placeholder="如 deepseek-chat / gpt-4o-mini" autocomplete="off" spellcheck="false"></label>
+        <div class="settings-row ai-auto-row">
+          <span class="settings-label">起卦后自动解卦</span>
+          <label class="toggle-switch"><input type="checkbox" id="settingAiAuto" aria-label="起卦后自动解卦"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="settings-hint">关闭时，在结果页手动点「请 AI 解读这一卦」。</div>
+        <label class="ai-field"><span class="ai-field-label">提示词模板</span><textarea id="aiPrompt" class="settings-textarea" rows="9" spellcheck="false"></textarea></label>
+        <button class="btn-profile btn-reset-prompt" id="resetPromptBtn">恢复默认提示词</button>
+        <div class="ai-actions">
+          <button class="btn btn-primary btn-small btn-save-ai" id="saveAiBtn">保存配置</button>
+          <button class="btn btn-small btn-test-ai" id="testAiBtn">测试连接</button>
+        </div>
+        <div class="bazi-status" id="aiStatus"></div>
+        <div class="settings-hint ai-warn">密钥只保存在本机浏览器中；请求 AI 时会发给你填写的接口。浏览器直连若被跨域（CORS）拦截，请改用支持跨域的服务或自建代理。</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="history-overlay" id="historyOverlay" aria-hidden="true"></div>
+<div class="history-panel archive" id="historyPanel" role="dialog" aria-modal="true" aria-labelledby="historyPanelTitle" aria-hidden="true">
+  <div class="history-head">
+    <div class="panel-title"><h3 id="historyPanelTitle">牌册</h3><span id="historyMeta"></span></div>
+    <button class="btn-close" id="historyCloseBtn" aria-label="关闭牌册"></button>
+  </div>
+  <div class="archive-body">
+    <aside class="archive-map" id="historyMap"></aside>
+    <div class="archive-list" id="historyList"></div>
+  </div>
+  <div class="panel-foot"><button class="btn-clear" id="clearHistoryBtn">清空牌册</button></div>
+</div>
+<div class="share-overlay" id="shareImageContainer">
+        <div class="share-box" role="dialog" aria-modal="true" aria-label="分享图">
+            <h3>分享图</h3>
+            <div class="share-preview" id="shareImagePreview"></div>
             <div class="share-actions">
-                <button class="btn-download" id="shareDownloadBtn">下载图片</button>
-                <button class="btn-copy" id="shareCopyBtn">复制图片</button>
-                <button class="btn-close-share" id="closeShareBtn">关闭</button>
+                <button class="btn btn-primary btn-download" id="shareDownloadBtn">下载图片</button>
+                <button class="btn btn-copy" id="shareCopyBtn">复制图片</button>
+                <button class="btn btn-quiet btn-close-share" id="closeShareBtn">关闭</button>
             </div>
         </div>
     </div>
 
     <!-- 回到顶部 -->
     <button class="back-to-top" id="backToTop" aria-label="回到顶部">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="18 15 12 9 6 15"/>
-        </svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
     </button>
 
     <!-- Toast 提示 -->
     <div class="toast-container" id="toastContainer"></div>
     <!-- Confirm 弹窗 -->
     <div class="confirm-overlay" id="confirmOverlay">
-        <div class="confirm-box">
+        <div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmMsg">
             <div class="confirm-msg" id="confirmMsg"></div>
             <div class="confirm-actions">
-                <button class="confirm-btn confirm-yes" id="confirmYes">确定</button>
-                <button class="confirm-btn confirm-no" id="confirmNo">取消</button>
+                <button class="btn confirm-btn confirm-yes" id="confirmYes">确定</button>
+                <button class="btn confirm-btn confirm-no" id="confirmNo">取消</button>
             </div>
         </div>
     </div>
@@ -353,15 +187,17 @@
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
     <script src="js/core.js"></script>
     <script src="js/lunar.js"></script>
-    <script src="js/cards.js"></script>
-    <script src="js/effects.js"></script>
+    <script src="js/glyphs.js"></script>
+    <script src="js/cosmos.js"></script>
     <script src="js/ritual.js"></script>
     <script src="js/ai.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/share.js"></script>
+    <script src="js/settings.js?v=20261030"></script>
+    <script src="js/share.js?v=20261030"></script>
     <script src="js/history.js"></script>
     <script src="js/daily.js"></script>
     <script src="js/divination.js"></script>
+    <script src="js/instruments.js"></script>
+    <script src="js/theme.js?v=20261030"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

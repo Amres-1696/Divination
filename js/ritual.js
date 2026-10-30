@@ -1,254 +1,204 @@
-// ritual —— 六幕发牌仪式(ArcanaRitual)与「心若不诚」开场白
+// ritual —— 起卦仪式(HexRitual)：圆图收成方图 → 六次掷钱、逐爻筛卦 → 剩下一卦
+// 卦象在仪式前已经算好（铜钱随机或生辰取数），仪式负责把它一爻一爻揭出来。
+// 只用 style / classList / sleep 和可选的 Cosmos，测试环境里也能跑完。
 
-class ArcanaRitual {
-    constructor(stage, finalGua, hexLines, change) {
+const YAO_POS_CN = ['初', '二', '三', '四', '五', '上'];
+const YAO_TYPE_CN = { 6: '老阴', 7: '少阳', 8: '少阴', 9: '老阳' };
+const LINE_TO_BEI = { 9: 3, 8: 2, 7: 1, 6: 0 }; // 背面朝上的铜钱数
+
+function yaoLabel(line, i) {
+    const num = (line === 7 || line === 9) ? '九' : '六';
+    if (i === 0) return '初' + num;
+    if (i === 5) return '上' + num;
+    return num + YAO_POS_CN[i];
+}
+
+class HexRitual {
+    constructor(stage, finalGua, hexLines, change, method) {
         this.stage = stage;
         this.finalGua = finalGua;
         this.hexLines = hexLines;
         this.change = change;
-        this.cards = [];
+        this.method = method === 'bazi' ? 'bazi' : 'coin';
+        this.cast = 0;
+        const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
+        this.value = shaoValue(bits.slice().reverse().join(''));
+        this.chosenCard = null;
+        this.dead = false;
+        this._offKey = null;
+    }
+    // 跳过后停止一切后续动作，避免旧仪式继续改动图层或监听按键
+    abort() {
+        this.dead = true;
+        if (this._offKey) this._offKey();
     }
     async run() {
         this.buildStage();
-        await this.actAwaken();
-        await this.actRiffle();
-        await this.actFan();
-        await this.actChoose();
-        await this.actRise();
-        await this.actFlip();
-        await this.actProclaim();
+        await this.actUnfold();
+        await this.actCast();
+        await this.actSettle();
     }
     buildStage() {
+        const rowLabels = TRIGRAM_BY_VALUE.map((n, t) => `<span data-t="${t}">${n}</span>`).join('');
         this.stage.innerHTML = `
-<div class="ritual-status" id="ritualStatus"></div>
-<div class="deck-area" id="deckArea"></div>
-<button type="button" class="ritual-skip" id="ritualSkip">跳过仪式 ›</button>`;
+<div class="ritual-head">
+  <p class="ritual-status" id="ritualStatus" aria-live="polite"></p>
+  <button type="button" class="ritual-skip" id="ritualSkip">跳过，直接看结果</button>
+</div>
+<div class="ritual-body">
+  <div class="grid-frame">
+    <div class="grid-cols" aria-hidden="true"><em>上卦</em>${rowLabels}</div>
+    <div class="grid-rows" aria-hidden="true"><em>下卦</em>${rowLabels}</div>
+    <div class="grid-slot" id="gridSlot"></div>
+    <p class="grid-count" id="gridCount" aria-live="polite">六十四卦</p>
+  </div>
+  <div class="cast-panel">
+    <div class="coins" id="coins">${buildCoin()}${buildCoin()}${buildCoin()}</div>
+    <div class="cast-build" id="castBuild">${buildHexBars(null, [], 'hx-build')}</div>
+    <div class="cast-actions" id="castActions"></div>
+  </div>
+</div>`;
         this.statusEl = this.stage.querySelector('#ritualStatus');
-        this.deckEl = this.stage.querySelector('#deckArea');
+        this.countEl = this.stage.querySelector('#gridCount');
+        this.coinsEl = this.stage.querySelector('#coins');
+        this.buildEl = this.stage.querySelector('#castBuild');
+        this.actionsEl = this.stage.querySelector('#castActions');
+        if (this.stage.classList) {
+            this.stage.classList.add('pre');
+            if (this.method === 'bazi') this.stage.classList.add('by-birth');
+        }
         const skipBtn = this.stage.querySelector('#ritualSkip');
         if (skipBtn) skipBtn.addEventListener('click', () => { if (this._onSkip) this._onSkip(); });
     }
-    setStatus(roman, cn) {
-        this.statusEl.innerHTML = `${roman}<span class="ritual-status-sub">${cn}</span>`;
-        this.statusEl.classList.add('show');
+    setStatus(main, sub) {
+        this.statusEl.innerHTML = `<span class="ritual-status-main">${main}</span>` +
+            (sub ? `<span class="ritual-status-sub">${sub}</span>` : '');
     }
-    async actAwaken() {
-        this.setStatus('Ⅰ · AWAKENING', '牌垫苏醒');
-        await sleep(1200);
+    async actUnfold() {
+        if (this.dead) return;
+        this.setStatus('六十四卦', '圆图卷作方图：行是下卦，列是上卦');
+        if (typeof Cosmos !== 'undefined') Cosmos.toGrid();
+        await sleep(700);
+        if (this.stage.classList) this.stage.classList.remove('pre');
+        await sleep(1150);
     }
-    async actRiffle() {
-        this.setStatus('Ⅱ · RIFFLE', '洗牌');
-        const pool = this.pickDeckPool(DECK_POOL_SIZE);
-        for (let i = 0; i < DECK_POOL_SIZE; i++) {
-            const card = makeArcanaCard(pool[i], { large: false });
-            card.style.transform = `translate3d(${(Math.random()-0.5)*6}px, ${(Math.random()-0.5)*6}px, ${-i*0.5}px) rotate(${(Math.random()-0.5)*4}deg)`;
-            card.style.zIndex = String(i);
-            this.deckEl.appendChild(card);
-            this.cards.push(card);
+    async actCast() {
+        if (this.method === 'bazi') {
+            this.setStatus('依生辰取数', '生辰起卦不掷钱，六爻由生辰和所问推出');
+            await sleep(700);
+            for (let i = 0; i < 6; i++) await this.revealLine(i, false);
+            return;
         }
-        await sleep(280);
-        this.cards.forEach((c, i) => {
-            setTimeout(() => {
-                const side = i % 2 === 0 ? -1 : 1;
-                c.style.transition = 'transform 0.6s cubic-bezier(0.4,0,0.2,1)';
-                c.style.transform = `translate3d(${side*42}px, ${(Math.random()-0.5)*10}px, ${i*1.5}px) rotate(${side*5}deg)`;
-            }, i * 28);
-        });
-        await sleep(750);
-        this.cards.forEach((c, i) => {
-            setTimeout(() => {
-                c.style.transform = `translate3d(${(Math.random()-0.5)*4}px, ${(Math.random()-0.5)*4}px, ${-i*0.4}px) rotate(${(Math.random()-0.5)*3}deg)`;
-            }, i * 16);
-        });
-        await sleep(600);
-    }
-    async actFan() {
-        this.setStatus('Ⅲ · FAN', '扇形摊开');
-        const n = this.cards.length;
-        const isMob = window.innerWidth <= 768;
-        const radius = isMob ? 180 : 240;
-        const arc = isMob ? 140 : 110;     // 移动端加大弧度，牌间距更明显
-        const rotMul = isMob ? 0.5 : 0.4;
-        const center = (n - 1) / 2;
-        this.cards.forEach((c, i) => {
-            const t = n === 1 ? 0.5 : i / (n - 1);
-            const angle = -arc/2 + t * arc;
-            const rad = angle * Math.PI / 180;
-            const x = Math.sin(rad) * radius;
-            const y = -Math.cos(rad) * radius * 0.18 + 20;
-            const rot = angle * rotMul;
-            // z-index 围绕中心层叠：中央卡顶层、向两侧渐次后退
-            const z = 40 - Math.round(Math.abs(i - center));
-            // 存储扇形位置供选牌阶段使用
-            c._fanX = x;
-            c._fanY = y;
-            c._fanRot = rot;
-            c._fanZ = z;
-            setTimeout(() => {
-                c.style.transition = 'transform 1.05s cubic-bezier(0.4,0,0.2,1), opacity 0.8s ease, filter 0.8s ease';
-                c.style.setProperty('--fan-x', x + 'px');
-                c.style.setProperty('--fan-y', y + 'px');
-                c.style.setProperty('--fan-rot', rot + 'deg');
-                c.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg)`;
-                c.style.zIndex = String(z);
-                c.classList.add('awake');
-            }, i * 45);
-        });
-        await sleep(1700);
-    }
-    async actChoose() {
-        this.setStatus('CHOOSE · 心选一卦', '凝神择牌 · 轻触预览');
-        const randomIdx = () => Math.floor(Math.random() * this.cards.length);
-
-        // 「由天意定之」：从容的出口，不读秒、不催促
-        const fateBtn = document.createElement('button');
-        fateBtn.type = 'button';
-        fateBtn.className = 'choose-fate-btn';
-        fateBtn.textContent = '由天意定之';
-        this.deckEl.appendChild(fateBtn);
+        this.setStatus('第一爻', (window.innerWidth || 1000) > 768
+            ? '点「掷钱」或按空格，自下而上掷六次' : '点「掷钱」，自下而上掷六次');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cast-btn';
+        btn.textContent = '掷钱';
+        this.actionsEl.appendChild(btn);
+        if (btn.focus) btn.focus({ preventScroll: true });
 
         return new Promise(resolve => {
-            let resolved = false;
-            let candidateIndex = -1;
-
-            const liftCard = (card) => {
-                card.style.zIndex = '100';
-                card.style.transition = 'transform 0.22s ease, filter 0.22s ease';
-                card.style.transform = `translate3d(${card._fanX}px, ${card._fanY - 20}px, 0) rotate(${card._fanRot}deg) scale(1.08)`;
-                card.style.filter = 'drop-shadow(0 8px 20px rgba(201,169,110,0.5))';
-                card.classList.add('candidate');
+            let busy = false;
+            const onKey = (e) => {
+                if (e.key !== ' ' && e.key !== 'Enter') return;
+                const tag = (e.target && e.target.tagName) || '';
+                if (/INPUT|TEXTAREA|SELECT/.test(tag) || (e.target && e.target !== btn && tag === 'BUTTON')) return;
+                e.preventDefault();
+                this._castHandler();
             };
-            const dropCard = (card) => {
-                card.style.zIndex = String(card._fanZ);
-                card.style.transition = 'transform 0.22s ease, filter 0.22s ease';
-                card.style.transform = `translate3d(${card._fanX}px, ${card._fanY}px, 0) rotate(${card._fanRot}deg)`;
-                card.style.filter = '';
-                card.classList.remove('candidate');
+            this._castHandler = async () => {
+                if (busy || this.cast >= 6 || this.dead) return;
+                busy = true;
+                btn.disabled = true;
+                await this.revealLine(this.cast, true);
+                this.cast++;
+                busy = false;
+                btn.disabled = false;
+                if (this.cast >= 6) {
+                    btn.remove();
+                    if (document.removeEventListener) document.removeEventListener('keydown', onKey);
+                    resolve();
+                } else {
+                    this.setStatus(`第${'一二三四五六'[this.cast]}爻`, '再掷一次');
+                    if (btn.focus) btn.focus({ preventScroll: true });
+                }
             };
-
-            const cleanup = () => {
-                fateBtn.remove();
-                this.cards.forEach(c => {
-                    c.classList.remove('selectable', 'candidate');
-                    c.style.cursor = '';
-                    if (c._chooseHandler) {
-                        c.removeEventListener('click', c._chooseHandler);
-                        delete c._chooseHandler;
-                    }
-                });
-            };
-            const settle = (idx) => {
-                if (resolved) return;
-                resolved = true;
-                this.chosenIndex = idx;
-                cleanup();
-                resolve();
-            };
-
-            // 两段式（桌面 / 移动一致）：点击成为候选（上浮预览），再次点击同一张落定
-            // 避免桌面端「悬停即选、误触即定终身」
-            this.cards.forEach((c, i) => {
-                c.classList.add('selectable');
-                c.style.cursor = 'pointer';
-                const handler = () => {
-                    if (candidateIndex === i) {
-                        haptic(15);
-                        settle(i);
-                    } else {
-                        if (candidateIndex >= 0 && this.cards[candidateIndex]) dropCard(this.cards[candidateIndex]);
-                        haptic(8);
-                        candidateIndex = i;
-                        liftCard(c);
-                        this.setStatus('CHOOSE · 心选一卦', '再触此卦 · 落定');
-                    }
-                };
-                c._chooseHandler = handler;
-                c.addEventListener('click', handler);
-            });
-
-            fateBtn.addEventListener('click', () => { haptic(12); settle(randomIdx()); });
+            btn.addEventListener('click', () => this._castHandler());
+            document.addEventListener('keydown', onKey);
+            this._offKey = () => { if (document.removeEventListener) document.removeEventListener('keydown', onKey); };
         });
     }
-    async actRise() {
-        this.setStatus('Ⅳ · ASCENSION', '浮升抽牌');
-        const mid = (typeof this.chosenIndex === 'number')
-            ? this.chosenIndex
-            : Math.floor(this.cards.length / 2);
-        const chosen = this.cards[mid];
-        this.cards.forEach((c, i) => {
-            if (i === mid) return;
-            c.style.transition = 'transform 1.3s ease, opacity 1.3s ease, filter 1s ease';
-            c.style.opacity = '0.22';
-            c.classList.remove('awake');
+    tossCoins(line) {
+        const bei = LINE_TO_BEI[line];
+        const coins = Array.from(this.coinsEl.querySelectorAll ? this.coinsEl.querySelectorAll('.coin') : []);
+        const order = [0, 1, 2].sort(() => Math.random() - 0.5);
+        coins.forEach((c, k) => {
+            const isBei = order.indexOf(k) < bei;
+            c.classList.remove('toss-zi', 'toss-bei', 'landed');
+            c.offsetHeight;
+            c.style.setProperty('--dur', (560 + Math.random() * 260) + 'ms');
+            c.style.setProperty('--turns', String(3 + Math.floor(Math.random() * 3)));
+            c.classList.add(isBei ? 'toss-bei' : 'toss-zi');
         });
-        await sleep(450);
-        const bin = TRIGRAM_TO_BINARY[this.finalGua[2][0]] + TRIGRAM_TO_BINARY[this.finalGua[2][1]];
-        const finalCard = makeArcanaCard(this.finalGua, {
-            large: true,
-            hexLines: this.hexLines,
-            changingYaos: this.change.changingYaos,
-            rare: isRareGua(bin)
-        });
-        chosen.innerHTML = finalCard.innerHTML;
-        chosen.className = finalCard.className + ' active';
-        chosen.style.transition = 'transform 1.4s cubic-bezier(0.3, 0, 0.2, 1), filter 1s ease, width 0.8s ease, height 0.8s ease';
-        chosen.style.width = '110px';
-        chosen.style.height = '188px';
-        chosen.style.marginLeft = '-55px';
-        chosen.style.marginTop = '-94px';
-        chosen.style.transform = 'translate3d(0, -20px, 60px) rotate(0deg) scale(1.15)';
-        chosen.style.zIndex = '50';
-        this.chosenCard = chosen;
-        await sleep(1050);
     }
-    async actFlip() {
-        this.setStatus('Ⅴ · REVELATION', '翻开显影');
-        this.chosenCard.style.transition = 'transform 0.65s ease, filter 0.65s ease';
-        this.chosenCard.style.transform = 'translate3d(0, -10px, 60px) rotate(0deg) scale(1.10)';
-        this.chosenCard.style.filter = 'drop-shadow(0 0 6px rgba(244,196,122,0.4))';
-        await sleep(800);
-        this.chosenCard.style.transform = 'translate3d(0, -20px, 60px) rotate(0deg) scale(1.15)';
-        this.chosenCard.style.filter = '';
-        haptic(25);
-        this.chosenCard.classList.add('flipped');
-        this.chosenCard.classList.remove('active');
-        this.chosenCard.classList.add('peak');
-        await sleep(800);
-        this.chosenCard.classList.add('yao-animate');
-        await sleep(900);
-    }
-    async actProclaim() {
-        this.setStatus('Ⅵ · PROCLAMATION', '昭示归寂');
-        await sleep(800);
-        this.cards.forEach((c, i) => {
-            if (c === this.chosenCard) return;
-            c.style.transition = 'transform 1s ease, opacity 1s ease';
-            c.style.opacity = '0';
-            c.style.transform = `translate3d(${(Math.random()-0.5)*40}px, 60px, -200px) rotate(${(Math.random()-0.5)*20}deg)`;
-        });
-        await sleep(700);
-        this.statusEl.style.transition = 'opacity 0.8s ease';
-        this.statusEl.style.opacity = '0';
-        await sleep(550);
-    }
-    pickDeckPool(n) {
-        const indices = Array.from({ length: 64 }, (_, i) => i);
-        for (let i = indices.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [indices[i], indices[j]] = [indices[j], indices[i]];
+    async revealLine(i, withCoins) {
+        if (this.dead) return;
+        const line = this.hexLines[i];
+        const moving = this.change.changingYaos.includes(i);
+        if (withCoins) {
+            haptic(10);
+            this.tossCoins(line);
+            await sleep(880);
         }
-        return indices.slice(0, n).map(idx => GUA[idx]);
+        if (this.dead) return;
+        const bar = this.buildEl.querySelector(`[data-i="${i}"]`);
+        if (bar && bar.classList) {
+            bar.classList.remove('empty');
+            bar.classList.add((line === 7 || line === 9) ? 'yang' : 'yin', 'drop');
+            if (moving) bar.classList.add('chg');
+        }
+        const typeText = YAO_TYPE_CN[line] + (moving ? '，动爻' : '');
+        const bei = LINE_TO_BEI[line];
+        this.setStatus(`${yaoLabel(line, i)}　${typeText}`,
+            withCoins ? `${bei} 枚背面朝上` : `第${'一二三四五六'[i]}爻`);
+        if (typeof Cosmos !== 'undefined') Cosmos.eliminate(i, shaoBit(this.value, i));
+        // 坐标轴标签：前三爻筛下卦（行），后三爻筛上卦（列）
+        const axis = i < 3 ? '.grid-rows' : '.grid-cols';
+        const tri = i < 3 ? (this.value >> 3) : (this.value & 7);
+        const bitPos = i < 3 ? 2 - i : 5 - i;
+        const labels = this.stage.querySelectorAll ? this.stage.querySelectorAll(`${axis} span`) : [];
+        Array.from(labels).forEach(el => {
+            const t = Number(el.dataset.t);
+            if (((t >> bitPos) & 1) !== ((tri >> bitPos) & 1)) el.classList.add('out');
+        });
+        const left = 64 >> (i + 1);
+        this.countEl.textContent = left === 1 ? '余此一卦' : `余 ${toChineseNum(left)} 卦`;
+        await sleep(withCoins ? 420 : 620);
+    }
+    async actSettle() {
+        if (this.dead) return;
+        if (typeof Cosmos !== 'undefined') Cosmos.mark(this.value);
+        this.setStatus(this.finalGua[0], this.change.hasChange && this.change.changeGua
+            ? `动爻 ${this.change.changingYaos.length} 处，变为${this.change.changeGua[0]}` : '六爻皆静');
+        this.chosenCard = { cosmosValue: this.value };
+        await sleep(1200);
+        if (this.stage.classList) this.stage.classList.add('settling');
+        await sleep(320);
     }
 }
 
-// 占卜主流程 
+// 起卦前的一句开场：首页内容依次退场，句子逐字浮现在圆心
 async function showInvocation() {
+    document.body.classList.add('casting');
+    const text = '心若不诚，卦不应人';
     const inv = document.createElement('div');
     inv.className = 'invocation';
-    inv.innerHTML = '<span>心若不诚 · 卦不应人</span>';
+    inv.innerHTML = '<p>' + text.split('').map((ch, i) => `<span style="--k:${i}">${ch}</span>`).join('') + '</p>';
     document.body.appendChild(inv);
-    await sleep(1500);
+    await sleep(1650);
     inv.classList.add('fade-out');
-    await sleep(400);
+    await sleep(380);
     inv.remove();
+    document.body.classList.remove('casting');
 }

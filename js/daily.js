@@ -1,4 +1,4 @@
-// daily —— 每日一卦与箴言（按用户种子+日期或八字推定）、卦象详解弹层
+// daily —— 每日一卦与箴言（按用户种子+日期或生辰推定）、卦象详解弹层
 
 // 每日一卦 
 function getUserSeed() {
@@ -69,67 +69,80 @@ function renderDailyGua(now = new Date()) {
     if (!el) return;
     const gua = getDailyGua(now);
     const motto = getDailyMotto(now);
-    const roman = toRoman(guaIndex(gua));
     el.innerHTML = `
-<span class="daily-today-seal">今日</span>
-<div class="daily-label">DAILY · ARCANUM · 今日启示</div>
-<div class="daily-content">
-    <span class="daily-roman">${roman}</span>
-    <span class="daily-symbol">${gua[2]}</span>
-    <span class="daily-name">${gua[0]}</span>
-    <span class="daily-divider">◆</span>
-    <span class="daily-motto">${motto}</span>
-</div>`;
+<span class="daily-symbol" aria-hidden="true">${buildYaoArtSvg(binToHexLines(guaBinary(gua)), [])}</span>
+<span class="daily-copy"><span class="daily-eyebrow">今日一卦</span><span class="daily-name">${gua[0]}</span><span class="daily-motto">${motto}</span></span>
+<span class="daily-link">看卦辞</span>`;
     _dailyDateKey = dailyDateKey(now);
     // 详情与可见卡片共用快照，避免跨日/设置变化时点击到另一卦。
     el.onclick = () => showGuaDetail(gua);
 }
 
 // 卦象详解 
-function showGuaDetail(gua) {
+function showGuaDetail(gua, when) {
     const old = document.querySelector('.detail-overlay');
     if (old) old.remove();
 
+    const d = when || new Date();
+    const bin = guaBinary(gua);
+    const v = shaoValue(bin);
+    const lines = binToHexLines(bin);
+    const verdict = getVerdict(gua);
+    const verdictText = { ji: '吉', xiong: '凶', ping: '平' }[verdict];
+
+    // 爻辞直接标注在卦画每一爻的右边，自上而下
     const yaos = gua[3].split('|');
-    const yaoHtml = yaos.map(y => {
-        const i = y.indexOf('：');
-        const pos = i > 0 ? y.substring(0, i) : '';
-        const txt = i > 0 ? y.substring(i + 1) : y;
-        return `<div class="detail-yao"><span class="detail-yao-name">${pos}</span>${txt}</div>`;
-    }).join('');
+    const callouts = [];
+    for (let i = 5; i >= 0; i--) {
+        const y = yaos[i] || '';
+        const cut = y.indexOf('：');
+        const pos = cut > 0 ? y.substring(0, cut) : yaoLabel(lines[i], i);
+        const txt = cut > 0 ? y.substring(cut + 1) : y;
+        callouts.push(`<li style="--r:${5 - i}"><span class="gs-pos">${pos}</span><span class="gs-text">${txt}</span></li>`);
+    }
 
     const analysis = gua[4].split('。').filter(s => s.trim()).map(s =>
         `<p>${s.trim()}。</p>`
     ).join('');
 
-    const upper = getTrigramName(gua[2][0]);
-    const lower = getTrigramName(gua[2][1]);
-    const roman = toRoman(guaIndex(gua));
-
     const overlay = document.createElement('div');
     overlay.className = 'detail-overlay';
     overlay.innerHTML = `
-<div class="detail-box">
-    <div class="detail-head">
-        <div class="detail-symbol">${gua[2]}</div>
-        <div class="detail-info">
-            <div style="font-family:'Cinzel',serif;color:#8a6d3a;font-size:0.85rem;letter-spacing:0.4em;margin-bottom:2px;">${roman}</div>
-            <h2>${gua[0]}</h2>
-            <div class="detail-sub">${gua[1]}</div>
-        </div>
-        <button class="detail-close" id="detailCloseBtn">×</button>
-    </div>
-    <div class="detail-meta">上卦 ${upper} · 下卦 ${lower}</div>
-    <div class="detail-section"><h3>爻 辞</h3>${yaoHtml}</div>
-    <div class="detail-section"><h3>卦 象 解 读</h3><div class="detail-analysis">${analysis}</div></div>
+<div class="detail-box gua-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
+    <header class="gs-head">
+        <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
+        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="verdict-seal ${verdict}" aria-label="${verdictText}"><span>${verdictText}</span></span></div>
+        <p class="gs-sub">${gua[1]}</p>
+    </header>
+    <figure class="gs-figure">
+        <div class="gs-glyph">${buildHexBars(lines)}</div>
+        <ol class="gs-yao" aria-label="爻辞">${callouts.join('')}</ol>
+    </figure>
+    <div class="detail-section"><h3>卦象</h3><div class="detail-analysis">${analysis}</div></div>
+    <dl class="title-block gs-tb">
+        <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
+        <div><dt>上下</dt><dd>上${TRIGRAM_BY_VALUE[v & 7]} 下${TRIGRAM_BY_VALUE[v >> 3]}</dd></div>
+        <div><dt>方图</dt><dd>${typeof buildMiniMap === 'function' ? buildMiniMap(v) : ''}</dd></div>
+    </dl>
 </div>`;
-    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeGuaDetail(overlay); });
     document.body.appendChild(overlay);
-    overlay.querySelector('#detailCloseBtn').addEventListener('click', () => overlay.remove());
+    overlay.querySelector('#detailCloseBtn').addEventListener('click', () => closeGuaDetail(overlay));
     requestAnimationFrame(() => overlay.classList.add('show'));
+    const closeBtn = overlay.querySelector('#detailCloseBtn');
+    if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
+}
+
+function closeGuaDetail(overlay) {
+    overlay = overlay || document.querySelector('.detail-overlay');
+    if (!overlay || overlay._closing) return;
+    overlay._closing = true;
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 320);
 }
 
 function getTrigramName(sym) {
-    const map = {'☰':'乾(天)','☱':'兑(泽)','☲':'离(火)','☳':'震(雷)','☴':'巽(风)','☵':'坎(水)','☶':'艮(山)','☷':'坤(地)'};
+    const map = {'☰':'乾天','☱':'兑泽','☲':'离火','☳':'震雷','☴':'巽风','☵':'坎水','☶':'艮山','☷':'坤地'};
     return map[sym] || sym;
 }
