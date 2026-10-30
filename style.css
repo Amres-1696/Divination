@@ -2,7 +2,7 @@
    整站是一张蓝晒图纸：外框带天干地支分区，按钮、卡片用制图的角标，
    开关画成一根爻（关是阴爻，开是阳爻），结果页附图签和引线标注。
    展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei），正文用思源宋体（Noto Serif SC）。
-   结果页的正文放在一张更深、更灰的读纸上，和满屏的蓝图装饰分开。
+   结果页的正文铺一层淡淡的浅灰读纸，和满屏的蓝图装饰分开。
    动效只改 transform / opacity；六十四卦图层由 cosmos.js 逐帧补间。 */
 
 @property --g {
@@ -619,14 +619,16 @@ body.casting .home-main > * {
 .title-block .tb-wide:first-child dd { font-family: var(--display); font-weight: 400; font-size: 16px; }
 
 .reading { max-width: 39em; }
-/* 读纸：正文区压一层更深、更灰的底，读长段文字时不再被饱和的蓝晃眼 */
+/* 读纸：正文区铺一层很淡的浅灰，和满屏的蓝图装饰分开；随结果页一起慢慢浮现 */
 .reading-sheet {
   --t: 12px;
   margin-top: 40px;
   padding: 34px 36px 38px;
-  background-color: rgba(14, 22, 36, .42);
+  background-color: rgba(226, 233, 243, .055);
   box-shadow: inset 0 0 0 1px var(--rule-soft);
 }
+.result.entering .reading-sheet { animation: sheet-in 1s ease both; animation-delay: 320ms; }
+@keyframes sheet-in { from { opacity: 0; } to { opacity: 1; } }
 .reading-sheet > .block:first-child { margin-top: 0; }
 .reading-name-row { display: flex; align-items: center; gap: 26px; }
 .hex-name { font-family: var(--display); font-size: clamp(46px, 6vw, 68px); font-weight: 400; line-height: 1.12; letter-spacing: .05em; }
