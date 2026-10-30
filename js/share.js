@@ -144,6 +144,10 @@ function renderShareCanvas(card, scale) {
         useCORS: true,
         allowTaint: false,
         imageTimeout: 8000,
+        // 只克隆分享卡所在的那一支：整页克隆要复制上千个节点并重算样式，主线程会卡近两秒。
+        // <head> 里的样式表和字体不在 body 下，照常保留。
+        ignoreElements: el => document.body.contains(el) && el !== document.body &&
+            !el.contains(card) && !card.contains(el),
         onclone: clonedDoc => {
             const clonedCard = clonedDoc.getElementById('shareCard');
             if (!clonedCard) return;

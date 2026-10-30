@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20261030-5">
+    <link rel="stylesheet" href="style.css?v=20261030-6">
     <script src="html2canvas.min.js" defer></script>
 </head>
 <body>
@@ -98,14 +98,14 @@
     <div class="settings-group" style="--k:2">
       <div class="settings-row">
         <span class="settings-label">每日启示</span>
-        <label class="toggle-switch"><input type="checkbox" id="settingDaily" checked aria-label="每日启示"><span class="toggle-slider"></span></label>
+        <label class="toggle-switch"><input type="checkbox" id="settingDaily" checked aria-label="每日启示"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
       </div>
       <div class="settings-hint">首页显示今日一卦与一句箴言。</div>
     </div>
     <div class="settings-group" style="--k:3">
       <div class="settings-row">
         <span class="settings-label">AI 解卦</span>
-        <label class="toggle-switch"><input type="checkbox" id="settingAiEnabled" aria-label="AI 解卦"><span class="toggle-slider"></span></label>
+        <label class="toggle-switch"><input type="checkbox" id="settingAiEnabled" aria-label="AI 解卦"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
       </div>
       <div class="settings-hint">起卦后由 AI 详解卦象，需要填写兼容 OpenAI 格式的接口。</div>
       <div class="ai-config" id="aiConfig">
@@ -125,7 +125,7 @@
         <label class="ai-field"><span class="ai-field-label">模型名称</span><input type="text" id="aiModel" class="settings-input" placeholder="如 deepseek-chat / gpt-4o-mini" autocomplete="off" spellcheck="false"></label>
         <div class="settings-row ai-auto-row">
           <span class="settings-label">起卦后自动解卦</span>
-          <label class="toggle-switch"><input type="checkbox" id="settingAiAuto" aria-label="起卦后自动解卦"><span class="toggle-slider"></span></label>
+          <label class="toggle-switch"><input type="checkbox" id="settingAiAuto" aria-label="起卦后自动解卦"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
         </div>
         <div class="settings-hint">关闭时，在结果页手动点「请 AI 解读这一卦」。</div>
         <label class="ai-field"><span class="ai-field-label">提示词模板</span><textarea id="aiPrompt" class="settings-textarea" rows="9" spellcheck="false"></textarea></label>
@@ -191,10 +191,10 @@
     <script src="js/ritual.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/settings.js?v=20261030"></script>
-    <script src="js/share.js?v=20261030"></script>
+    <script src="js/share.js?v=20261030-2"></script>
     <script src="js/history.js"></script>
     <script src="js/daily.js"></script>
-    <script src="js/divination.js"></script>
+    <script src="js/divination.js?v=20261030"></script>
     <script src="js/instruments.js"></script>
     <script src="js/theme.js?v=20261030"></script>
     <script src="js/main.js"></script>
