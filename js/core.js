@@ -2,9 +2,6 @@
 // 被几乎所有其它模块调用，最先加载（紧跟 data.js）
 
 
-const DECK_POOL_SIZE_DESKTOP = 13;
-const DECK_POOL_SIZE_MOBILE = 9;
-const DECK_POOL_SIZE = (window.innerWidth <= 768) ? DECK_POOL_SIZE_MOBILE : DECK_POOL_SIZE_DESKTOP;
 const HISTORY_MAX = 50;
 const COIN_TO_LINE = { 3: 9, 2: 8, 1: 7, 0: 6 }; // 铜钱法：3阳=老阳9, 2阳=少阴8, 1阳=少阳7, 0阳=老阴6
 
@@ -82,10 +79,27 @@ function simpleHash(str) {
 function escHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function toRoman(n) {
-    const ones = ['','Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ'];
-    const tens = ['','Ⅹ','ⅩⅩ','ⅩⅩⅩ','ⅩⅬ','Ⅼ','ⅬⅩ','ⅬⅩⅩ','ⅬⅩⅩⅩ','ⅩⅭ'];
-    return tens[Math.floor(n/10)] + ones[n%10];
+// 通行本（文王）卦序，用于显示「第几卦」。GUA 数组本身按伏羲二进制排列，不能直接当卦序用。
+const KING_WEN_ORDER = '乾坤屯蒙需讼师比小畜履泰否同人大有谦豫随蛊临观噬嗑贲剥复无妄大畜颐大过坎离咸恒遁大壮晋明夷家人睽蹇解损益夬姤萃升困井革鼎震艮渐归妹丰旅巽兑涣节中孚小过既济未济';
+const KING_WEN_NAMES = KING_WEN_ORDER.match(/小畜|同人|大有|噬嗑|无妄|大畜|大过|大壮|明夷|家人|归妹|中孚|小过|既济|未济|./g);
+function guaShortName(gua) {
+    const name = Array.isArray(gua) ? gua[0] : String(gua || '');
+    return name.includes('为') ? name[0] : name.slice(2);
+}
+function guaNumber(gua) {
+    const i = KING_WEN_NAMES.indexOf(guaShortName(gua));
+    return i >= 0 ? i + 1 : 0;
+}
+function toChineseNum(n) {
+    const d = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    if (n <= 0) return '';
+    if (n < 10) return d[n];
+    const t = Math.floor(n / 10), o = n % 10;
+    return (t === 1 ? '' : d[t]) + '十' + d[o];
+}
+function guaOrdinal(gua) {
+    const n = guaNumber(gua);
+    return n ? `第${toChineseNum(n)}卦` : '';
 }
 function guaIndex(gua) {
     const i = GUA.indexOf(gua);

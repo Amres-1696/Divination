@@ -1,4 +1,5 @@
 // share —— 抓取当前卦数据、生成 9:16 分享卡、html2canvas 导图、下载/复制
+// 分享卡只用纯色、文字和内联 SVG，file:// 下也不会污染画布。
 
 // 分享卡
 function getCurrentGuaData() {
@@ -13,7 +14,9 @@ function getCurrentGuaData() {
     items.forEach(el => { if (el.textContent.trim()) list.push(el.textContent.trim()); });
     const changingYaoTexts = [];
     const changingYaos = [];
-    const yaoItems = r.querySelectorAll('.yao-item');
+    // 页面上六爻自上而下排列，按 data-i（0=初爻）还原顺序
+    const yaoItems = Array.from(r.querySelectorAll('.yao-item'))
+        .sort((a, b) => Number(a.dataset.i) - Number(b.dataset.i));
     yaoItems.forEach((el, i) => {
         if (el.classList.contains('changing')) {
             changingYaos.push(i);
@@ -59,109 +62,65 @@ function getCurrentGuaData() {
 function createShareCard(d) {
     if (!d) return '';
     const guaEntry = GUA.find(g => g[0] === d.name);
-    const roman = guaEntry ? toRoman(guaIndex(guaEntry)) : '';
     const verdict = guaEntry ? getVerdict(guaEntry) : 'ping';
     const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
-    const verdictColor = verdict === 'ji' ? '#c97a2e' : verdict === 'xiong' ? '#a84848' : '#8a7a5a';
+    const hexLines = (d.hexagramLines && d.hexagramLines.length === 6) ? d.hexagramLines : [8, 8, 8, 8, 8, 8];
+    // 分享卡用内联颜色画卦，不依赖页面 CSS（html2canvas 取色更稳）
+    const yao = buildYaoArtSvg(hexLines, d.changingYaos || [])
+        .replace(/class="yao-svg-line changing"/g, 'style="stroke:#FF8A5C;fill:none"')
+        .replace(/class="yao-svg-line"/g, 'style="stroke:#EEF2F7;fill:none"');
+    // 先天方图缩略：六十四格里只亮这一格
+    const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
+    const v = shaoValue(bits.slice().reverse().join(''));
+    let cells = '';
+    for (let k = 0; k < 64; k++) cells += `<i class="${k === v ? 'on' : ''}"></i>`;
+    const ordinal = guaEntry ? guaOrdinal(guaEntry) : '';
+    const main = (d.analysisList || [])[0] || '';
+    const reading = (d.analysisList || []).slice(1).join('');
 
-    // 六爻立牌 SVG（内联 stroke，不依赖 CSS）
-    const hexLines = (d.hexagramLines && d.hexagramLines.length === 6)
-        ? d.hexagramLines : [8,8,8,8,8,8];
-    const changingYaos = d.changingYaos || [];
-    const shareYaoSvg = (function() {
-        const w = 60, h = 80, lineH = 2.4, gap = 8;
-        const rowH = lineH + gap;
-        const startY = (h - (6*rowH - gap)) / 2;
-        const cx = w/2, halfW = 22;
-        const parts = [];
-        for (let i = 0; i < 6; i++) {
-            const drawIdx = 5 - i;
-            const y = startY + drawIdx * rowH + lineH/2;
-            const line = hexLines[i];
-            const isYang = (line === 7 || line === 9);
-            const isChanging = changingYaos.includes(i);
-            const color = isChanging ? '#a84848' : '#1a1412';
-            const attr = `stroke="${color}" stroke-width="2.8" stroke-linecap="round"`;
-            if (isYang) {
-                parts.push(`<line ${attr} x1="${cx-halfW}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
-            } else {
-                parts.push(`<line ${attr} x1="${cx-halfW}" y1="${y}" x2="${cx-5}" y2="${y}" />`);
-                parts.push(`<line ${attr} x1="${cx+5}" y1="${y}" x2="${cx+halfW}" y2="${y}" />`);
-            }
-        }
-        return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;">${parts.join('')}</svg>`;
-    })();
-
-    // 9:16 竖屏卡片，500×888
+    // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card">
-    <div class="sc-border-outer"></div>
-    <div class="sc-border-inner"></div>
-    <div class="sc-corner sc-corner-tl"></div>
-    <div class="sc-corner sc-corner-tr"></div>
-    <div class="sc-corner sc-corner-bl"></div>
-    <div class="sc-corner sc-corner-br"></div>
-
-    <div class="sc-header">
-        <div class="sc-title">天衍 · DESTINY</div>
-        <div class="sc-date">${d.date || ''}</div>
-        <div class="sc-divider"></div>
-    </div>
-
-    <div class="sc-card-wrap">
-        <div class="sc-tarot">
-            <div class="sc-tarot-frame"></div>
-            <div class="sc-tarot-corner sc-tarot-corner-tl"></div>
-            <div class="sc-tarot-corner sc-tarot-corner-tr"></div>
-            <div class="sc-tarot-corner sc-tarot-corner-bl"></div>
-            <div class="sc-tarot-corner sc-tarot-corner-br"></div>
-            ${roman ? `<div class="sc-tarot-roman">${roman}</div>` : ''}
-            ${d.symbol ? `<div class="sc-tarot-watermark"><span>${d.symbol[0] || ''}</span><span>${d.symbol[1] || ''}</span></div>` : ''}
-            <div class="sc-tarot-art"><div class="sc-tarot-art-inner">${shareYaoSvg}</div></div>
-            <div class="sc-tarot-name">${d.name || ''}</div>
-            <div class="sc-tarot-band"></div>
-        </div>
-    </div>
-
-    <div class="sc-gua-info">
-        <div class="sc-gua-name">《${d.name || ''}》</div>
-        <div class="sc-gua-title">${d.title || ''}</div>
-    </div>
-
-    <div class="sc-verdict-wrap">
-        <div class="sc-verdict" style="color:${verdictColor};border:1px solid ${verdictColor};">〔${verdictText[verdict]}〕</div>
-    </div>
-
-    ${d.question ? `<div class="sc-question">
-        <div class="sc-question-text">
-            <span class="sc-quote">❝</span>
-            心之所念 · ${escHtml(d.question)}
-            <span class="sc-quote">❞</span>
-        </div>
-    </div>` : '<div class="sc-spacer"></div>'}
-
-    ${d.analysisList && d.analysisList.length ? `<div class="sc-analysis">
-        <div class="sc-section-title">· 卦象奥义 ·</div>
-        <div class="sc-analysis-list">${d.analysisList.slice(0, 3).map(t =>
-            `<div class="sc-analysis-item">${escHtml(t)}</div>`
-        ).join('')}</div>
-    </div>` : ''}
-
-    ${d.hasChange && d.cgName ? `<div class="sc-change">
-        <div class="sc-section-title">· 变卦演化 ·</div>
-        <div class="sc-change-flow">${escHtml(d.name)} ⟶ ${escHtml(d.cgName)}</div>
-        ${d.changePos ? `<div class="sc-change-pos">${escHtml(d.changePos)}</div>` : ''}
-        ${d.cgExplain ? `<div class="sc-change-explain">${escHtml(d.cgExplain)}</div>` : ''}
-    </div>` : ''}
-
-    <div class="sc-footer">
-        <div class="sc-copyright">© 天衍 · DESTINY</div>
-        <div class="sc-slogan">六十四卦 · 命之所向</div>
-    </div>
+  <div class="sc-top"><span class="sc-brand">天衍</span><span class="sc-date">${escHtml(d.date || '')}</span></div>
+  ${d.question ? `<div class="sc-question"><span>所问</span>${escHtml(d.question)}</div>` : ''}
+  <div class="sc-figure">
+    <div class="sc-hex">${yao}</div>
+    <div class="sc-map"><div class="sc-grid">${cells}</div><span>六十四卦，取其一</span></div>
+  </div>
+  <div class="sc-name-row"><span class="sc-name">${escHtml(d.name || '')}</span><span class="sc-verdict sc-${verdict}">${verdictText[verdict]}</span></div>
+  <div class="sc-sub">${ordinal}${d.title ? '　' + escHtml(d.title) : ''}</div>
+  ${d.hasChange && d.cgName ? `<div class="sc-change">变为 ${escHtml(d.cgName)}${d.changePos ? `　${escHtml(d.changePos.replace('变爻位置：', ''))}` : ''}</div>` : ''}
+  ${main ? `<div class="sc-main">${escHtml(main)}</div>` : ''}
+  ${reading ? `<div class="sc-reading">${escHtml(reading)}</div>` : ''}
+  <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>天衍 · 周易六十四卦</span></div>
 </div>`;
 }
 
 let _lastBlobUrl = null;
 let _lastBlob = null;
+
+function scrubShareCardExternalUrls(card, view) {
+    if (!card) return;
+    const win = view || window;
+    const nodes = [card, ...card.querySelectorAll('*')];
+    const urlRe = /url\(["']?([^"')]+)["']?\)/gi;
+
+    nodes.forEach(el => {
+        let bg = '';
+        try { bg = win.getComputedStyle(el).backgroundImage || ''; } catch (e) {}
+        if (!bg || !/url\(/i.test(bg)) return;
+
+        const urls = [];
+        let m;
+        urlRe.lastIndex = 0;
+        while ((m = urlRe.exec(bg))) urls.push(m[1]);
+
+        // 导出节点只允许 data:image/... 纹理。这样即便页面是 file://，
+        // 或主题 CSS 后续又加入本地图片，也不会污染导出 canvas。
+        if (urls.some(src => !/^data:image\//i.test(src))) {
+            el.style.setProperty('background-image', 'none', 'important');
+        }
+    });
+}
 
 function canvasToBlob(canvas, type) {
     return new Promise(resolve => canvas.toBlob(resolve, type, 1.0));
@@ -178,7 +137,26 @@ function isMobile() {
 }
 
 function renderShareCanvas(card, scale) {
-    return html2canvas(card, { backgroundColor: '#e8dcc0', scale, logging: false, useCORS: true });
+    return html2canvas(card, {
+        backgroundColor: '#1A3D72',
+        scale,
+        logging: false,
+        useCORS: true,
+        allowTaint: false,
+        imageTimeout: 8000,
+        onclone: clonedDoc => {
+            const clonedCard = clonedDoc.getElementById('shareCard');
+            if (!clonedCard) return;
+            scrubShareCardExternalUrls(clonedCard, clonedDoc.defaultView);
+        }
+    });
+}
+
+function assertCanvasExportable(canvas) {
+    // 比等到 toBlob 再报 SecurityError 更早发现污染，并立即走纯色兜底。
+    const ctx = canvas && canvas.getContext && canvas.getContext('2d');
+    if (!ctx) throw new Error('无法读取分享画布');
+    ctx.getImageData(0, 0, 1, 1);
 }
 
 async function shareAsImage() {
@@ -190,7 +168,7 @@ async function shareAsImage() {
     const preview = document.getElementById('shareImagePreview');
     const data = getCurrentGuaData();
     if (!data) { showToast('请先占卜', 'error'); return; }
-    preview.innerHTML = '<div class="share-loading"><div class="share-loading-ring"></div><span>生成中…</span></div>';
+    preview.innerHTML = '<p class="share-loading">正在生成…</p>';
     container.classList.add('show');
 
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
@@ -206,20 +184,17 @@ async function shareAsImage() {
         }
         await sleep(80);
         const card = tmp.querySelector('#shareCard');
+        scrubShareCardExternalUrls(card, window);
 
         // 根据设备选择 scale，避免双次渲染
-        const scale = isMobile() ? 1 : 2;
-        let canvas;
-        try {
-            canvas = await renderShareCanvas(card, scale);
-        } catch (e1) {
-            canvas = await renderShareCanvas(card, 1);
-        }
+        const scale = isMobile() ? 1.5 : 2;
+        let canvas = await renderShareCanvas(card, scale);
+        assertCanvasExportable(canvas);
         if (!canvas || !canvas.width || !canvas.height) {
-            canvas = await renderShareCanvas(card, 1);
+            throw new Error('分享画布生成失败');
         }
 
-        let blob = await canvasToBlob(canvas, 'image/png');
+        const blob = await canvasToBlob(canvas, 'image/png');
         if (!blob) throw new Error('toBlob returned null');
 
         const objectUrl = URL.createObjectURL(blob);
@@ -227,15 +202,12 @@ async function shareAsImage() {
         _lastBlob = blob;
 
         // 直接使用 blob URL，跳过昂贵的 toDataURL base64 编码
-        const hint = isMobile()
-            ? '<div style="margin-top:10px;text-align:center;font-size:12px;color:#8a6d3a;letter-spacing:2px;">长按图片 · 保存到相册</div>'
-            : '';
-        preview.innerHTML =
-            '<img id="sharePreviewImg" alt="分享图" style="max-width:100%;border-radius:4px;border:1px solid #c9a96e;box-shadow:0 8px 24px rgba(0,0,0,0.3);">' + hint;
+        const hint = isMobile() ? '<p class="share-hint">长按图片可保存到相册</p>' : '';
+        preview.innerHTML = '<img id="sharePreviewImg" alt="分享图预览">' + hint;
         const imgEl = preview.querySelector('#sharePreviewImg');
         imgEl.onerror = function() {
             this.onerror = null;
-            preview.innerHTML = '<div style="padding:20px;color:#a84848;">预览加载失败，可直接点「下载图片」</div>';
+            preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「下载图片」。</p>';
         };
         imgEl.src = objectUrl;
 
@@ -243,7 +215,7 @@ async function shareAsImage() {
             try {
                 const a = document.createElement('a');
                 a.href = objectUrl;
-                a.download = '天衍_Arcana_' + Date.now() + '.png';
+                a.download = '天衍_' + (data.name || '卦') + '_' + Date.now() + '.png';
                 document.body.appendChild(a); // Firefox 要求节点在文档中才能触发 click
                 a.click();
                 a.remove();
@@ -280,9 +252,7 @@ async function shareAsImage() {
         };
     } catch(e) {
         const msg = (e && e.message) ? e.message : String(e);
-        preview.innerHTML =
-            '<div style="padding:20px;color:#a84848;text-align:center;">生成失败' +
-            '<br><small style="color:#666;font-size:11px;opacity:0.7;word-break:break-all;display:inline-block;margin-top:6px;">' + escHtml(msg) + '</small></div>';
+        preview.innerHTML = '<p class="share-error">分享图没有生成出来。<small>' + escHtml(msg) + '</small></p>';
     } finally {
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }

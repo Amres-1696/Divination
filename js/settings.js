@@ -83,6 +83,13 @@ function saveBazi() {
 }
 
 function applySettings(settings) {
+    const homeMethod = document.getElementById('homeMethod');
+    if (homeMethod) homeMethod.value = settings.method;
+    const settingMethod = document.getElementById('settingMethod');
+    if (settingMethod) settingMethod.value = settings.method;
+    if (typeof syncMethodPickers === 'function') syncMethodPickers();
+    const birthGroup = document.getElementById('baziSettings');
+    if (birthGroup) birthGroup.hidden = settings.method !== 'bazi';
     // 每日启示
     const dailyEl = document.getElementById('dailyGua');
     if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';

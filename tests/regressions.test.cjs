@@ -7,6 +7,34 @@ const path = require('node:path');
 const vm = require('node:vm');
 const ROOT = path.resolve(__dirname, '..');
 
+test('method changes synchronize the home picker, settings picker and birth fields', () => {
+    const f = fixture();
+    let syncs = 0;
+    f.context.syncMethodPickers = () => { syncs++; };
+    assert.equal(f.run("saveSetting('method', 'bazi')"), true);
+    assert.equal(f.byId('homeMethod').value, 'bazi');
+    assert.equal(f.byId('settingMethod').value, 'bazi');
+    assert.equal(f.byId('baziSettings').hidden, false);
+    assert.equal(f.run("saveSetting('method', 'coin')"), true);
+    assert.equal(f.byId('homeMethod').value, 'coin');
+    assert.equal(f.byId('settingMethod').value, 'coin');
+    assert.equal(f.byId('baziSettings').hidden, true);
+    assert.equal(syncs, 2);
+});
+
+test('failed method changes preserve the last synchronized picker state', () => {
+    const f = fixture();
+    f.run("saveSetting('method', 'coin')");
+    let syncs = 0;
+    f.context.syncMethodPickers = () => { syncs++; };
+    f.failWrites();
+    assert.equal(f.run("saveSetting('method', 'bazi')"), false);
+    assert.equal(f.byId('homeMethod').value, 'coin');
+    assert.equal(f.byId('settingMethod').value, 'coin');
+    assert.equal(f.byId('baziSettings').hidden, true);
+    assert.equal(syncs, 0);
+});
+
 function fixture() {
     const storage = new Map(), elements = new Map(), timers = new Map(), frames = new Map();
     const documentEvents = new Map(), notices = [];
@@ -60,7 +88,7 @@ function fixture() {
     });
     const run = source => vm.runInContext(source, context);
     function load(file) { vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context, { filename: file }); }
-    for (const file of ['data.js', ...['core', 'lunar', 'cards', 'effects', 'ritual', 'ai', 'settings', 'share', 'history', 'daily', 'divination'].map(n => 'js/' + n + '.js')]) load(file);
+    for (const file of ['data.js', ...['core', 'lunar', 'glyphs', 'ritual', 'ai', 'settings', 'share', 'history', 'daily', 'divination'].map(n => 'js/' + n + '.js')]) load(file);
     context.showToast = (...args) => notices.push(args);
     run(`var gua = lookupGua('111111'); var lines = [7,7,7,7,7,7]; var change = calculateChangeGua(lines, '111111');`);
     return { run, load, context, storage, byId, timers, frames, notices, documentEvents,
@@ -145,7 +173,6 @@ test('saved history metadata, not current settings, reaches AI request and retry
 test('live divination saves its start snapshot and ID before rendering', async () => {
     const f = fixture();
     await f.run(`(async()=>{
-        triggerIgnitionChain=()=>{};
         showInvocation=async()=>{const s=loadSettings();s.method='bazi';saveSettings(s)};
         window.matchMedia=()=>({matches:true});
         var originalRender=renderResult;
@@ -160,7 +187,7 @@ test('live divination saves its start snapshot and ID before rendering', async (
 
 test('history storage failure still renders result without any AI persistence target', async () => {
     const f = fixture(); f.failWrites();
-    await f.run(`triggerIgnitionChain=()=>{};showInvocation=async()=>{};window.matchMedia=()=>({matches:true});
+    await f.run(`showInvocation=async()=>{};window.matchMedia=()=>({matches:true});
         renderResult=(...args)=>globalThis.rendered=args;divine();`);
     assert.equal(f.run('rendered[7].historyId'), null);
     assert.equal(f.run('_divineRunning'), false);
@@ -174,7 +201,7 @@ test('auto-run uses the newly saved record and ignores an identical older record
         return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: 'automatic answer' } }] }) };
     };
     f.byId('question').value = '工作';
-    await f.run(`triggerIgnitionChain=()=>{};showInvocation=async()=>{};window.matchMedia=()=>({matches:true});generateHexagram=()=>lines;divine();`);
+    await f.run(`showInvocation=async()=>{};window.matchMedia=()=>({matches:true});generateHexagram=()=>lines;divine();`);
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(f.run('readHistorySafe()[0].id'), idAtRequest);
     assert.equal(f.run('readHistorySafe()[0].aiReading'), 'automatic answer');
@@ -199,45 +226,41 @@ test('successful settings and profile changes still persist and report success',
     assert.equal(f.byId('aiApiKey').value, 'second-test-key');
 });
 
-test('history click during real choose phase is blocked, selection can still finish', async () => {
+test('history click during the casting phase is blocked, casting can still finish', async () => {
     const f = fixture(); twoRecords(f);
     await f.run(`(async()=>{
-        sleep=()=>Promise.resolve();showInvocation=async()=>{};triggerIgnitionChain=()=>{};
-        const choose=ArcanaRitual.prototype.actChoose;
-        let ready;const chosen=new Promise(r=>ready=r);
-        ArcanaRitual.prototype.actChoose=function(){globalThis.activeRitual=this;const p=choose.call(this);ready();return p};
+        sleep=()=>Promise.resolve();showInvocation=async()=>{};
+        const cast=HexRitual.prototype.actCast;
+        let ready;const casting=new Promise(r=>ready=r);
+        HexRitual.prototype.actCast=function(){globalThis.activeRitual=this;const p=cast.call(this);ready();return p};
         renderResult=(...args)=>globalThis.rendered=args;toggleHistory=()=>{};
-        globalThis.pendingDivine=divine();await chosen;
+        globalThis.pendingDivine=divine();await casting;
         loadHistoryItem(older);
     })()`);
     assert.equal(f.run('typeof rendered'), 'undefined');
     assert.equal(f.run('_divineRunning'), true);
     assert.match(f.notices.at(-1)[0], /正在起卦/);
-    await f.run(`activeRitual.cards[0]._chooseHandler();activeRitual.cards[0]._chooseHandler();pendingDivine;`);
+    await f.run(`(async()=>{for(let i=0;i<6;i++) await activeRitual._castHandler(); await pendingDivine;})()`);
     assert.equal(f.run('_divineRunning'), false);
     assert.equal(f.byId('divineBtn').disabled, false);
+    assert.equal(f.run('activeRitual.cast'), 6);
     f.run('loadHistoryItem(older)');
     assert.equal(f.run('rendered[7].historyId'), f.run('older'));
 });
 
-test('particle pause cancels timers and frames; even stale callbacks cannot fork the loop', () => {
+test('each cast keeps exactly the hexagrams that match every line so far', () => {
     const f = fixture();
-    f.run(`var ctx=new Proxy({}, {get:(t,p)=>t[p]||(()=>{}),set:(t,p,v)=>(t[p]=v,true)});
-        var dust=new DustParticles({style:{},getContext:()=>ctx});dust.start();`);
-    f.fireTimer(f.run('dust._tickTimer'));
-    const stale = f.frames.get(f.run('dust._rafId'));
-    f.run('dust.pause()');
-    assert.equal(f.frames.size, 0);
-    assert.equal(f.timers.size, 0);
-    f.run('dust.resume();dust.resume()');
-    stale();
-    assert.equal([...f.timers.values()].filter(t => t.delay === 33).length, 1);
-    for (let i = 0; i < 5; i++) {
-        f.fireTimer(f.run('dust._tickTimer'));
-        const cb = f.frames.get(f.run('dust._rafId'));
-        f.run('dust.pause();dust.resume()'); cb();
-    }
-    assert.equal([...f.timers.values()].filter(t => t.delay === 33).length, 1);
+    assert.equal(f.run(`(()=>{for(let v=0;v<64;v++){
+        const lines=linesFromShao(v);
+        const bin=lines.map(x=>x%2?'1':'0').reverse().join('');
+        if(shaoValue(bin)!==v) return 'roundtrip '+v;
+        if(lookupGua(bin)[0]!==lookupGua(bin)[0]) return 'lookup';
+        let alive=[...Array(64).keys()];
+        for(let i=0;i<6;i++){alive=alive.filter(u=>shaoBit(u,i)===shaoBit(v,i)); if(alive.length!==64>>(i+1)) return 'count '+v+' '+i;}
+        if(alive[0]!==v) return 'survivor '+v;
+    }return 'ok'})()`), 'ok');
+    assert.equal(f.run("shaoValue('111111')"), 63);
+    assert.equal(f.run("TRIGRAM_BY_VALUE[shaoValue(TRIGRAM_TO_BINARY['☵']+TRIGRAM_TO_BINARY['☳'])>>3]"), '震');
 });
 
 test('daily detail always opens the visible snapshot', () => {
@@ -323,4 +346,12 @@ test('foreground visibility and minute timer both check for daily rollover', () 
     for (const fn of f.documentEvents.get('visibilitychange')) fn();
     for (const timer of f.timers.values()) if (timer.delay === 60000) timer.fn();
     assert.equal(f.run('checks'), 2);
+});
+
+test('card numbers follow the received (King Wen) sequence, not the binary array order', () => {
+    const f = fixture();
+    assert.equal(f.run("new Set(GUA.map(guaNumber)).size"), 64);
+    assert.equal(f.run("guaOrdinal(lookupGua('111111'))"), '第一卦');
+    assert.equal(f.run("guaOrdinal(GUA.find(g=>g[0]==='山风蛊'))"), '第十八卦');
+    assert.equal(f.run("guaOrdinal(GUA.find(g=>g[0]==='火水未济'))"), '第六十四卦');
 });

@@ -30,14 +30,13 @@ async function divine() {
     if (btnText) btnText.textContent = '演卦';
 
     try {
-        triggerIgnitionChain();
-        // 心若不诚 · 卦不应人（章节 5.2）
         await showInvocation();
 
+        if (typeof setPageView === 'function') setPageView('ritual');
         resultArea.innerHTML = '<div class="ritual-stage" id="ritualStage"></div>';
 
         const stage = document.getElementById('ritualStage');
-        stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (window.scrollTo) window.scrollTo({ top: 0 });
 
         const hexLines = settings.method === 'bazi'
             ? generateHexagramBazi(settings.bazi, question)
@@ -53,17 +52,23 @@ async function divine() {
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         let chosenCard = null;
         if (!prefersReducedMotion) {
-            const ritual = new ArcanaRitual(stage, gua, hexLines, change);
+            const ritual = new HexRitual(stage, gua, hexLines, change, settings.method);
             // 仪式与「跳过」信号竞速：点跳过即直奔结果，不触碰内部动画时序
             let skipped = false;
-            const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; res(); }; });
+            const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; ritual.abort(); res(); }; });
             await Promise.race([ritual.run(), skipPromise]);
-            chosenCard = skipped ? null : ritual.chosenCard;
+            // 跳过时也让方图里对应的那一卦飞到结果页
+            chosenCard = skipped ? { cosmosValue: ritual.value } : ritual.chosenCard;
         }
 
         // 先落库拿到唯一 ID，自动 AI 解读和重试都绑定本条记录。
         readingContext.historyId = saveToHistory(question, gua, fullBin, hexLines, change, readingContext);
         renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
+    } catch (error) {
+        if (typeof setPageView === 'function') setPageView('home');
+        resultArea.innerHTML = '';
+        showToast('起卦未完成，请重试', 'error');
+        console.error(error);
     } finally {
         btn.disabled = false;
         if (btnText) btnText.textContent = originalText;
@@ -106,97 +111,155 @@ function getMainReading(gua, change) {
     return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」` };
 }
 
+function buildCallouts(hexLines, changingYaos) {
+    // 卦画右侧的标注：每一爻一条引线，动爻用橙色并注明变后的爻
+    const rows = [];
+    for (let i = 5; i >= 0; i--) {
+        const line = hexLines[i];
+        const moving = changingYaos.includes(i);
+        const after = moving ? yaoLabel(line === 9 ? 8 : 7, i) : '';
+        rows.push(`<li class="co${moving ? ' moving' : ''}" style="--r:${5 - i}" data-i="${i}">
+<span class="co-name" data-ben="${yaoLabel(line, i)}" data-zhi="${moving ? after : yaoLabel(line, i)}">${yaoLabel(line, i)}</span>${moving ? `<span class="co-note">动 → ${after}</span>` : ''}</li>`);
+    }
+    return `<ol class="callouts" aria-hidden="true">${rows.join('')}</ol>`;
+}
+
+function buildMiniMap(v) {
+    let cells = '';
+    for (let k = 0; k < 64; k++) cells += `<i${k === v ? ' class="on"' : ''}></i>`;
+    return `<span class="minimap" aria-hidden="true">${cells}</span>`;
+}
+
 function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi, readingContext = {}) {
     const resultArea = document.getElementById('resultArea');
-    const yaoNames = ['初九','九二','九三','九四','九五','上九','初六','六二','六三','六四','六五','上六'];
-    const roman = toRoman(guaIndex(gua));
     const verdict = getVerdict(gua);
-    const verdictText = { ji:'吉', xiong:'凶', ping:'平' };
+    const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
     const mainReading = getMainReading(gua, change);
-    let firstRect = null;
-    if (sourceCard && sourceCard.parentNode) {
-        firstRect = sourceCard.getBoundingClientRect();
-        sourceCard.remove();
-    }
+    const zhi = change.hasChange ? change.changeGua : null;
+    const v = shaoValue(fullBin || guaBinary(gua));
 
+    const yaoArr = gua[3].split('|');
     const yaoHtml = hexLines.map((line, i) => {
         const isYang = (line === 9 || line === 7);
-        const yaoType = line===9?'老阳':line===7?'少阳':line===8?'少阴':'老阴';
-        const yaoName = isYang ? yaoNames[i] : yaoNames[i+6];
-        const yaoText = gua[3].split('|')[i] || '';
+        const raw = yaoArr[i] || '';
+        const cut = raw.indexOf('：');
+        const yaoName = cut > 0 ? raw.slice(0, cut) : yaoLabel(line, i);
+        const yaoText = cut > 0 ? raw.slice(cut + 1) : raw;
         const isChanging = change.changingYaos.includes(i);
         const lineVis = isYang
-            ? '<span class="yao-line yang"><span></span></span>'
-            : '<span class="yao-line yin"><span></span><span></span></span>';
-        const changeBadge = isChanging ? '<span class="yao-badge change">变</span>' : '';
-        return `<div class="yao-item${isChanging?' changing':''}">
-<div class="yao-header yao-toggle">${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-badge type">${yaoType}</span>${changeBadge}<span class="yao-chevron">›</span></div>
-<div class="yao-text">${yaoText}</div></div>`;
-    }).join('');
+            ? '<span class="yao-line yang" aria-hidden="true"><span></span></span>'
+            : '<span class="yao-line yin" aria-hidden="true"><span></span><span></span></span>';
+        return `<li class="yao-item${isChanging ? ' changing' : ''}" data-i="${i}">
+${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span></li>`;
+    }).reverse().join('');
 
-    const analysisHtml = gua[4].split('。').filter(s=>s.trim()).map(s =>
-        `<div class="analysis-item">${s.trim()}。</div>`
+    const analysisHtml = gua[4].split('。').filter(s => s.trim()).map(s =>
+        `<span class="analysis-item">${s.trim()}。</span>`
     ).join('');
 
+    const methodText = readingContext.method === 'bazi' ? '生辰起卦' : readingContext.method === 'coin' ? '铜钱起卦' : '未记录';
+    const upperName = TRIGRAM_BY_VALUE[v & 7], lowerName = TRIGRAM_BY_VALUE[v >> 3];
+
     let changeHtml = '';
-    if (change.hasChange && change.changeGua) {
-        const pos = change.changingYaos.map(p => ['初','二','三','四','五','上'][p]);
-        changeHtml = `<section class="card card-drama change-section"><h3>变·卦·演化 <span class="hex-tag">天机易转</span></h3>
+    if (zhi) {
+        const pos = change.changingYaos.map(p => YAO_POS_CN[p]);
+        changeHtml = `<section class="block change-section"><h3>变卦</h3>
 <div class="change-comparison">
-<div class="gua-box"><div class="gua-label">BEN · 本</div><div class="gua-symbol">${gua[2]}</div><div class="gua-name">${gua[0]}</div></div>
-<div class="change-arrow">⟶</div>
-<div class="gua-box changed"><div class="gua-label">BIAN · 变</div><div class="gua-symbol">${change.changeGua[2]}</div><div class="gua-name">${change.changeGua[0]}</div></div>
+  <div class="gua-box"><div class="gua-mini">${buildYaoArtSvg(hexLines, change.changingYaos)}</div><div class="gua-label">本卦</div><div class="gua-name">${gua[0]}</div><span class="gua-symbol" hidden>${gua[2]}</span></div>
+  <div class="change-arrow" aria-hidden="true"><svg viewBox="0 0 48 12"><path d="M0 6h44M39 1l6 5-6 5"/></svg></div>
+  <div class="gua-box changed"><div class="gua-mini">${buildYaoArtSvg(binToHexLines(change.changeBinary), change.changingYaos)}</div><div class="gua-label">之卦</div><div class="gua-name">${zhi[0]}</div><span class="gua-symbol" hidden>${zhi[2]}</span></div>
 </div>
-<div class="change-details"><p>变爻位置：第 ${pos.join('、')} 爻</p><p>${change.changeGua[4]}</p></div></section>`;
+<div class="change-details"><p>变爻位置：第 ${pos.join('、')} 爻</p><p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};
     const showAiCard = !!savedAi || aiSettings.enabled;
     const aiHtml = showAiCard
-        ? `<section class="card card-ai" id="aiReadingCard"><h3>天机 · AI 详解 <span class="hex-tag">灵犀一点</span></h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
+        ? `<section class="block card-ai" id="aiReadingCard"><h3>AI 解读</h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
         : '';
 
     // 记录本卦所问，供分享卡读取（不读实时输入框：回看历史或起卦后改输入会导致分享卡答非所问）
     resultArea.dataset.question = question || '';
+    if (typeof setPageView === 'function') setPageView('result');
 
     resultArea.innerHTML = `
-<section class="card result-header">
-    <div class="chosen-card-wrap" id="chosenCardWrap"></div>
-    <div class="hex-roman">${roman}</div>
-    <h2 class="hex-name hex-name-art">${gua[0]}</h2>
-    <div class="hex-title">${gua[1]}</div>
-    <div class="hex-symbol" style="display:none;">${gua[2]}</div>
-    ${question ? `<p class="hex-question">「${escHtml(question)}」</p>` : ''}
-    <div class="verdict-seal ${verdict}">${verdictText[verdict]}</div>
-    <div class="share-row"><button class="btn-share" id="shareBtn">✦ 生成分享图</button></div>
-</section>
-<section class="card card-primary main-reading"><h3>主 · 断 <span class="hex-tag">${mainReading.rule}</span></h3><div class="analysis-list"><div class="analysis-item">${mainReading.text}</div></div></section>
-<section class="card card-primary"><h3>卦象奥义</h3><div class="analysis-list">${analysisHtml}</div></section>
-<section class="card card-secondary"><h3>六爻之辞</h3><div class="yao-list">${yaoHtml}</div></section>
-${changeHtml}
-${aiHtml}
-<section class="result-actions">
-    <button class="btn-action btn-action-secondary" id="newDivineBtn">
-        <span class="btn-rune">↺</span><span>再问一卦</span>
-    </button>
-    <button class="btn-action btn-action-tertiary" id="viewHistoryBtn">
-        <span class="btn-rune">◱</span><span>翻阅牌册</span>
-    </button>
-    <p class="result-warning">占而再三 · 神不告之</p>
-</section>`;
+<div class="result entering">
+  <div class="result-bar" style="--d:0"><button class="back-link" id="backHomeBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>回到起卦</button></div>
+  <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '心中所念'}</h1></div>
+  <div class="reading-layout">
+    <aside class="result-header">
+      <figure class="glyph-figure">
+        <div class="result-glyph${sourceCard ? ' awaiting' : ''}" id="resultGlyph" data-v="${v}">${buildHexBars(hexLines, change.changingYaos, 'hx-big')}</div>
+        ${buildCallouts(hexLines, change.changingYaos)}
+      </figure>
+      ${zhi ? `<div class="ben-zhi" role="group" aria-label="切换本卦与之卦" style="--d:4">
+        <button type="button" class="bz-opt" id="benBtn" aria-pressed="true">本卦<b>${gua[0]}</b></button>
+        <button type="button" class="bz-opt" id="zhiBtn" aria-pressed="false">之卦<b>${zhi[0]}</b></button>
+        <span class="bz-mark" aria-hidden="true"></span>
+      </div>` : '<p class="zhi-none" style="--d:4">六爻皆静，没有之卦</p>'}
+      <dl class="title-block" style="--d:5">
+        <div class="tb-wide"><dt>卦名</dt><dd>${gua[0]}${buildMiniMap(v)}</dd></div>
+        <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
+        <div><dt>上下</dt><dd>上${upperName} 下${lowerName}</dd></div>
+        <div><dt>起卦</dt><dd>${methodText}</dd></div>
+        <div><dt>动爻</dt><dd>${change.changingYaos.length ? change.changingYaos.map(p => YAO_POS_CN[p]).join('、') : '无'}</dd></div>
+        <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
+      </dl>
+    </aside>
+    <article class="reading" id="readingColumn">
+      <header class="reading-head" style="--d:2">
+        <div class="reading-name-row"><h2 class="hex-name">${gua[0]}</h2><span class="verdict-seal ${verdict}" aria-label="${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span></div>
+        <p class="hex-title">${gua[1]}</p>
+        <span class="hex-symbol" hidden>${gua[2]}</span>
+      </header>
+      <section class="block main-reading" style="--d:3"><h3>主断 <span class="rule-tag">${mainReading.rule}</span></h3><p class="analysis-list lead"><span class="analysis-item">${mainReading.text}</span></p></section>
+      <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
+      ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
+      ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
+      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3><ol class="yao-list">${yaoHtml}</ol></section>
+      <div class="result-actions" style="--d:7">
+        <button class="btn btn-primary" id="shareBtn">生成分享图</button>
+        <button class="btn" id="newDivineBtn">再问一卦</button>
+        <button class="btn btn-quiet" id="viewHistoryBtn">翻阅牌册</button>
+      </div>
+      <p class="result-warning" style="--d:7">卦可以看，事情仍由自己决定。</p>
+    </article>
+  </div>
+</div>`;
+    const backBtn = resultArea.querySelector('#backHomeBtn');
+    if (backBtn) backBtn.addEventListener('click', () => { if (typeof returnToInquiry === 'function') returnToInquiry(); });
 
     resultArea.querySelector('#shareBtn').addEventListener('click', shareAsImage);
     const newBtn = resultArea.querySelector('#newDivineBtn');
     if (newBtn) newBtn.addEventListener('click', () => {
-        const qEl = document.getElementById('question');
-        if (qEl) { qEl.value = ''; qEl.focus(); }
-        document.body.classList.remove('mood-ji', 'mood-xiong', 'mood-ping');
-        resultArea.innerHTML = '';
-        const target = document.querySelector('.question-area');
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof returnToInquiry === 'function') returnToInquiry({ clear: true });
     });
     const viewBtn = resultArea.querySelector('#viewHistoryBtn');
     if (viewBtn) viewBtn.addEventListener('click', toggleHistory);
+
+    // 本卦 ⇄ 之卦：动爻在原处阴阳互变，标注同步改写
+    const benBtn = resultArea.querySelector('#benBtn');
+    const zhiBtn = resultArea.querySelector('#zhiBtn');
+    const showZhi = (on) => {
+        const glyph = resultArea.querySelector('#resultGlyph');
+        const header = resultArea.querySelector('.result-header');
+        const was = header && header.classList && header.classList.contains('as-zhi');
+        if (!header || was === on) return;
+        header.classList.toggle('as-zhi', on);
+        if (glyph && glyph.querySelectorAll) glyph.querySelectorAll('.bar.chg').forEach(b => {
+            b.classList.toggle('yang');
+            b.classList.toggle('yin');
+        });
+        if (header.querySelectorAll) header.querySelectorAll('.co-name').forEach(n => {
+            n.textContent = on ? n.dataset.zhi : n.dataset.ben;
+        });
+        benBtn.setAttribute('aria-pressed', String(!on));
+        zhiBtn.setAttribute('aria-pressed', String(on));
+    };
+    if (benBtn && zhiBtn && zhi) {
+        benBtn.addEventListener('click', () => showZhi(false));
+        zhiBtn.addEventListener('click', () => showZhi(true));
+    }
 
     const aiBody = resultArea.querySelector('#aiReadingBody');
     if (aiBody) {
@@ -211,126 +274,30 @@ ${aiHtml}
         } else if (aiSettings.autoRun) {
             runAi();
         } else {
-            aiBody.innerHTML = '<button class="btn-ai-run" id="aiRunBtn"><span class="btn-rune">✧</span> 请神解卦 <span class="btn-rune">✧</span></button>';
+            aiBody.innerHTML = '<button class="btn" id="aiRunBtn">请 AI 解读这一卦</button>';
             aiBody.querySelector('#aiRunBtn').addEventListener('click', runAi);
         }
     }
 
-    const wrap = resultArea.querySelector('#chosenCardWrap');
-    let bigCard;
-    if (sourceCard) {
-        sourceCard.style.cssText = '';
-        sourceCard.classList.remove('active', 'peak');
-        wrap.appendChild(sourceCard);
-        bigCard = sourceCard;
-    } else {
-        bigCard = makeArcanaCard(gua, {
-            large: true,
-            hexLines,
-            changingYaos: change.changingYaos,
-            rare: isRareGua(fullBin)
-        });
-        bigCard.classList.add('flipped');
-        bigCard.classList.add('yao-animate');
-        wrap.appendChild(bigCard);
-    }
-
-    if (firstRect) {
-        wrap.style.animation = 'none';
-        const lastRect = bigCard.getBoundingClientRect();
-        const dx = (firstRect.left + firstRect.width/2) - (lastRect.left + lastRect.width/2);
-        const dy = (firstRect.top + firstRect.height/2) - (lastRect.top + lastRect.height/2);
-        const scale = lastRect.width > 0 ? firstRect.width / lastRect.width : 1;
-
-        bigCard.style.transformOrigin = 'center center';
-        bigCard.style.transition = 'none';
-        bigCard.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
-        bigCard.offsetHeight; 
-
-        requestAnimationFrame(() => {
-            bigCard.style.transition = 'transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)';
-            bigCard.style.transform = '';
-        });
-
-
-        setTimeout(() => {
-            bigCard.style.transition = '';
-            bigCard.style.transform = '';
-            bigCard.style.transformOrigin = '';
-            wrap.style.animation = '';
-        }, 1250);
-    }
-
-
+    if (window.scrollTo) window.scrollTo({ top: 0 });
+    const glyphEl = resultArea.querySelector('#resultGlyph');
     const header = resultArea.querySelector('.result-header');
-    if (header) {
-        const headerKids = Array.from(header.children).filter(el => !el.matches('.chosen-card-wrap, .hex-symbol, .hex-name-art, .verdict-seal'));
-        headerKids.forEach((el, i) => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(8px)';
-            setTimeout(() => {
-                el.style.transition = 'opacity 0.55s ease, transform 0.55s ease';
-                el.style.opacity = '1';
-                el.style.transform = '';
-            }, 350 + i * 80);
-        });
-
-
-        const nameEl = header.querySelector('.hex-name-art');
-        if (nameEl) {
-            const txt = nameEl.textContent;
-            nameEl.innerHTML = txt.split('').map((ch, idx) =>
-                `<span class="hex-char" style="animation-delay:${600 + idx * 220}ms">${ch === ' ' ? '&nbsp;' : ch}</span>`
-            ).join('');
-        }
-
-
-        const seal = header.querySelector('.verdict-seal');
-        if (seal) {
-            seal.style.opacity = '0';
-            setTimeout(() => {
-                seal.style.opacity = '';
-                seal.classList.add('stamp-in');
-            }, 1400);
-        }
+    const land = () => {
+        if (glyphEl) glyphEl.classList.remove('awaiting');
+        if (header) header.classList.add('landed');
+    };
+    if (sourceCard && typeof Cosmos !== 'undefined') {
+        // 方图（或牌册缩略图）里的那一卦飞到这里，落定后换成页面上的卦画
+        requestAnimationFrame(() => Cosmos.toResult(sourceCard.cosmosValue, glyphEl, {
+            fromRect: sourceCard.fromRect || null,
+            done: land
+        }));
+    } else {
+        if (typeof Cosmos !== 'undefined') Cosmos.hide();
+        setTimeout(land, 250);
     }
-
-
-    const otherCards = resultArea.querySelectorAll('.card:not(.result-header)');
-    otherCards.forEach((el, i) => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
-            el.style.opacity = '1';
-            el.style.transform = '';
-            const yaoList = el.querySelector('.yao-list');
-            if (yaoList) yaoList.classList.add('scroll-open');
-            const analysisList = el.querySelector('.analysis-list');
-            if (analysisList) analysisList.classList.add('stagger-in');
-        }, 700 + i * 180);
-    });
-
-    // 移动端爻辞折叠/展开
-    resultArea.querySelectorAll('.yao-toggle').forEach(header => {
-        header.addEventListener('click', () => {
-            header.closest('.yao-item').classList.toggle('yao-expanded');
-        });
-    });
-
-    document.body.classList.remove('mood-ji', 'mood-xiong', 'mood-ping');
-    document.body.classList.add('mood-' + verdict);
-
-    if (isRareGua(fullBin) && bigCard) {
-        setTimeout(() => spawnGoldSparkles(bigCard, 16), 1500);
-        setTimeout(() => spawnGoldSparkles(bigCard, 10), 5500);
-        setTimeout(() => spawnGoldSparkles(bigCard, 10), 9500);
-    }
-
-    setTimeout(() => {
-        const target = resultArea.querySelector('.result-header') || resultArea;
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 1300);
+    const page = resultArea.querySelector('.result');
+    setTimeout(() => { if (page && page.classList) page.classList.remove('entering'); }, 2200);
 }
 
 // 归一化问题：去空白、去标点符号、全角转半角、统一小写

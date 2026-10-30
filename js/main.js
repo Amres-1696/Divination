@@ -1,43 +1,14 @@
-// main —— DOMContentLoaded 入口：初始化背景、绑定全部事件、键盘快捷键
+// main —— DOMContentLoaded 入口：绑定全部事件、键盘快捷键
 // 必须最后加载
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 入场动画区分新老用户（章节 3.2）
-    let hasVisited = null;
-    try { hasVisited = localStorage.getItem('tianyan_visited'); } catch (e) {}
-    if (hasVisited) {
-        document.body.classList.add('intro-fast');
-    } else {
-        try { localStorage.setItem('tianyan_visited', '1'); } catch (e) {}
-    }
-    document.body.classList.add('intro-start');
-    const introDur = hasVisited ? 1800 : 3500;
-    setTimeout(() => document.body.classList.remove('intro-start'), introDur);
-
-    applyHourTheme();
-    const dustCanvas = document.querySelector('.dust-layer');
-    let dust = null;
-    if (dustCanvas) {
-        dust = new DustParticles(dustCanvas);
-        dust.start();
-    }
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            if (dust) dust.pause();
-            // 暂停所有 CSS 动画，节省后台 GPU
-            document.documentElement.style.setProperty('--anim-state', 'paused');
-        } else {
-            if (dust) dust.resume();
-            document.documentElement.style.setProperty('--anim-state', 'running');
-            refreshDailyGuaIfNeeded();
-        }
+        if (!document.hidden) refreshDailyGuaIfNeeded();
     });
 
     loadHistory();
     renderDailyGua();
     restoreSettingsUI();
-    initParallax();
-    scheduleGoldStreak();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 
@@ -113,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
         const detail = document.querySelector('.detail-overlay.show');
-        if (detail) { detail.remove(); return; }
+        if (detail) { closeGuaDetail(detail); return; }
         const confirmO = document.getElementById('confirmOverlay');
         if (confirmO && confirmO.classList.contains('show')) { document.getElementById('confirmNo').click(); return; }
         const share = document.getElementById('shareImageContainer');
@@ -152,7 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 同步时辰与跨日启示；后台恢复时另做即时检查。
     setInterval(() => {
-        applyHourTheme();
         refreshDailyGuaIfNeeded();
     }, 60 * 1000);
 });
