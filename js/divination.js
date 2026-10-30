@@ -212,11 +212,13 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
         <p class="hex-title">${gua[1]}</p>
         <span class="hex-symbol" hidden>${gua[2]}</span>
       </header>
+      <div class="reading-sheet">
       <section class="block main-reading" style="--d:3"><h3>主断 <span class="rule-tag">${mainReading.rule}</span></h3><p class="analysis-list lead"><span class="analysis-item">${mainReading.text}</span></p></section>
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
       <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3><ol class="yao-list">${yaoHtml}</ol></section>
+      </div>
       <div class="result-actions" style="--d:7">
         <button class="btn btn-primary" id="shareBtn">生成分享图</button>
         <button class="btn" id="newDivineBtn">再问一卦</button>

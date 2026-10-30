@@ -1,7 +1,8 @@
 /* 天衍 —— 样式
    整站是一张蓝晒图纸：外框带天干地支分区，按钮、卡片用制图的角标，
    开关画成一根爻（关是阴爻，开是阳爻），结果页附图签和引线标注。
-   标题用宋体重字（Noto Serif SC），正文与批注用霞鹜文楷。
+   展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei），正文用思源宋体（Noto Serif SC）。
+   结果页的正文铺一层淡淡的浅灰读纸，和满屏的蓝图装饰分开。
    动效只改 transform / opacity；六十四卦图层由 cosmos.js 逐帧补间。 */
 
 @property --g {
@@ -15,8 +16,9 @@
   --blue-deep: #102B55;
   --blue-lift: #1E4682;
   --ink: #EEF2F7;
-  --ink-2: #B7C5DA;
-  --ink-3: #8FA3C4;
+  /* --ink-3 在最亮的底色上也有约 4.4:1，小号标签仍看得清 */
+  --ink-2: #C5D1E2;
+  --ink-3: #A7B8D3;
   --rule: rgba(238, 242, 247, .26);
   --rule-soft: rgba(238, 242, 247, .12);
   --zhu: #FF8A5C;
@@ -116,7 +118,7 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .detail-box::-webkit-scrollbar-thumb { border-width: 4px; }
 
 /* ---------- 制图角标（按钮、卡片、弹层共用） ---------- */
-.btn, .share-box, .confirm-box, .detail-box, .ai-profile-bar, .title-block, .seg, .ben-zhi {
+.btn, .share-box, .confirm-box, .detail-box, .ai-profile-bar, .title-block, .seg, .ben-zhi, .reading-sheet {
   --c: var(--rule);
   --t: 8px;
   background-image:
@@ -139,7 +141,7 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
   pointer-events: none;
   border: 1px solid var(--rule);
 }
-.frame-zones { position: absolute; display: flex; font-size: 10px; line-height: 1; color: var(--ink-3); opacity: .75; }
+.frame-zones { position: absolute; display: flex; font-size: 10px; line-height: 1; color: var(--ink-3); opacity: .6; }
 .frame-zones span { flex: 1; display: grid; place-items: center; position: relative; }
 .frame-zones span + span::before { content: ""; position: absolute; background: var(--rule); }
 .frame-top { left: 0; right: 0; top: calc(-1 * var(--frame)); height: var(--frame); }
@@ -410,8 +412,10 @@ body.casting .home-main > * {
 .daily-gua:hover .daily-name { text-decoration-color: var(--ink); }
 
 /* ---------- 仪式 ---------- */
+/* 宽度跟着方图和掷钱栏走，整组在页面上居中，标题行也和它左右对齐 */
 .ritual-stage {
-  max-width: 1120px;
+  width: fit-content;
+  max-width: 100%;
   min-height: calc(100svh - var(--head-h) - var(--frame) * 2);
   margin: 0 auto;
   padding: 0 var(--gutter) 28px;
@@ -428,7 +432,7 @@ body.casting .home-main > * {
 .ritual-body {
   flex: 1;
   display: grid;
-  grid-template-columns: auto 260px;
+  grid-template-columns: auto auto;
   gap: clamp(40px, 6vw, 88px);
   align-items: center;
   justify-content: center;
@@ -459,7 +463,7 @@ body.casting .home-main > * {
 }
 .grid-count { grid-column: 2; grid-row: 3; margin-top: 10px; text-align: right; font-size: 14.5px; color: var(--ink-2); }
 
-.cast-panel { display: grid; gap: 30px; justify-items: start; }
+.cast-panel { display: grid; gap: 30px; justify-items: center; }
 .coins { display: flex; gap: 14px; }
 .coin { position: relative; width: 60px; height: 60px; perspective: 420px; }
 .coin::after {
@@ -614,7 +618,18 @@ body.casting .home-main > * {
 .title-block dd { font-size: 14.5px; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .title-block .tb-wide:first-child dd { font-family: var(--display); font-weight: 400; font-size: 16px; }
 
-.reading { max-width: 35em; }
+.reading { max-width: 39em; }
+/* 读纸：正文区铺一层很淡的浅灰，和满屏的蓝图装饰分开；随结果页一起慢慢浮现 */
+.reading-sheet {
+  --t: 12px;
+  margin-top: 40px;
+  padding: 34px 36px 38px;
+  background-color: rgba(226, 233, 243, .055);
+  box-shadow: inset 0 0 0 1px var(--rule-soft);
+}
+.result.entering .reading-sheet { animation: sheet-in 1s ease both; animation-delay: 320ms; }
+@keyframes sheet-in { from { opacity: 0; } to { opacity: 1; } }
+.reading-sheet > .block:first-child { margin-top: 0; }
 .reading-name-row { display: flex; align-items: center; gap: 26px; }
 .hex-name { font-family: var(--display); font-size: clamp(46px, 6vw, 68px); font-weight: 400; line-height: 1.12; letter-spacing: .05em; }
 /* 批印：双线方框，盖下去的动作 */
@@ -830,6 +845,18 @@ body.view-ritual .site-footer { display: none; }
 .am-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-3); }
 .am-legend .ji { color: var(--zhu); }
 .am-legend .xiong { color: var(--ink-2); }
+/* 图例前画一小段和比例条同色的色块，说明哪段颜色是吉、平、凶 */
+.am-legend .ji::before, .am-legend .ping::before, .am-legend .xiong::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 4px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.am-legend .ji::before { background: var(--zhu); }
+.am-legend .ping::before { background: var(--ink-3); }
+.am-legend .xiong::before { background: var(--ink); }
 .am-top { margin-left: auto; }
 
 .am-frame {
@@ -927,7 +954,8 @@ body.view-ritual .site-footer { display: none; }
 .history-gua b { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--ink); }
 .history-change { color: var(--ink-3); }
 .history-verdict.v-ji { color: var(--zhu); }
-.history-del { position: relative; width: 28px; height: 28px; border-radius: 50%; opacity: 0; transition: opacity .2s ease, background-color .2s ease; }
+/* 叉号还是 28px 那么大，可点范围用负外边距扩到 40px，不挤动这一行的布局 */
+.history-del { position: relative; width: 40px; height: 40px; margin: -6px; border-radius: 50%; opacity: 0; transition: opacity .2s ease, background-color .2s ease; }
 .history-del::before, .history-del::after { content: ""; position: absolute; left: 50%; top: 50%; width: 11px; height: 1.3px; margin: -.65px 0 0 -5.5px; background: var(--ink-2); transform: rotate(45deg); }
 .history-del::after { transform: rotate(-45deg); }
 .history-item:hover .history-del, .history-item:focus-within .history-del { opacity: 1; }
@@ -1132,9 +1160,14 @@ body.view-ritual .site-footer { display: none; }
 .bazi-status.error { color: var(--zhu); }
 
 /* 爻开关：关是阴爻，开是阳爻 */
-.toggle-switch { position: relative; flex: none; width: 48px; height: 26px; cursor: pointer; }
+.toggle-switch { position: relative; flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 40px; cursor: pointer; }
 .toggle-switch input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
-.toggle-slider { position: absolute; left: 0; right: 0; top: 50%; height: 8px; margin-top: -4px; --g: 34%; transition: --g .5s var(--ease); }
+.toggle-slider { position: relative; width: 48px; height: 8px; --g: 34%; transition: --g .5s var(--ease); }
+/* 爻旁写明开关状态：初次使用的人不一定认得阴阳爻 */
+.toggle-state { order: -1; font-size: 13.5px; line-height: 1; color: var(--ink-3); transition: color .35s ease; }
+.toggle-state::before { content: "关"; }
+.toggle-switch input:checked ~ .toggle-state { color: var(--zhu); }
+.toggle-switch input:checked ~ .toggle-state::before { content: "开"; }
 .toggle-slider::before, .toggle-slider::after {
   content: "";
   position: absolute;
@@ -1379,6 +1412,7 @@ body.view-ritual .site-footer { display: none; }
   .btn-divine { padding: 11px 26px; }
   .daily-gua { margin-top: 40px; }
 
+  .ritual-stage { width: auto; }
   .ritual-head { min-height: 68px; }
   .ritual-status-main { font-size: 24px; }
   .ritual-status-sub { font-size: 14px; }
@@ -1402,7 +1436,7 @@ body.view-ritual .site-footer { display: none; }
   .glyph-figure { order: 1; }
   .reading-head { order: 2; margin-top: 26px; }
   .ben-zhi, .zhi-none { order: 3; align-self: start; min-width: 240px; }
-  .reading .block { order: 4; }
+  .reading-sheet { order: 4; margin-top: 30px; padding: 24px 18px 28px; }
   .title-block { order: 5; margin-top: 40px; }
   .result-actions { order: 6; }
   .result-warning { order: 7; }
