@@ -1290,9 +1290,45 @@ body.casting .home-main > * {
 .show > .share-box, .show > .confirm-box, .show > .detail-box { transform: none; }
 .share-box { width: min(440px, 100%); max-height: calc(100svh - 32px); overflow-y: auto; padding: 22px 22px 20px; }
 .share-box h3 { font-family: var(--display); font-size: 19px; font-weight: 400; letter-spacing: .18em; }
-.share-preview { margin: 16px 0 18px; min-height: 260px; display: grid; place-items: center; text-align: center; }
-.share-preview img { display: block; max-width: 100%; max-height: 60svh; box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .7); animation: rise .6s var(--ease-out) both; }
-.share-loading { color: var(--ink-3); font-size: 15.5px; }
+.share-preview { position: relative; margin: 16px 0 18px; min-height: 260px; display: grid; place-items: center; text-align: center; }
+.share-preview img { display: block; max-width: 100%; max-height: 60svh; box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .7); }
+/* 显影前的空白相纸，和成图同比例 */
+.share-paper {
+  height: min(60svh, 640px);
+  max-width: 100%;
+  aspect-ratio: 500 / 888;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(165deg, rgba(238, 242, 247, .14), rgba(238, 242, 247, .05));
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+.share-paper span { font-family: var(--display); font-size: 15px; letter-spacing: .5em; text-indent: .5em; color: var(--ink-3); animation: paper-breathe 1.6s ease-in-out infinite; }
+@keyframes paper-breathe { 50% { opacity: .35; } }
+/* 蓝晒显影：先过曝发白、看不清，再慢慢显出蓝色和字；一道光从上往下扫过 */
+.share-preview.developing img { animation: develop 1.5s cubic-bezier(.3, .1, .3, 1) both; }
+@keyframes develop {
+  0% { filter: brightness(3.2) saturate(0) contrast(.45) blur(2px); }
+  45% { filter: brightness(1.6) saturate(.35) contrast(.8) blur(.6px); }
+  100% { filter: none; }
+}
+.share-preview.developing::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(100%, calc(60svh * 500 / 888));
+  height: 70px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(238, 242, 247, .55) 55%, rgba(255, 138, 92, .5) 60%, transparent);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: develop-scan 1.25s cubic-bezier(.5, 0, .4, 1) .1s both;
+}
+@keyframes develop-scan {
+  from { top: -70px; opacity: 1; }
+  85% { opacity: 1; }
+  to { top: 100%; opacity: 0; }
+}
 .share-hint { margin-top: 10px; font-size: 13.5px; color: var(--ink-3); }
 .share-error { color: var(--zhu); font-size: 16px; }
 .share-error small { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-3); word-break: break-all; }
@@ -1412,43 +1448,112 @@ body.casting .home-main > * {
 .back-to-top.visible { opacity: 1; transform: none; pointer-events: auto; }
 .back-to-top svg { width: 20px; height: 20px; fill: none; stroke: var(--ink); stroke-width: 1.6; }
 
-/* ---------- 分享卡（导图用，颜色写死） ---------- */
+/* ---------- 分享卡（导图用，颜色写死） ----------
+   一张「起卦签」海报：蓝晒纸细网格 + 裁切线，左边一组出血的大卦画，右边先天圆环里竖排卦名，
+   吉凶朱印斜盖在卦画上，日期写干支农历。html2canvas 只认基础排版，全部用绝对定位和内联 SVG。 */
 .sc-card {
+  position: relative;
+  overflow: hidden;
   width: 500px;
   height: 888px;
-  padding: 44px 44px 34px;
+  padding: 40px 36px 34px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  background: #17396E;
+  background: linear-gradient(165deg, #1B4482 0%, #143668 46%, #0D2547 100%);
   color: #EEF2F7;
   font-family: var(--text);
   line-height: 1.8;
-  box-shadow: inset 0 0 0 14px #17396E, inset 0 0 0 15px rgba(238, 242, 247, .3);
 }
-.sc-top { width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
-.sc-brand { font-family: var(--display); font-size: 22px; font-weight: 400; letter-spacing: .14em; }
-.sc-date { font-size: 13px; color: #A7B8D3; }
-.sc-question { margin-top: 34px; font-size: 23px; line-height: 1.5; }
-.sc-question span { display: block; font-size: 12px; letter-spacing: .3em; color: #A7B8D3; margin-bottom: 4px; }
-.sc-figure { margin-top: 36px; width: 100%; display: flex; align-items: flex-end; justify-content: space-between; }
-.sc-hex { width: 150px; height: 150px; }
-.sc-hex svg { width: 150px; height: 150px; display: block; }
-.sc-map { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 12px; color: #A7B8D3; }
-.sc-grid { width: 104px; height: 104px; display: flex; flex-wrap: wrap; gap: 2px; }
-.sc-grid i { display: block; width: 11.25px; height: 11.25px; background: rgba(238, 242, 247, .16); }
-.sc-grid i.on { background: #FF8A5C; }
-.sc-name-row { margin-top: 30px; display: flex; align-items: center; gap: 18px; }
-.sc-name { font-family: var(--display); font-size: 54px; font-weight: 400; line-height: 1.1; letter-spacing: .05em; }
-.sc-verdict { width: 44px; height: 44px; border: 2px solid; display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 22px; font-weight: 400; line-height: 1; }
+.sc-bg { position: absolute; left: 0; top: 0; }
+.sc-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+.sc-brand { font-family: var(--display); font-size: 26px; line-height: 1; letter-spacing: .16em; }
+.sc-brand span { display: block; margin-top: 10px; font-family: var(--text); font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+.sc-when { text-align: right; line-height: 1.5; }
+.sc-when b { display: block; font-family: var(--display); font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
+.sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
+
+.sc-stage { position: relative; margin: 34px -36px 0; width: 500px; height: 300px; flex: none; }
+.sc-ring { position: absolute; left: 0; top: 0; }
+.sc-bar { position: absolute; left: -10px; width: 290px; height: 28px; background: #EEF2F7; }
+.sc-bar.yin { background: transparent; }
+.sc-bar.yin i { position: absolute; top: 0; height: 28px; width: 122px; background: #EEF2F7; }
+.sc-bar.yin i + i { left: 168px; }
+.sc-bar.moving, .sc-bar.moving i { background: #FF8A5C; }
+.sc-bar.yin.moving { background: transparent; }
+.sc-mark { position: absolute; left: 292px; width: 24px; text-align: center; font-size: 22px; line-height: 36px; color: #FF8A5C; }
+.sc-name {
+  position: absolute;
+  left: 392px;
+  top: 150px;
+  width: 80px;
+  margin: -96px 0 0 -40px;
+  height: 192px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-size: 54px;
+  line-height: 1.08;
+}
+.sc-name.long { font-size: 44px; }
+.sc-name span { display: block; }
+.sc-seal {
+  position: absolute;
+  left: 188px;
+  top: 206px;
+  width: 82px;
+  height: 82px;
+  padding: 5px;
+  border: 3px solid;
+  background: #11305C;
+  transform: rotate(-9deg);
+}
+.sc-seal span {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  font-family: var(--display);
+  font-size: 38px;
+  line-height: 1;
+}
 .sc-ji { color: #FF8A5C; border-color: #FF8A5C; }
 .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
 .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
-.sc-sub { margin-top: 8px; font-size: 16px; color: #C5D1E2; }
-.sc-change { margin-top: 2px; font-size: 15px; color: #FF8A5C; }
-.sc-main { margin-top: 24px; padding-top: 16px; width: 100%; border-top: 1px solid rgba(238, 242, 247, .26); font-size: 18px; line-height: 1.75; }
-.sc-reading { margin-top: 10px; font-size: 16px; line-height: 1.9; color: #C5D1E2; max-height: 214px; overflow: hidden; }
-.sc-foot { margin-top: auto; width: 100%; padding-top: 14px; border-top: 1px solid rgba(238, 242, 247, .26); display: flex; justify-content: space-between; font-size: 12.5px; color: #A7B8D3; }
+
+.sc-meta { position: relative; margin-top: 26px; font-size: 14px; letter-spacing: .14em; color: #C5D1E2; }
+.sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
+.sc-change { position: relative; margin-top: 4px; font-size: 14px; letter-spacing: .14em; color: #FF8A5C; }
+.sc-change span { color: #C5D1E2; letter-spacing: .06em; }
+.sc-ask {
+  position: relative;
+  margin-top: 26px;
+  padding-left: 16px;
+  border-left: 3px solid #FF8A5C;
+  font-family: var(--display);
+  font-size: 27px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  max-height: 140px;
+  overflow: hidden;
+}
+.sc-ask span { display: block; margin-bottom: 4px; font-family: var(--text); font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+.sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
+.sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
+.sc-foot {
+  position: relative;
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px dashed rgba(238, 242, 247, .3);
+  font-size: 12px;
+  letter-spacing: .1em;
+  color: #A7B8D3;
+}
 
 /* ---------- 矮屏：首页不滚动，按高度收紧 ---------- */
 @media (max-height: 720px) {

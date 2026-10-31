@@ -133,6 +133,7 @@ function showGuaDetail(gua, when) {
     document.body.appendChild(overlay);
     overlay.querySelector('#detailCloseBtn').addEventListener('click', () => closeGuaDetail(overlay));
     requestAnimationFrame(() => overlay.classList.add('show'));
+    guaSheetRipple(overlay, true);
     const closeBtn = overlay.querySelector('#detailCloseBtn');
     if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
 }
@@ -141,6 +142,33 @@ function closeGuaDetail(overlay) {
     overlay = overlay || document.querySelector('.detail-overlay');
     if (!overlay || overlay._closing) return;
     overlay._closing = true;
-    overlay.classList.remove('show');
-    setTimeout(() => overlay.remove(), 320);
+    // 圆形收回要 0.44 秒，遮罩晚一点再淡出，免得收到一半就被一起隐藏
+    const shrinking = guaSheetRipple(overlay, false);
+    const fadeAt = shrinking ? 260 : 0;
+    setTimeout(() => overlay.classList.remove('show'), fadeAt);
+    setTimeout(() => overlay.remove(), fadeAt + 320);
+}
+
+// 今日一卦详解以首页那枚小卦画为圆心晕开（clip-path 圆形展开），关闭时缩回卦画；
+// 小卦画同时轻轻一跳，像是被点开的源头
+function guaSheetRipple(overlay, open) {
+    const sheet = overlay.querySelector('.gua-sheet');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!sheet || typeof sheet.animate !== 'function' || reduce) return false;
+    const src = document.querySelector('#dailyGua .daily-symbol');
+    const b = sheet.getBoundingClientRect();
+    const s = src ? src.getBoundingClientRect() : null;
+    const x = s && s.width ? s.left + s.width / 2 - b.left : b.width / 2;
+    const y = s && s.width ? s.top + s.height / 2 - b.top : b.height / 2;
+    const far = Math.hypot(Math.max(x, b.width - x), Math.max(y, b.height - y)) + 8;
+    const from = `circle(0px at ${x}px ${y}px)`, to = `circle(${far}px at ${x}px ${y}px)`;
+    sheet.getAnimations().forEach(a => a.cancel());
+    if (open) {
+        sheet.animate([{ clipPath: from }, { clipPath: to }], { duration: 760, easing: 'cubic-bezier(.55, 0, .2, 1)' });
+        if (src && src.animate) src.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .35 }, { transform: 'scale(1)' }],
+            { duration: 520, easing: 'ease-out' });
+    } else {
+        sheet.animate([{ clipPath: to }, { clipPath: from }], { duration: 440, easing: 'cubic-bezier(.6, 0, .8, .4)', fill: 'forwards' });
+    }
+    return true;
 }
