@@ -133,7 +133,7 @@ function showGuaDetail(gua, when) {
     document.body.appendChild(overlay);
     overlay.querySelector('#detailCloseBtn').addEventListener('click', () => closeGuaDetail(overlay));
     requestAnimationFrame(() => overlay.classList.add('show'));
-    guaSheetRipple(overlay, true);
+    guaSheetFlight(overlay, true);
     const closeBtn = overlay.querySelector('#detailCloseBtn');
     if (closeBtn && closeBtn.focus) closeBtn.focus({ preventScroll: true });
 }
@@ -142,33 +142,59 @@ function closeGuaDetail(overlay) {
     overlay = overlay || document.querySelector('.detail-overlay');
     if (!overlay || overlay._closing) return;
     overlay._closing = true;
-    // 圆形收回要 0.44 秒，遮罩晚一点再淡出，免得收到一半就被一起隐藏
-    const shrinking = guaSheetRipple(overlay, false);
-    const fadeAt = shrinking ? 260 : 0;
+    // 卦画飞回首页要 0.52 秒；它在遮罩外面单独一层，遮罩可以先淡出
+    const flying = guaSheetFlight(overlay, false);
+    const fadeAt = flying ? 200 : 0;
     setTimeout(() => overlay.classList.remove('show'), fadeAt);
-    setTimeout(() => overlay.remove(), fadeAt + 320);
+    setTimeout(() => overlay.remove(), fadeAt + 340);
 }
 
-// 今日一卦详解以首页那枚小卦画为圆心晕开（clip-path 圆形展开），关闭时缩回卦画；
-// 小卦画同时轻轻一跳，像是被点开的源头
-function guaSheetRipple(overlay, open) {
+// 首页那枚小卦画飞起、放大，落到详情页卦画的位置变成大卦画；详情页同时从模糊中清晰浮现。
+// 关闭时大卦画飞回首页原位，详情页模糊淡去。飞行的是一份克隆，真卦画在落地前先藏起来
+function guaSheetFlight(overlay, open) {
     const sheet = overlay.querySelector('.gua-sheet');
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!sheet || typeof sheet.animate !== 'function' || reduce) return false;
+    const glyph = sheet && sheet.querySelector('.gs-glyph');
     const src = document.querySelector('#dailyGua .daily-symbol');
-    const b = sheet.getBoundingClientRect();
-    const s = src ? src.getBoundingClientRect() : null;
-    const x = s && s.width ? s.left + s.width / 2 - b.left : b.width / 2;
-    const y = s && s.width ? s.top + s.height / 2 - b.top : b.height / 2;
-    const far = Math.hypot(Math.max(x, b.width - x), Math.max(y, b.height - y)) + 8;
-    const from = `circle(0px at ${x}px ${y}px)`, to = `circle(${far}px at ${x}px ${y}px)`;
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!glyph || !src || typeof sheet.animate !== 'function' || reduce) return false;
+    const s = src.getBoundingClientRect();
+    if (!s.width) return false;
+    if (overlay._flyer) overlay._flyer.remove();
     sheet.getAnimations().forEach(a => a.cancel());
+    // 详情框自带的上移缩放入场会让落点量不准，交给这里的动画接管
+    sheet.style.transform = 'none';
+    overlay.classList.add('flown');
+    const g = glyph.getBoundingClientRect();
+    const flyer = document.createElement('div');
+    flyer.className = 'gs-glyph gs-flyer';
+    flyer.innerHTML = glyph.innerHTML;
+    flyer.style.cssText = `left:${g.left}px;top:${g.top}px;width:${g.width}px;height:${g.height}px;`;
+    document.body.appendChild(flyer);
+    overlay._flyer = flyer;
+    const dx = s.left - g.left, dy = s.top - g.top, k = s.width / g.width;
+    const atSrc = `translate(${dx}px, ${dy}px) scale(${k.toFixed(3)})`;
+    // 走一段向上拱起的弧线，而不是直线
+    const mid = `translate(${dx * .45}px, ${dy * .45 - 46}px) scale(${((1 + k) / 2 + .12).toFixed(3)})`;
+    glyph.style.visibility = 'hidden';
+    src.style.visibility = 'hidden';
+    const land = () => {
+        glyph.style.visibility = '';
+        src.style.visibility = '';
+        flyer.remove();
+        if (overlay._flyer === flyer) overlay._flyer = null;
+    };
     if (open) {
-        sheet.animate([{ clipPath: from }, { clipPath: to }], { duration: 760, easing: 'cubic-bezier(.55, 0, .2, 1)' });
-        if (src && src.animate) src.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)', offset: .35 }, { transform: 'scale(1)' }],
-            { duration: 520, easing: 'ease-out' });
+        flyer.animate([{ transform: atSrc }, { transform: mid, offset: .5 }, { transform: 'none' }],
+            { duration: 760, easing: 'cubic-bezier(.45, 0, .2, 1)' }).onfinish = land;
+        sheet.animate([
+            { opacity: 0, filter: 'blur(10px)', transform: 'translateY(18px)' },
+            { opacity: 1, filter: 'blur(0px)', transform: 'none' }
+        ], { duration: 620, delay: 160, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
     } else {
-        sheet.animate([{ clipPath: to }, { clipPath: from }], { duration: 440, easing: 'cubic-bezier(.6, 0, .8, .4)', fill: 'forwards' });
+        flyer.animate([{ transform: 'none' }, { transform: mid, offset: .5 }, { transform: atSrc }],
+            { duration: 520, easing: 'cubic-bezier(.5, 0, .25, 1)', fill: 'forwards' }).onfinish = land;
+        sheet.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(8px)' }],
+            { duration: 260, easing: 'ease-in', fill: 'forwards' });
     }
     return true;
 }

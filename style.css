@@ -1390,6 +1390,9 @@ body.casting .home-main > * {
 .show .gs-glyph .bar:nth-child(3) { animation-delay: .39s; }
 .show .gs-glyph .bar:nth-child(2) { animation-delay: .47s; }
 .show .gs-glyph .bar:nth-child(1) { animation-delay: .55s; }
+/* 从首页飞过来的那份卦画：飞行时在最上层，落地后换回详情页里的真卦画，所以爻条不再逐根落下 */
+.gs-flyer { position: fixed; z-index: 75; margin: 0; pointer-events: none; transform-origin: 0 0; }
+.flown .gs-glyph .bar { animation: none; }
 .show .gs-yao li::before { animation: lead-in .45s var(--ease-out) both; animation-delay: calc(.3s + (5 - var(--r)) * 80ms); }
 .show .gs-yao li span { animation: fade-in .4s ease both; animation-delay: calc(.45s + (5 - var(--r)) * 80ms); }
 @keyframes lead-in { from { transform: scaleX(0); } }
