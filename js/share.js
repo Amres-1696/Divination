@@ -59,8 +59,46 @@ function getCurrentGuaData() {
         symbol: symbolEl ? symbolEl.textContent : '',
         question: (r.dataset.question || '').trim(),
         analysisList: list, changingYaoTexts, changingYaos, hexagramLines,
-        hasChange, cgName, cgSymbol, cgExplain, changePos, date
+        hasChange, cgName, cgSymbol, cgExplain, changePos, date,
+        createdAt: when && !isNaN(when) ? when.toISOString() : ''
     };
+}
+
+// 起卦时刻写成干支农历（乙巳年九月初十 午时）；旧记录没有精确时间时退回原日期字符串
+function shareCardWhen(d) {
+    const when = d.createdAt ? new Date(d.createdAt) : null;
+    if (!when || isNaN(when)) return { lunar: '', solar: d.date || '' };
+    const lu = solarToLunar(when.getFullYear(), when.getMonth() + 1, when.getDate());
+    const shi = DI_ZHI[Math.floor((when.getHours() + 1) / 2) % 12] + '时';
+    const pad = n => String(n).padStart(2, '0');
+    return {
+        lunar: lu ? `${ganZhiYear(lu.year)}年${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)} ${shi}` : '',
+        solar: `${when.getFullYear()}.${pad(when.getMonth() + 1)}.${pad(when.getDate())} ${pad(when.getHours())}:${pad(when.getMinutes())}`
+    };
+}
+
+// 背景：蓝晒纸的细网格、四角裁切线，和压在卦名后面的先天圆环（橙色刻度＝六十四取一）
+function shareCardBackdrop() {
+    const lines = [];
+    for (let x = 24; x < 500; x += 24) lines.push(`<line x1="${x}" y1="0" x2="${x}" y2="888"/>`);
+    for (let y = 24; y < 888; y += 24) lines.push(`<line x1="0" y1="${y}" x2="500" y2="${y}"/>`);
+    const crop = [[18, 18, 1, 1], [482, 18, -1, 1], [18, 870, 1, -1], [482, 870, -1, -1]]
+        .map(([x, y, sx, sy]) => `<path d="M${x} ${y + sy * 22}V${y}H${x + sx * 22}"/>`).join('');
+    return `<svg class="sc-bg" width="500" height="888" viewBox="0 0 500 888" aria-hidden="true">
+<g stroke="#EEF2F7" stroke-opacity=".05" stroke-width="1">${lines.join('')}</g>
+<g stroke="#EEF2F7" stroke-opacity=".5" stroke-width="1.2" fill="none">${crop}</g></svg>`;
+}
+function shareCardRing() {
+    const cx = 392, cy = 150, ticks = [];
+    for (let k = 0; k < 64; k++) {
+        const a = k * 5.625 * Math.PI / 180, on = k === 0;
+        const r1 = on ? 100 : 118, r2 = on ? 146 : (k % 8 === 0 ? 132 : 126);
+        ticks.push(`<line x1="${(cx + r1 * Math.sin(a)).toFixed(1)}" y1="${(cy - r1 * Math.cos(a)).toFixed(1)}" x2="${(cx + r2 * Math.sin(a)).toFixed(1)}" y2="${(cy - r2 * Math.cos(a)).toFixed(1)}" stroke="${on ? '#FF8A5C' : '#EEF2F7'}" stroke-opacity="${on ? 1 : .32}" stroke-width="${on ? 2.4 : 1}"/>`);
+    }
+    return `<svg class="sc-ring" width="500" height="300" viewBox="0 0 500 300" aria-hidden="true">
+<circle cx="${cx}" cy="${cy}" r="138" fill="none" stroke="#EEF2F7" stroke-opacity=".14"/>
+<circle cx="${cx}" cy="${cy}" r="104" fill="none" stroke="#EEF2F7" stroke-opacity=".22" stroke-dasharray="2 5"/>
+${ticks.join('')}</svg>`;
 }
 
 function createShareCard(d) {
@@ -69,33 +107,42 @@ function createShareCard(d) {
     const verdict = guaEntry ? getVerdict(guaEntry) : 'ping';
     const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
     const hexLines = (d.hexagramLines && d.hexagramLines.length === 6) ? d.hexagramLines : [8, 8, 8, 8, 8, 8];
-    // 分享卡用内联颜色画卦，不依赖页面 CSS（html2canvas 取色更稳）
-    const yao = buildYaoArtSvg(hexLines, d.changingYaos || [])
-        .replace(/class="yao-svg-line changing"/g, 'style="stroke:#FF8A5C;fill:none"')
-        .replace(/class="yao-svg-line"/g, 'style="stroke:#EEF2F7;fill:none"');
-    // 先天方图缩略：六十四格里只亮这一格
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
     const v = shaoValue(bits.slice().reverse().join(''));
-    let cells = '';
-    for (let k = 0; k < 64; k++) cells += `<i class="${k === v ? 'on' : ''}"></i>`;
     const ordinal = guaEntry ? guaOrdinal(guaEntry) : '';
     const main = (d.analysisList || [])[0] || '';
     const reading = (d.analysisList || []).slice(1).join('');
+    const when = shareCardWhen(d);
+    // 大卦画：六根爻条从卡片左缘伸进来，动爻橙色，并按古法在末端标 ○（老阳）/ ×（老阴）
+    const bars = hexLines.map((line, i) => {
+        const yang = line === 7 || line === 9, moving = line === 9 || line === 6;
+        const top = 16 + (5 - i) * 48;
+        const cls = 'sc-bar' + (yang ? '' : ' yin') + (moving ? ' moving' : '');
+        return `<div class="${cls}" style="top:${top}px">${yang ? '' : '<i></i><i></i>'}</div>` +
+            (moving ? `<span class="sc-mark" style="top:${top - 4}px">${line === 9 ? '○' : '×'}</span>` : '');
+    }).join('');
+    const chars = Array.from(d.name || '');
+    const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
 
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card">
-  <div class="sc-top"><span class="sc-brand">天衍</span><span class="sc-date">${escHtml(d.date || '')}</span></div>
-  ${d.question ? `<div class="sc-question"><span>所问</span>${escHtml(d.question)}</div>` : ''}
-  <div class="sc-figure">
-    <div class="sc-hex">${yao}</div>
-    <div class="sc-map"><div class="sc-grid">${cells}</div><span>六十四卦，取其一</span></div>
+  ${shareCardBackdrop()}
+  <div class="sc-head">
+    <div class="sc-brand">天衍<span>起卦签</span></div>
+    <div class="sc-when">${when.lunar ? `<b>${escHtml(when.lunar)}</b>` : ''}<span>${escHtml(when.solar)}</span></div>
   </div>
-  <div class="sc-name-row"><span class="sc-name">${escHtml(d.name || '')}</span><span class="sc-verdict sc-${verdict}">${verdictText[verdict]}</span></div>
-  <div class="sc-sub">${ordinal}${d.title ? '　' + escHtml(d.title) : ''}</div>
-  ${d.hasChange && d.cgName ? `<div class="sc-change">变为 ${escHtml(d.cgName)}${d.changePos ? `　${escHtml(d.changePos.replace('变爻位置：', ''))}` : ''}</div>` : ''}
+  <div class="sc-stage">
+    ${shareCardRing()}
+    ${bars}
+    <div class="sc-name${chars.length > 3 ? ' long' : ''}">${nameHtml}</div>
+    <div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div>
+  </div>
+  <div class="sc-meta">${ordinal}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}${d.title ? `<em>·</em>${escHtml(d.title)}` : ''}</div>
+  ${d.hasChange && d.cgName ? `<div class="sc-change">之卦　${escHtml(d.cgName)}${d.changePos ? `　<span>${escHtml(d.changePos.replace('变爻位置：', ''))}</span>` : ''}</div>` : ''}
+  ${d.question ? `<div class="sc-ask"><span>所问</span>${escHtml(d.question)}</div>` : ''}
   ${main ? `<div class="sc-main">${escHtml(main)}</div>` : ''}
   ${reading ? `<div class="sc-reading">${escHtml(reading)}</div>` : ''}
-  <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>天衍 · 周易六十四卦</span></div>
+  <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>六十四卦 · 取其一</span></div>
 </div>`;
 }
 
@@ -176,8 +223,10 @@ async function shareAsImage() {
     const preview = document.getElementById('shareImagePreview');
     const data = getCurrentGuaData();
     if (!data) { showToast('请先占卜', 'error'); return; }
-    preview.innerHTML = '<p class="share-loading">正在生成…</p>';
+    preview.classList.remove('developing');
+    preview.innerHTML = '<div class="share-paper"><span>显影中</span></div>';
     container.classList.add('show');
+    shareBoxMotion(container, true);
 
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
@@ -218,6 +267,8 @@ async function shareAsImage() {
             preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「下载图片」。</p>';
         };
         imgEl.src = objectUrl;
+        // 图片像蓝晒照片一样显影：先过曝发白，再慢慢显出蓝色，一道光从上往下扫过
+        preview.classList.add('developing');
 
         document.getElementById('shareDownloadBtn').onclick = () => {
             try {
@@ -266,8 +317,32 @@ async function shareAsImage() {
     }
 }
 
+// 分享弹层从「生成分享图」按钮的位置升起放大；关闭时缩回按钮
+function shareBoxMotion(container, open) {
+    const box = container && container.querySelector('.share-box');
+    const btn = document.getElementById('shareBtn');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!box || !btn || typeof box.animate !== 'function' || reduce) return;
+    box.getAnimations().forEach(a => a.cancel());
+    const b = box.getBoundingClientRect(), s = btn.getBoundingClientRect();
+    if (!s.width || !b.width) return;
+    const dx = (s.left + s.width / 2) - (b.left + b.width / 2);
+    const dy = (s.top + s.height / 2) - (b.top + b.height / 2);
+    const at = `translate(${dx}px, ${dy}px) scale(${Math.max(.12, s.width / b.width).toFixed(3)})`;
+    const frames = [
+        { transform: at, opacity: 0, borderRadius: '2px' },
+        { transform: `translate(${dx * .18}px, ${dy * .18 - 18}px) scale(.94)`, opacity: 1, offset: .6 },
+        { transform: 'none', opacity: 1 }
+    ];
+    if (open) box.animate(frames, { duration: 620, easing: 'cubic-bezier(.2, .8, .25, 1)' });
+    // 收回后停在按钮处（下次打开前会先取消），免得弹层淡出前闪回原位
+    else box.animate(frames.slice().reverse(), { duration: 300, easing: 'cubic-bezier(.5, 0, .75, .2)', fill: 'forwards' });
+}
+
 function closeShare() {
-    document.getElementById('shareImageContainer').classList.remove('show');
+    const container = document.getElementById('shareImageContainer');
+    if (container.classList.contains('show')) shareBoxMotion(container, false);
+    container.classList.remove('show');
     if (_lastBlobUrl) {
         URL.revokeObjectURL(_lastBlobUrl);
         _lastBlobUrl = null;
