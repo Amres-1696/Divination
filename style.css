@@ -387,11 +387,9 @@ body.casting .home-main > * {
   letter-spacing: .14em;
   text-indent: .14em;
 }
-.home-lede { margin-top: 20px; font-size: 17.5px; line-height: 1.75; color: var(--ink-2); }
-.question-area { margin-top: 38px; }
-.field-label { display: block; font-size: 13px; letter-spacing: .3em; text-indent: .3em; color: var(--ink-3); }
+.question-area { margin-top: 44px; }
 /* 尺寸线：两端短竖线，聚焦时变橙 */
-.q-field { position: relative; margin-top: 4px; border-bottom: 1px solid var(--ink); transition: border-color .25s ease; }
+.q-field { position: relative; border-bottom: 1px solid var(--ink); transition: border-color .25s ease; }
 .q-field::before, .q-field::after {
   content: "";
   position: absolute;
@@ -417,7 +415,6 @@ body.casting .home-main > * {
   border-radius: 0;
   outline: none;
 }
-#question::placeholder { color: var(--ink-3); opacity: .9; }
 .q-count { position: absolute; right: 0; top: calc(100% + 7px); font-size: 11px; color: var(--ink-3); letter-spacing: .05em; }
 .form-row { margin-top: 34px; display: flex; align-items: center; justify-content: center; gap: 22px; }
 
@@ -1564,7 +1561,6 @@ body.casting .home-main > * {
 /* ---------- 矮屏：首页不滚动，按高度收紧 ---------- */
 @media (max-height: 720px) {
   .home-title { font-size: clamp(52px, 10vh, 96px); }
-  .home-lede { margin-top: 10px; font-size: 15.5px; line-height: 1.6; }
   .question-area { margin-top: 16px; }
   .daily-gua { margin-top: 18px; }
 }
@@ -1588,7 +1584,6 @@ body.casting .home-main > * {
   .nav-tag-text::before { top: -12px; }
   .masthead-nav sup { right: -15px; }
   .home-title { font-size: 74px; }
-  .home-lede { font-size: 16px; margin-top: 16px; }
   .question-area { margin-top: 30px; }
   #question { font-size: 19px; }
   .btn-divine { padding: 11px 26px; }

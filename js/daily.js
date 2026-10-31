@@ -161,8 +161,11 @@ function guaSheetFlight(overlay, open) {
     if (!s.width) return false;
     if (overlay._flyer) overlay._flyer.remove();
     sheet.getAnimations().forEach(a => a.cancel());
-    // 详情框自带的上移缩放入场会让落点量不准，交给这里的动画接管
+    // 详情框自带的上移缩放入场（CSS 过渡）会让落点偏下约 18px，卦画落地后整框再往上滑一下。
+    // 连过渡一起关掉、立即生效后再量落点，入场交给这里的动画接管
+    sheet.style.transition = 'none';
     sheet.style.transform = 'none';
+    sheet.offsetWidth;
     overlay.classList.add('flown');
     const g = glyph.getBoundingClientRect();
     const flyer = document.createElement('div');
