@@ -387,7 +387,8 @@ body.casting .home-main > * {
   letter-spacing: .14em;
   text-indent: .14em;
 }
-.question-area { margin-top: 44px; }
+/* 标题和输入区拉开：标题升到圆图上半部，输入区和按钮留在圆心附近 */
+.question-area { margin-top: clamp(64px, 13vh, 130px); }
 /* 尺寸线：两端短竖线，聚焦时变橙 */
 .q-field { position: relative; border-bottom: 1px solid var(--ink); transition: border-color .25s ease; }
 .q-field::before, .q-field::after {
@@ -1561,7 +1562,7 @@ body.casting .home-main > * {
 /* ---------- 矮屏：首页不滚动，按高度收紧 ---------- */
 @media (max-height: 720px) {
   .home-title { font-size: clamp(52px, 10vh, 96px); }
-  .question-area { margin-top: 16px; }
+  .question-area { margin-top: clamp(40px, 9vh, 64px); }
   .daily-gua { margin-top: 18px; }
 }
 /* 手机横屏这类实在放不下的高度，退回可以滚动，免得内容被裁掉 */
@@ -1584,7 +1585,7 @@ body.casting .home-main > * {
   .nav-tag-text::before { top: -12px; }
   .masthead-nav sup { right: -15px; }
   .home-title { font-size: 74px; }
-  .question-area { margin-top: 30px; }
+  .question-area { margin-top: clamp(56px, 10vh, 96px); }
   #question { font-size: 19px; }
   .btn-divine { padding: 11px 26px; }
   .daily-gua { margin-top: 40px; }
