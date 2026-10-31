@@ -110,7 +110,25 @@ function archiveFlight(panel, tag, open) {
     clearTimeout(panel._flightTimer);
     const showRingSlots = () => { (panel._ringSlots || []).forEach(el => { el.style.visibility = ''; }); panel._ringSlots = []; };
     if (open) showRingSlots();
+    const toItem = !open && panel._toItem;
+    panel._toItem = false;
     [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    // 从牌册打开某一卦：不让卦飞回圆图，圆图空位立刻还原（被点的那一卦要从它的位置起飞），面板轻轻淡去
+    if (toItem) {
+        showRingSlots();
+        panel.classList.add('morphing');
+        panel.classList.remove('flying', 'flown');
+        panel.animate([{ opacity: 1, transform: 'none', filter: 'blur(0px)' }, { opacity: 0, transform: 'scale(.985)', filter: 'blur(6px)' }],
+            { duration: 300, easing: 'ease-in', fill: 'forwards' });
+        panel._flightTimer = setTimeout(() => {
+            panel.style.transition = 'none';
+            panel.classList.remove('morphing');
+            panel.offsetHeight;
+            panel.style.transition = '';
+            panel.getAnimations().forEach(a => a.cancel());
+        }, 330);
+        return;
+    }
     panel.classList.add('morphing', 'flying');
     // 卦是飞进格子亮起来的，落定后不再让亮格子另放一遍逐个点亮的动画
     panel.classList.toggle('flown', open);

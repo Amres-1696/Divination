@@ -255,7 +255,11 @@ function loadHistoryItem(id, fromRect) {
     const bin = item.binary || guaBinary(gua);
     // 从牌册缩略图的位置飞到结果页
     const source = fromRect ? { cosmosValue: shaoValue(bin), fromRect } : null;
+    // 打开某一卦：牌册不要走「卦飞回圆图」的普通关闭，只淡去，把舞台交给这一卦飞向结果页
+    const panel = document.getElementById('historyPanel');
+    if (panel) panel._toItem = true;
     toggleHistory(false);
+    if (panel) panel._toItem = false;   // 没走过渡（如减少动态效果）时也不留到下一次关闭
     if (item.hexagramLines && item.hexagramLines.length === 6) {
         renderResult(gua, item.hexagramLines, change, item.question, bin, source, item.aiReading, readingContext);
     } else {
