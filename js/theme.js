@@ -102,10 +102,14 @@ function morphPanelFromTag(panel, open) {
 // ---------- 牌册：抽到过的卦飞进方图 ----------
 // 点「牌册」时挂签被往下一拽；只有亮着的（抽到过的）卦飞：在首页时从圆图上各自的位置飞进牌册的
 // 8×8 方图，其他页面没有圆图，就从挂签里散出来落进格子。没抽到过的淡格子原地不动。关闭时原路飞回。
-// 飞行的是克隆，亮格子里的真卦画在落定前先藏起来（.flying）
+// 飞行的是克隆，亮格子里的真卦画在落定前先藏起来（.flying）；圆图上飞走的那几卦留出空位，
+// 牌册开着时一直空着，关上后卦飞回原位才重新出现
+const RING_SPIN_DEG_PER_MS = 360 / 520000;   // 与 CSS cosmos-spin 的 520s 一圈一致
 function archiveFlight(panel, tag, open) {
     if (panel._flyers) panel._flyers.remove();
     clearTimeout(panel._flightTimer);
+    const showRingSlots = () => { (panel._ringSlots || []).forEach(el => { el.style.visibility = ''; }); panel._ringSlots = []; };
+    if (open) showRingSlots();
     [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
     panel.classList.add('morphing', 'flying');
     // 卦是飞进格子亮起来的，落定后不再让亮格子另放一遍逐个点亮的动画
@@ -137,6 +141,10 @@ function archiveFlight(panel, tag, open) {
             size = r.width * .72;
             rot = Math.atan2(sx - hcx, hcy - sy) * 180 / Math.PI;
             op = .46;
+            if (open) {
+                cg.style.visibility = 'hidden';
+                (panel._ringSlots = panel._ringSlots || []).push(cg);
+            }
         } else {
             sx = tr.left + tr.width / 2; sy = tr.top + tr.height * .6;
             size = 6; rot = 0; op = 0;
@@ -148,9 +156,8 @@ function archiveFlight(panel, tag, open) {
         layer.appendChild(f);
         // 落地时正好是这一格的亮度（抽到次数越多越亮）
         const endOp = Number(getComputedStyle(el).opacity) || 1;
-        const from = `translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${(size / t.width).toFixed(3)})`;
         const order = (v >> 3) + (v & 7);
-        flights.push({ f, from, op, endOp, order });
+        flights.push({ f, t, sx, sy, size, rot, op, endOp, order, onRing: !!cg });
     });
     document.body.appendChild(layer);
     panel._flyers = layer;
@@ -159,10 +166,19 @@ function archiveFlight(panel, tag, open) {
     // 按方图上从左上到右下的次序一个接一个飞；卦少时间隔大一些，卦多时总共也不超过约 0.7 秒
     flights.sort((a, b) => a.order - b.order);
     const step = flights.length > 1 ? Math.min(90, 700 / (flights.length - 1)) : 0;
-    flights.forEach(({ f, from, op, endOp }, rank) => {
+    flights.forEach(({ f, t, sx, sy, size, rot, op, endOp, onRing }, rank) => {
         const delay = open ? rank * step : (flights.length - 1 - rank) * step * .6;
         const dur = open ? 760 : 520;
         longest = Math.max(longest, delay + dur);
+        // 飞回圆图时圆图还在慢慢转：按落地那一刻转过的角度修正落点，正好落回自己的空位
+        if (!open && onRing) {
+            const d = RING_SPIN_DEG_PER_MS * (delay + dur), a = d * Math.PI / 180;
+            const ox = sx - hcx, oy = sy - hcy;
+            sx = hcx + ox * Math.cos(a) - oy * Math.sin(a);
+            sy = hcy + ox * Math.sin(a) + oy * Math.cos(a);
+            rot += d;
+        }
+        const from = `translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${(size / t.width).toFixed(3)})`;
         // 从挂签散出来的卦起点太小，先隐着，飞出一小段再显出来；
         // 飞行中途亮起来看得清，落地时正好是这一格的亮度
         const frames = op
@@ -184,7 +200,10 @@ function archiveFlight(panel, tag, open) {
         panel.classList.remove('morphing', 'flying');
         panel.offsetHeight;
         panel.style.transition = '';
-        if (!open) panel.getAnimations().forEach(a => a.cancel());
+        if (!open) {
+            panel.getAnimations().forEach(a => a.cancel());
+            showRingSlots();
+        }
     }, longest + 30);
 }
 
