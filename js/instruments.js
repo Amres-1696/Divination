@@ -1,5 +1,5 @@
 // instruments —— 生辰与配置的输入器具
-// 年份是一把可拖动的刻度尺，月日是一页带农历的小月历，时辰是一面十二时辰钟（拖指针选）。
+// 年份拨算盘，月日是一条可拖动的月相带，时辰是一面十二时辰钟（拖指针选）。
 // 原生 input / select 仍是数据源（settings.js 照常读写），这里只负责画和同步。
 
 function hookValue(el, onSet) {
@@ -14,127 +14,104 @@ function hookValue(el, onSet) {
 }
 const _reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-// ---------- 年：刻度尺 ----------
-function makeYearRuler(input, onChange) {
-    const MIN = 1900, MAX = 2100, STEP = 11, DEFAULT = 1990;
+// ---------- 年：算盘 ----------
+// 四档算珠是千、百、十、个位：上面一颗「五」珠，下面四颗「一」珠，靠梁的才算数。
+// 点一颗珠子就拨上或拨下；拨出的年份超出 1900–2100 时归到边界，算珠跟着滑过去。
+// 右边大字读出年份，写出干支、生肖和正月初一的公历日期（春节前出生算上一年）。
+const YEAR_ZODIAC = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+
+function makeYearAbacus(input, onChange) {
+    const MIN = 1900, MAX = 2100, PLACES = ['千', '百', '十', '个'];
     const root = document.createElement('div');
-    root.className = 'ruler';
-    root.tabIndex = 0;
-    root.setAttribute('role', 'slider');
-    root.setAttribute('aria-label', '出生年份');
-    root.setAttribute('aria-valuemin', MIN);
-    root.setAttribute('aria-valuemax', MAX);
-    const ticks = [];
-    for (let y = MIN; y <= MAX; y++) {
-        const x = (y - MIN) * STEP;
-        const major = y % 10 === 0, mid = y % 5 === 0;
-        ticks.push(`<line x1="${x}" x2="${x}" y1="0" y2="${major ? 16 : mid ? 10 : 6}" class="${major ? 'rt-major' : 'rt-minor'}"/>`);
-        if (major) ticks.push(`<text x="${x}" y="30">${y}</text>`);
-    }
-    const width = (MAX - MIN) * STEP;
-    root.innerHTML = `
-<div class="ruler-read"><b class="ruler-year">—</b><span>年</span><em class="ruler-hint">左右拖动刻度尺</em></div>
-<div class="ruler-window">
-  <svg class="ruler-tape" width="${width}" height="36" viewBox="0 0 ${width} 36" aria-hidden="true">${ticks.join('')}</svg>
-  <i class="ruler-needle" aria-hidden="true"></i>
+    root.className = 'abacus-year';
+    const rod = (p, i) => `
+<div class="ab-rod" data-i="${i}" tabindex="0" role="spinbutton" aria-label="${p}位" aria-valuemin="0" aria-valuemax="9">
+  <i class="ab-line" aria-hidden="true"></i>
+  <button type="button" class="ab-bead heaven" data-k="5" tabindex="-1" aria-hidden="true"></button>
+  ${[0, 1, 2, 3].map(k => `<button type="button" class="ab-bead earth" data-k="${k}" tabindex="-1" aria-hidden="true"></button>`).join('')}
+  <span class="ab-digit" aria-hidden="true"></span>
 </div>`;
-    const tape = root.querySelector('.ruler-tape');
-    const win = root.querySelector('.ruler-window');
-    const read = root.querySelector('.ruler-year');
-    let pos = DEFAULT, has = false, anim = 0;
-    const setRaw = hookValue(input, () => fromInput(true));
+    root.innerHTML = `
+<div class="ab-frame">
+  <i class="ab-beam" aria-hidden="true"></i>
+  ${PLACES.map(rod).join('')}
+</div>
+<div class="ab-read" aria-live="polite"><b class="ab-year">—</b><span class="ab-gz"></span><small class="ab-ny"></small></div>`;
+    const rods = Array.from(root.querySelectorAll('.ab-rod'));
+    const yearEl = root.querySelector('.ab-year'), gzEl = root.querySelector('.ab-gz'), nyEl = root.querySelector('.ab-ny');
+    const setRaw = hookValue(input, () => fromInput());
+    let value = null;
 
-    function draw() {
-        const cx = win.clientWidth / 2;
-        tape.style.transform = `translate3d(${(cx - (pos - MIN) * STEP).toFixed(1)}px,0,0)`;
-        const y = Math.round(pos);
-        read.textContent = has ? y : '—';
-        root.classList.toggle('empty', !has);
-        root.setAttribute('aria-valuenow', has ? y : DEFAULT);
-        root.setAttribute('aria-valuetext', has ? `${y} 年` : '未选择');
-    }
-    function clamp(v) { return Math.min(MAX, Math.max(MIN, v)); }
-    function animateTo(target, commit) {
-        cancelAnimationFrame(anim);
-        target = clamp(target);
-        const from = pos, t0 = performance.now(), dur = _reduceMotion() ? 0 : 420;
-        const stepFn = now => {
-            const t = dur ? Math.min(1, (now - t0) / dur) : 1;
-            pos = from + (target - from) * (1 - Math.pow(1 - t, 3));
-            draw();
-            if (t < 1) anim = requestAnimationFrame(stepFn);
-            else if (commit) commitYear(Math.round(target));
-        };
-        anim = requestAnimationFrame(stepFn);
-    }
-    function commitYear(y) {
-        has = true;
-        setRaw(String(y));
-        draw();
-        if (onChange) onChange(y);
-    }
-    function fromInput(animated) {
-        const v = parseInt(input.value, 10);
-        if (v >= MIN && v <= MAX) {
-            has = true;
-            if (animated && root.isConnected && root.offsetParent) animateTo(v, false);
-            else { pos = v; draw(); }
-        } else { has = false; pos = DEFAULT; draw(); }
-        if (onChange) onChange(has ? v : null);
-    }
-
-    // 拖动，松手后带一点惯性再吸附到整年
-    let drag = null;
-    win.addEventListener('pointerdown', e => {
-        cancelAnimationFrame(anim);
-        win.setPointerCapture(e.pointerId);
-        drag = { x: e.clientX, pos, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false };
-        root.classList.add('dragging');
-    });
-    win.addEventListener('pointermove', e => {
-        if (!drag) return;
-        const now = performance.now();
-        const dx = e.clientX - drag.x;
-        if (Math.abs(dx) > 3) drag.moved = true;
-        pos = clamp(drag.pos - dx / STEP);
-        has = true;
-        drag.v = (e.clientX - drag.lastX) / Math.max(1, now - drag.lastT);
-        drag.lastX = e.clientX; drag.lastT = now;
-        draw();
-    });
-    const end = e => {
-        if (!drag) return;
-        root.classList.remove('dragging');
-        let target;
-        if (!drag.moved) {
-            // 点按刻度：跳到那一年
-            const r = win.getBoundingClientRect();
-            target = pos + (e.clientX - (r.left + r.width / 2)) / STEP;
-        } else {
-            target = pos - drag.v * 180 / STEP;
+    // 这一年正月初一落在公历哪天
+    function newYearDay(y) {
+        for (let d = new Date(y, 0, 15); d.getMonth() < 3; d.setDate(d.getDate() + 1)) {
+            const lu = solarToLunar(y, d.getMonth() + 1, d.getDate());
+            if (lu && lu.month === 1 && lu.day === 1 && !lu.isLeap) return `${d.getMonth() + 1}月${d.getDate()}日`;
         }
-        drag = null;
-        animateTo(Math.round(clamp(target)), true);
-    };
-    win.addEventListener('pointerup', end);
-    win.addEventListener('pointercancel', end);
-    // 只认横向滚动（触控板左右划、Shift+滚轮）；竖向滚轮留给设置面板滚动，免得划过刻度尺时误改年份
-    root.addEventListener('wheel', e => {
-        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
-        if (!d) return;
-        e.preventDefault();
-        const base = has ? Math.round(pos) : DEFAULT;
-        animateTo(base + Math.sign(d) * (Math.abs(d) > 60 ? 2 : 1), true);
-    }, { passive: false });
-    root.addEventListener('keydown', e => {
-        const base = has ? Math.round(pos) : DEFAULT;
-        const map = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -10, PageUp: 10 };
-        if (map[e.key] !== undefined) { e.preventDefault(); animateTo(base + map[e.key], true); }
-        else if (e.key === 'Home') { e.preventDefault(); animateTo(MIN, true); }
-        else if (e.key === 'End') { e.preventDefault(); animateTo(MAX, true); }
+        return '';
+    }
+    const digitsOf = y => String(y).padStart(4, '0').split('').map(Number);
+    // 按每档数字摆算珠：五珠 ≥5 时靠梁；一珠靠梁的颗数 = 数字除以 5 的余数
+    function place(y) {
+        digitsOf(y).forEach((d, i) => {
+            const r = rods[i];
+            r.querySelector('.heaven').classList.toggle('on', d >= 5);
+            r.querySelectorAll('.earth').forEach(b => b.classList.toggle('on', Number(b.dataset.k) < d % 5));
+            r.querySelector('.ab-digit').textContent = d;
+            r.setAttribute('aria-valuenow', d);
+        });
+    }
+    function show() {
+        root.classList.toggle('empty', value == null);
+        place(value == null ? 1990 : value);
+        if (value == null) {
+            yearEl.textContent = '—';
+            gzEl.textContent = '拨动算珠，定出生年份';
+            nyEl.textContent = '';
+            return;
+        }
+        yearEl.innerHTML = `${value}<span>年</span>`;
+        gzEl.textContent = `${ganZhiYear(value)}年 · 属${YEAR_ZODIAC[lunarYearBranch(value) - 1]}`;
+        const ny = newYearDay(value);
+        nyEl.textContent = ny ? `正月初一在 ${ny}，之前出生算上一年` : '';
+    }
+    function commit(y) {
+        value = Math.min(MAX, Math.max(MIN, y));
+        setRaw(String(value));
+        show();
+        if (onChange) onChange(value);
+    }
+    function setDigit(i, d) {
+        const ds = digitsOf(value == null ? 1990 : value);
+        ds[i] = Math.min(9, Math.max(0, d));
+        commit(Number(ds.join('')));
+    }
+    function fromInput() {
+        const v = parseInt(input.value, 10);
+        value = v >= MIN && v <= MAX ? v : null;
+        show();
+        if (onChange) onChange(value);
+    }
+
+    rods.forEach((r, i) => {
+        r.addEventListener('click', e => {
+            const b = e.target.closest('.ab-bead');
+            if (!b) return;
+            const d = digitsOf(value == null ? 1990 : value)[i];
+            if (b.classList.contains('heaven')) { setDigit(i, d >= 5 ? d - 5 : d + 5); return; }
+            // 和真算盘一样：点一颗靠梁的一珠，它和外侧的珠子一起拨开；点一颗离梁的，它和内侧的一起拨上梁
+            const k = Number(b.dataset.k), count = d % 5, base = d - count;
+            setDigit(i, base + (k < count ? k : k + 1));
+        });
+        r.addEventListener('keydown', e => {
+            const map = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 };
+            if (map[e.key] === undefined) return;
+            e.preventDefault();
+            const d = digitsOf(value == null ? 1990 : value)[i];
+            setDigit(i, d + map[e.key]);
+        });
     });
-    if (window.ResizeObserver) new ResizeObserver(draw).observe(win);
-    fromInput(false);
+    fromInput();
     return root;
 }
 
@@ -229,7 +206,7 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
         const shown = has || !!drag;
         if (shown) {
             read.innerHTML = `${x.m}月${x.d}日<small>周${BAND_WEEK_CN[x.w]}</small>`;
-            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '';
+            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '早于农历历表起点（1900 年正月初一），按公历起卦';
         } else {
             read.textContent = '—';
             lunarLine.textContent = '左右拖动月相带，让出生那天停在指针下';
@@ -493,13 +470,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const day = document.getElementById('baziDay');
     const hour = document.getElementById('baziHour');
     const slots = {
-        ruler: document.getElementById('rulerSlot'),
+        year: document.getElementById('yearSlot'),
         cal: document.getElementById('calSlot'),
         dial: document.getElementById('dialSlot')
     };
-    if (year && month && day && hour && slots.ruler) {
+    if (year && month && day && hour && slots.year) {
         let cal = null;
-        slots.ruler.appendChild(makeYearRuler(year, () => { if (cal) cal._refresh(); }));
+        slots.year.appendChild(makeYearAbacus(year, () => { if (cal) cal._refresh(); }));
         cal = makeMoonBand(year, month, day);
         slots.cal.appendChild(cal);
         slots.dial.appendChild(makeHourDial(hour));

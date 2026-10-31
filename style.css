@@ -1084,46 +1084,57 @@ body.casting .home-main > * {
 
 .sr-native { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
-/* 生辰器具：刻度尺（年）、月历（月日）、十二时辰钟（时） */
+/* 生辰器具：算盘（年）、月相带（月日）、十二时辰钟（时） */
 .birth { display: grid; gap: 22px; border-radius: 4px; }
 .birth-row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
 .birth-cal { flex: 1 1 100%; min-width: 0; }
 .birth-dial { flex: 1 1 100%; min-width: 0; display: grid; place-items: center; }
 
-.ruler { position: relative; user-select: none; -webkit-user-select: none; outline-offset: 6px; }
-.ruler-read { display: flex; align-items: baseline; gap: 6px; }
-.ruler-read b { font-family: var(--display); font-size: 30px; font-weight: 400; line-height: 1.1; font-variant-numeric: tabular-nums; min-width: 2.6em; }
-.ruler-read span { font-size: 14px; color: var(--ink-3); }
-.ruler-hint { margin-left: auto; font-style: normal; font-size: 12px; color: var(--ink-3); transition: opacity .3s ease; }
-.ruler:not(.empty) .ruler-hint { opacity: 0; }
-.ruler.empty .ruler-read b { color: var(--ink-3); }
-.ruler-window {
+/* 年：一把四档算盘（千百十个），上一颗五珠、下四颗一珠，靠梁的才算数；右边大字读出年份和干支 */
+.abacus-year { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px; }
+.ab-frame {
   position: relative;
-  height: 46px;
-  margin-top: 6px;
-  overflow: hidden;
-  cursor: grab;
-  touch-action: pan-y;
-  border-top: 1px solid var(--rule);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, 40px);
+  height: 126px;
+  margin-bottom: 20px;
+  padding: 0 8px;
+  box-shadow: inset 0 0 0 1px var(--rule), inset 0 0 0 6px rgba(238, 242, 247, .03);
 }
-.ruler.dragging .ruler-window { cursor: grabbing; }
-.ruler-tape { position: absolute; left: 0; top: 0; will-change: transform; }
-.ruler-tape line { stroke: rgba(238, 242, 247, .32); stroke-width: 1; }
-.ruler-tape line.rt-major { stroke: var(--ink-2); }
-.ruler-tape text { fill: var(--ink-3); font-family: var(--text); font-size: 11px; text-anchor: middle; }
-.ruler-needle { position: absolute; left: 50%; top: 0; bottom: 6px; width: 2px; margin-left: -1px; background: var(--zhu); }
-.ruler-needle::after {
-  content: "";
+.ab-beam { position: absolute; left: 0; right: 0; top: 36px; height: 6px; background: rgba(238, 242, 247, .14); box-shadow: inset 0 1px 0 var(--rule), inset 0 -1px 0 var(--rule); }
+.ab-rod { position: relative; height: 126px; outline: none; }
+.ab-rod:focus-visible { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.ab-line { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 1px; margin-left: -.5px; background: var(--rule); }
+/* 算珠侧面是两头尖的扁菱形 */
+.ab-bead {
   position: absolute;
   left: 50%;
-  top: 0;
-  margin-left: -5px;
-  border: 5px solid transparent;
-  border-top: 6px solid var(--zhu);
+  width: 32px;
+  height: 16px;
+  margin-left: -16px;
+  padding: 0;
+  background: rgba(238, 242, 247, .16);
+  clip-path: polygon(18% 0, 82% 0, 100% 50%, 82% 100%, 18% 100%, 0 50%);
+  transition: transform .3s cubic-bezier(.3, 1.35, .5, 1), background-color .25s ease;
+  cursor: pointer;
 }
-.ruler.empty .ruler-needle { opacity: .45; }
+.ab-bead:hover { background: rgba(238, 242, 247, .32); }
+.ab-bead.heaven { top: 6px; }
+.ab-bead.heaven.on { transform: translateY(14px); background: var(--zhu); }
+.ab-bead.earth[data-k="0"] { top: 56px; }
+.ab-bead.earth[data-k="1"] { top: 72px; }
+.ab-bead.earth[data-k="2"] { top: 88px; }
+.ab-bead.earth[data-k="3"] { top: 104px; }
+.ab-bead.earth.on { transform: translateY(-14px); background: var(--ink); }
+.abacus-year.empty .ab-bead.on { background: rgba(238, 242, 247, .34); }
+.ab-digit { position: absolute; left: 0; right: 0; bottom: -20px; text-align: center; font-size: 12px; line-height: 1; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ab-read { flex: 1 1 100px; display: grid; gap: 4px; min-width: 0; }
+.ab-year { font-family: var(--display); font-weight: 400; font-size: 34px; line-height: 1.1; letter-spacing: .04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ab-year span { margin-left: 6px; font-family: var(--text); font-size: 13px; color: var(--ink-3); }
+.ab-gz { font-family: var(--display); font-size: 16px; letter-spacing: .1em; color: var(--ink); }
+.ab-ny { font-size: 11.5px; line-height: 1.5; color: var(--ink-3); }
+.abacus-year.empty .ab-year, .abacus-year.empty .ab-gz { color: var(--ink-3); }
 
 /* 月相带：一整年的月相排成一条胶片，拖到出生那天停在朱红指针下；上方一排月份做粗调 */
 .band { display: grid; gap: 10px; }
@@ -1526,6 +1537,9 @@ body.casting .home-main > * {
   .nav-tag-text::before { top: -12px; }
   .masthead-nav sup { right: -15px; }
   .band-months button { font-size: 10.5px; letter-spacing: -.06em; }
+  .abacus-year { column-gap: 16px; }
+  .ab-year { font-size: 28px; }
+  .ab-gz { font-size: 14px; }
   .home-title { font-size: 74px; }
   .question-area { margin-top: clamp(56px, 10vh, 96px); }
   #question { font-size: 19px; }
