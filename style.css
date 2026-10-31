@@ -59,14 +59,15 @@ body::before, .mat {
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .075 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(110% 85% at 50% 46%, #1F4A88 0%, var(--blue) 52%, #10294F 100%);
 }
-/* 图框外的一圈纸边：和底纸一模一样，只是盖在内容上面，滚动的内容到图框线就被裁掉 */
+/* 图框外的一圈纸边：和底纸一模一样，只是盖在内容上面，滚动的内容到图框线就被裁掉。
+   顶栏区域不盖，内容可以一直滚到图框顶边 */
 .mat {
   z-index: 2;
   clip-path: polygon(evenodd,
     0 0, 100% 0, 100% 100%, 0 100%, 0 0,
-    var(--frame) calc(var(--frame) + var(--head-h)), var(--frame) calc(100% - var(--frame)),
-    calc(100% - var(--frame)) calc(100% - var(--frame)), calc(100% - var(--frame)) calc(var(--frame) + var(--head-h)),
-    var(--frame) calc(var(--frame) + var(--head-h)));
+    var(--frame) var(--frame), var(--frame) calc(100% - var(--frame)),
+    calc(100% - var(--frame)) calc(100% - var(--frame)), calc(100% - var(--frame)) var(--frame),
+    var(--frame) var(--frame));
 }
 body.dialog-open { overflow: hidden; }
 h1, h2, h3, p, figure, dl, dd { margin: 0; }
@@ -243,7 +244,7 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .cg.hit { --line: var(--zhu); }
 
 /* ---------- 顶栏 ---------- */
-/* 顶栏固定在图框顶部，像图纸上方的一条图签横带；内容滚到它下沿就被纸边遮住 */
+/* 顶栏固定在图框顶部，没有底色和遮罩，内容从它下面滚过去 */
 .masthead {
   position: fixed;
   top: var(--frame);
@@ -256,18 +257,6 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
   align-items: center;
   justify-content: space-between;
 }
-.masthead::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: var(--rule-soft);
-  opacity: 0;
-  transition: opacity .3s ease;
-}
-body.scrolled .masthead::after { opacity: 1; }
 .brand { display: flex; align-items: center; gap: 12px; line-height: 1; padding: 6px 0; transition: opacity .5s ease; }
 .brand b { font-family: var(--display); font-size: 21px; font-weight: 400; letter-spacing: .14em; }
 .brand span { font-size: 12.5px; color: var(--ink-3); padding-left: 12px; border-left: 1px solid var(--rule); letter-spacing: .12em; }
