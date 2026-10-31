@@ -172,6 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initFrameScroll();
     if (typeof Cosmos !== 'undefined') { Cosmos.init(); Cosmos.intro(); }
     playHomeEnter(500);
+    // 顶栏挂签的入场动画播完就撤掉 intro，之后记录数变化不再重播
+    setTimeout(() => document.body.classList.remove('intro'), 2200);
     document.getElementById('homeBtn').addEventListener('click', () => returnToInquiry());
     document.getElementById('questionForm').addEventListener('submit', e => { e.preventDefault(); divine(); });
     const method = document.getElementById('homeMethod');
