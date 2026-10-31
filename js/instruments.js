@@ -138,20 +138,21 @@ function makeYearRuler(input, onChange) {
     return root;
 }
 
-// ---------- 月、日：月相历 ----------
-// 每一天画成那天的月相（按农历日：初一朔、十五望），公历数字叠在月亮上；农历只在初一写月名、十五写「望」。
-// 选中的那天月亮变朱红并套一圈细框。
+// ---------- 月、日：月相带 ----------
+// 一整年的月相排成一条胶片（按农历日：初一朔、十五望，上半月右亮、下半月左亮），
+// 左右拖动，让出生那天停在中间的朱红指针下；上方一排月份做粗调，点哪个月胶片就滑过去。
+// 手感和上面选年份的刻度尺一样：拖动带惯性，松手吸附到整天。
 
-// 农历日 → 月相小图：暗面一整圆，亮面由外侧半圆和明暗交界的半椭圆围成
-function moonSvg(lunarDay) {
-    const r = 8, p = ((lunarDay - 1) % 29.53) / 29.53;
+// 农历日 → 月相亮面的路径：外侧半圆 + 明暗交界的半椭圆；朔日没有亮面
+function moonLitPath(lunarDay, r) {
+    if (lunarDay <= 1) return '';
+    const p = ((lunarDay - 1) % 29.53) / 29.53;
     const k = Math.cos(2 * Math.PI * p);           // 1 = 朔（全暗），-1 = 望（全亮）
     const rx = (r * Math.abs(k)).toFixed(2);
-    const waxing = p < .5;                         // 上半月右边亮，下半月左边亮
+    const waxing = p < .5;
     const outer = waxing ? 1 : 0;
     const inner = waxing ? (k > 0 ? 0 : 1) : (k > 0 ? 1 : 0);
-    const lit = lunarDay <= 1 ? '' : `<path class="moon-lit" d="M0 ${-r}A${r} ${r} 0 0 ${outer} 0 ${r}A${rx} ${r} 0 0 ${inner} 0 ${-r}Z"/>`;
-    return `<svg class="moon" viewBox="-10 -10 20 20" aria-hidden="true"><circle class="moon-dark" r="${r}"/>${lit}</svg>`;
+    return `M0 ${-r}A${r} ${r} 0 0 ${outer} 0 ${r}A${rx} ${r} 0 0 ${inner} 0 ${-r}Z`;
 }
 function moonPhaseName(lunarDay) {
     if (lunarDay <= 1) return '朔';
@@ -164,87 +165,172 @@ function moonPhaseName(lunarDay) {
     if (lunarDay <= 29) return '残月';
     return '晦';
 }
-const CAL_MONTH_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+const BAND_MONTH_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+const BAND_WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
 
-function makeBirthCalendar(yearInput, monthSel, dayInput) {
+function makeMoonBand(yearInput, monthSel, dayInput) {
+    const STEP = 26, H = 76, R = 7.5;
     const root = document.createElement('div');
-    root.className = 'cal';
+    root.className = 'band';
     root.innerHTML = `
-<div class="cal-head">
-  <button type="button" class="cal-nav" data-d="-1" aria-label="上个月"></button>
-  <span class="cal-title" aria-live="polite"></span>
-  <button type="button" class="cal-nav next" data-d="1" aria-label="下个月"></button>
-</div>
-<div class="cal-week" aria-hidden="true"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
-<div class="cal-grid" role="grid" aria-label="出生日期"></div>
-<p class="cal-lunar"></p>`;
-    const title = root.querySelector('.cal-title');
-    const grid = root.querySelector('.cal-grid');
-    const lunarLine = root.querySelector('.cal-lunar');
-    const setMonthRaw = hookValue(monthSel, () => render(0));
-    const setDayRaw = hookValue(dayInput, () => render(0));
-    let viewYear = 1990, viewMonth = 1;
+<div class="band-read" aria-live="polite"><b class="band-date">—</b><span class="band-lunar"></span></div>
+<div class="band-months" role="group" aria-label="跳到月份">${BAND_MONTH_CN.map((n, i) => `<button type="button" data-m="${i + 1}">${n}</button>`).join('')}</div>
+<div class="band-window" tabindex="0" role="slider" aria-label="出生日期">
+  <div class="band-tape"></div>
+  <i class="band-needle" aria-hidden="true"></i>
+</div>`;
+    const read = root.querySelector('.band-date');
+    const lunarLine = root.querySelector('.band-lunar');
+    const months = Array.from(root.querySelectorAll('.band-months button'));
+    const win = root.querySelector('.band-window');
+    const tape = root.querySelector('.band-tape');
+    const setMonthRaw = hookValue(monthSel, () => fromInputs(true));
+    const setDayRaw = hookValue(dayInput, () => fromInputs(true));
+    let year = 0, days = [], groups = [], pos = 0, has = false, anim = 0, onIdx = -1, drag = null;
 
     function readYear() { const y = parseInt(yearInput.value, 10); return y >= 1900 && y <= 2100 ? y : 1990; }
-    function render(dir) {
-        viewYear = readYear();
-        const m = parseInt(monthSel.value, 10);
-        if (m >= 1 && m <= 12) viewMonth = m;
-        const days = new Date(viewYear, viewMonth, 0).getDate();
-        const first = new Date(viewYear, viewMonth - 1, 1).getDay();
-        let d = parseInt(dayInput.value, 10);
-        if (d > days) { d = days; setDayRaw(String(d)); }
-        // 这个公历月跨了哪几个农历月
-        const luFirst = solarToLunar(viewYear, viewMonth, 1), luLast = solarToLunar(viewYear, viewMonth, days);
-        const span = luFirst && luLast
-            ? `${ganZhiYear(luFirst.year)}年 ${lunarMonthName(luFirst.month, luFirst.isLeap)}` +
-              (luLast.month !== luFirst.month || luLast.isLeap !== luFirst.isLeap
-                  ? ` — ${luLast.year !== luFirst.year ? ganZhiYear(luLast.year) + '年 ' : ''}${lunarMonthName(luLast.month, luLast.isLeap)}` : '')
-            : '';
-        title.innerHTML = `<b class="cal-month">${CAL_MONTH_CN[viewMonth - 1]}月</b><span class="cal-year">${viewYear}</span>` +
-            (span ? `<em class="cal-span">${span}</em>` : '');
-        const cells = [];
-        for (let k = 0; k < first; k++) cells.push('<span class="cal-blank"></span>');
-        for (let day = 1; day <= days; day++) {
-            const lu = solarToLunar(viewYear, viewMonth, day);
-            const lname = lu ? (lu.day === 1 ? lunarMonthName(lu.month, lu.isLeap) : lu.day === 15 ? '望' : '') : '';
-            const sel = day === d && monthSel.value !== '';
-            const label = `${viewMonth}月${day}日` + (lu ? `，农历${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)}` : '');
-            cells.push(`<button type="button" class="cal-day${sel ? ' on' : ''}${lu && lu.day === 1 ? ' new-moon' : ''}" data-day="${day}" aria-pressed="${sel}" aria-label="${label}">` +
-                `${lu ? moonSvg(lu.day) : ''}<b>${day}</b>${lname ? `<small>${lname}</small>` : ''}</button>`);
+    // 这一年的每一天：公历月日、星期、农历，以及在胶片上的位置
+    function build() {
+        year = readYear();
+        days = [];
+        for (let d = new Date(year, 0, 1); d.getFullYear() === year; d.setDate(d.getDate() + 1)) {
+            days.push({ m: d.getMonth() + 1, d: d.getDate(), w: d.getDay(), lu: solarToLunar(year, d.getMonth() + 1, d.getDate()) });
         }
-        grid.innerHTML = cells.join('');
-        if (dir) {
-            grid.classList.remove('slide-l', 'slide-r');
-            grid.offsetHeight;
-            grid.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
-        }
-        const hasDate = d >= 1 && monthSel.value !== '';
-        const lu = hasDate ? solarToLunar(viewYear, viewMonth, d) : null;
-        lunarLine.innerHTML = hasDate
-            ? (lu ? `<span>农历</span>${formatLunar(lu).replace(/^农历/, '')}<em>${moonPhaseName(lu.day)}</em>` : '')
-            : '点选出生那天，下面会显示农历和月相';
-        lunarLine.classList.toggle('muted', !hasDate);
+        const parts = [];
+        days.forEach((x, i) => {
+            const cx = i * STEP + STEP / 2;
+            if (x.d === 1) parts.push(`<line class="bt-month" x1="${i * STEP}" x2="${i * STEP}" y1="2" y2="${H - 2}"/><text class="bt-mname" x="${i * STEP + 5}" y="12">${BAND_MONTH_CN[x.m - 1]}月</text>`);
+            const lit = x.lu ? moonLitPath(x.lu.day, R) : '';
+            const cls = 'bt-day' + (x.lu && x.lu.day === 1 ? ' new' : '') + (x.lu && x.lu.day === 15 ? ' full' : '');
+            parts.push(`<g class="${cls}" transform="translate(${cx} 38)"><circle class="bt-dark" r="${R}"/>${lit ? `<path class="bt-lit" d="${lit}"/>` : ''}<text class="bt-num" y="${R + 14}">${x.d}</text></g>`);
+        });
+        const width = days.length * STEP;
+        tape.innerHTML = `<svg width="${width}" height="${H}" viewBox="0 0 ${width} ${H}" aria-hidden="true">${parts.join('')}</svg>`;
+        groups = Array.from(tape.querySelectorAll('.bt-day'));
+        onIdx = -1;
+        win.setAttribute('aria-valuemin', 1);
+        win.setAttribute('aria-valuemax', days.length);
     }
-    root.querySelectorAll('.cal-nav').forEach(b => b.addEventListener('click', () => {
-        let m = viewMonth + Number(b.dataset.d);
-        const y = readYear();
-        // 到了 1900 年正月 / 2100 年腊月就停住，不要绕回同一年的另一头
-        if ((m < 1 && y <= 1900) || (m > 12 && y >= 2100)) return;
-        if (m < 1) { m = 12; yearInput.value = String(y - 1); }
-        if (m > 12) { m = 1; yearInput.value = String(y + 1); }
-        setMonthRaw(String(m));
-        render(Number(b.dataset.d));
-    }));
-    grid.addEventListener('click', e => {
-        const b = e.target.closest('.cal-day');
-        if (!b) return;
-        setMonthRaw(String(viewMonth));
-        setDayRaw(b.dataset.day);
-        render(0);
+    function clamp(v) { return Math.min(days.length - 1, Math.max(0, v)); }
+    function indexOf(m, d) {
+        const max = new Date(year, m, 0).getDate();
+        return days.findIndex(x => x.m === m && x.d === Math.min(d, max));
+    }
+    function draw() {
+        const cx = win.clientWidth / 2;
+        tape.style.transform = `translate3d(${(cx - (pos * STEP + STEP / 2)).toFixed(1)}px,0,0)`;
+        const i = Math.round(pos), x = days[i];
+        if (onIdx !== i) {
+            if (groups[onIdx]) groups[onIdx].classList.remove('on');
+            if (groups[i]) groups[i].classList.add('on');
+            onIdx = i;
+        }
+        months.forEach(b => b.classList.toggle('on', Number(b.dataset.m) === x.m));
+        const shown = has || !!drag;
+        if (shown) {
+            read.innerHTML = `${x.m}月${x.d}日<small>周${BAND_WEEK_CN[x.w]}</small>`;
+            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '';
+        } else {
+            read.textContent = '—';
+            lunarLine.textContent = '左右拖动月相带，让出生那天停在指针下';
+        }
+        root.classList.toggle('empty', !shown);
+        win.setAttribute('aria-valuenow', i + 1);
+        win.setAttribute('aria-valuetext', has
+            ? `${x.m}月${x.d}日` + (x.lu ? `，农历${lunarMonthName(x.lu.month, x.lu.isLeap)}${lunarDayName(x.lu.day)}` : '')
+            : '未选择');
+    }
+    function commit(i) {
+        const x = days[i];
+        has = true;
+        setMonthRaw(String(x.m));
+        setDayRaw(String(x.d));
+        draw();
+    }
+    function animateTo(target, doCommit) {
+        cancelAnimationFrame(anim);
+        target = clamp(Math.round(target));
+        const from = pos, t0 = performance.now();
+        // 跨得越远滑得越久，但不超过 0.9 秒
+        const dur = _reduceMotion() ? 0 : Math.min(900, 280 + Math.abs(target - from) * 6);
+        const stepFn = now => {
+            const t = dur ? Math.min(1, (now - t0) / dur) : 1;
+            pos = from + (target - from) * (1 - Math.pow(1 - t, 3));
+            draw();
+            if (t < 1) anim = requestAnimationFrame(stepFn);
+            else if (doCommit) commit(target);
+        };
+        anim = requestAnimationFrame(stepFn);
+    }
+    function fromInputs(animated) {
+        if (readYear() !== year) build();
+        const m = parseInt(monthSel.value, 10), d = parseInt(dayInput.value, 10);
+        if (m >= 1 && m <= 12 && d >= 1) {
+            has = true;
+            const i = indexOf(m, d);
+            if (animated && root.isConnected && root.offsetParent) animateTo(i, false);
+            else { pos = i; draw(); }
+        } else {
+            has = false;
+            pos = indexOf(6, 15);
+            draw();
+        }
+    }
+
+    // 拖动：松手后带一点惯性再吸附到整天；轻点某一天直接滑过去
+    win.addEventListener('pointerdown', e => {
+        cancelAnimationFrame(anim);
+        win.setPointerCapture(e.pointerId);
+        drag = { x: e.clientX, pos, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false };
+        root.classList.add('dragging');
     });
-    root._refresh = () => render(0);
-    render(0);
+    win.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const now = performance.now(), dx = e.clientX - drag.x;
+        if (Math.abs(dx) > 3) drag.moved = true;
+        pos = clamp(drag.pos - dx / STEP);
+        drag.v = (e.clientX - drag.lastX) / Math.max(1, now - drag.lastT);
+        drag.lastX = e.clientX; drag.lastT = now;
+        draw();
+    });
+    const end = e => {
+        if (!drag) return;
+        root.classList.remove('dragging');
+        const r = win.getBoundingClientRect();
+        const target = drag.moved ? pos - drag.v * 260 / STEP : pos + (e.clientX - (r.left + r.width / 2)) / STEP;
+        drag = null;
+        animateTo(target, true);
+    };
+    win.addEventListener('pointerup', end);
+    win.addEventListener('pointercancel', end);
+    // 只认横向滚动，竖向滚轮留给设置面板
+    win.addEventListener('wheel', e => {
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!d) return;
+        e.preventDefault();
+        animateTo(Math.round(pos) + Math.sign(d) * (Math.abs(d) > 60 ? 3 : 1), true);
+    }, { passive: false });
+    win.addEventListener('keydown', e => {
+        const i = Math.round(pos), x = days[i];
+        let target = null;
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') target = i - 1;
+        else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') target = i + 1;
+        else if (e.key === 'PageUp') target = indexOf(Math.max(1, x.m - 1), x.d);
+        else if (e.key === 'PageDown') target = indexOf(Math.min(12, x.m + 1), x.d);
+        else if (e.key === 'Home') target = 0;
+        else if (e.key === 'End') target = days.length - 1;
+        if (target == null) return;
+        e.preventDefault();
+        animateTo(target, true);
+    });
+    months.forEach(b => b.addEventListener('click', () => {
+        const x = days[Math.round(pos)];
+        animateTo(indexOf(Number(b.dataset.m), has ? x.d : 1), true);
+    }));
+    if (window.ResizeObserver) new ResizeObserver(draw).observe(win);
+    root._refresh = () => fromInputs(false);
+    build();
+    fromInputs(false);
     return root;
 }
 
@@ -414,7 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (year && month && day && hour && slots.ruler) {
         let cal = null;
         slots.ruler.appendChild(makeYearRuler(year, () => { if (cal) cal._refresh(); }));
-        cal = makeBirthCalendar(year, month, day);
+        cal = makeMoonBand(year, month, day);
         slots.cal.appendChild(cal);
         slots.dial.appendChild(makeHourDial(hour));
     }

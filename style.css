@@ -1087,8 +1087,8 @@ body.casting .home-main > * {
 /* 生辰器具：刻度尺（年）、月历（月日）、十二时辰钟（时） */
 .birth { display: grid; gap: 22px; border-radius: 4px; }
 .birth-row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
-.birth-cal { flex: 1 1 210px; min-width: 0; }
-.birth-dial { flex: 1 1 170px; min-width: 0; display: grid; place-items: center; }
+.birth-cal { flex: 1 1 100%; min-width: 0; }
+.birth-dial { flex: 1 1 100%; min-width: 0; display: grid; place-items: center; }
 
 .ruler { position: relative; user-select: none; -webkit-user-select: none; outline-offset: 6px; }
 .ruler-read { display: flex; align-items: baseline; gap: 6px; }
@@ -1125,62 +1125,55 @@ body.casting .home-main > * {
 }
 .ruler.empty .ruler-needle { opacity: .45; }
 
-/* 月相历：标题是大号的「五月」配年份，下面注明跨了哪几个农历月；每天一枚月相，选中的月亮变朱红 */
-.cal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-.cal-title { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: center; column-gap: 8px; text-align: center; }
-.cal-month { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.1; letter-spacing: .08em; color: var(--ink); }
-.cal-year { font-size: 13px; letter-spacing: .08em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.cal-span { grid-column: 1 / -1; margin-top: 2px; font-style: normal; font-size: 11.5px; letter-spacing: .12em; color: var(--ink-3); }
-.cal-nav { position: relative; width: 30px; height: 30px; margin-top: 2px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--rule-soft); transition: background-color .2s ease, box-shadow .2s ease; }
-.cal-nav::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -2px;
-  border-left: 1.4px solid var(--ink-2);
-  border-bottom: 1.4px solid var(--ink-2);
-  transform: rotate(45deg);
-}
-.cal-nav.next::before { margin-left: -4px; transform: rotate(-135deg); }
-.cal-nav:hover { background: var(--rule-soft); box-shadow: inset 0 0 0 1px var(--rule); }
-.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
-.cal-week { font-size: 10.5px; letter-spacing: .1em; color: var(--ink-3); padding-bottom: 6px; }
-.cal-week span:first-child, .cal-week span:last-child { color: var(--ink-2); }
-.cal-grid { row-gap: 2px; }
-.cal-day {
+/* 月相带：一整年的月相排成一条胶片，拖到出生那天停在朱红指针下；上方一排月份做粗调 */
+.band { display: grid; gap: 10px; }
+.band-read { display: grid; justify-items: start; gap: 2px; min-height: 52px; }
+.band-date { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.15; letter-spacing: .06em; color: var(--ink); }
+.band-date small { margin-left: 10px; font-family: var(--text); font-size: 12.5px; letter-spacing: .2em; color: var(--ink-3); }
+.band-lunar { font-size: 13px; letter-spacing: .06em; color: var(--ink-2); }
+.band.empty .band-date { color: var(--ink-3); }
+.band.empty .band-lunar { color: var(--ink-3); }
+.band-months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+.band-months button { position: relative; padding: 4px 0 7px; font-size: 12px; color: var(--ink-3); transition: color .2s ease; }
+.band-months button::after { content: ""; position: absolute; left: 30%; right: 30%; bottom: 2px; height: 1.5px; background: var(--zhu); transform: scaleX(0); transition: transform .3s var(--ease-out); }
+.band-months button:hover { color: var(--ink); }
+.band-months button.on { color: var(--ink); }
+.band-months button.on::after { transform: scaleX(1); }
+.band-window {
   position: relative;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  font-variant-numeric: tabular-nums;
+  height: 76px;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
 }
-.cal-day .moon { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; transition: transform .3s var(--ease-out); }
-.moon-dark { fill: rgba(238, 242, 247, .06); stroke: rgba(238, 242, 247, .16); stroke-width: .6; }
-.moon-lit { fill: rgba(238, 242, 247, .2); }
-.cal-day b { position: relative; font-weight: 400; font-size: 13px; line-height: 1; color: var(--ink-2); transition: color .2s ease; }
-.cal-day small { position: absolute; left: 0; right: 0; bottom: -1px; font-size: 8.5px; line-height: 1; letter-spacing: 0; color: var(--ink-3); white-space: nowrap; }
-.cal-day.new-moon small { color: var(--zhu); opacity: .85; }
-.cal-day:hover .moon { transform: scale(1.12); }
-.cal-day:hover b { color: var(--ink); }
-.cal-day:hover .moon-lit { fill: rgba(238, 242, 247, .32); }
-/* 选中：月亮变朱红，外面套一圈细框，像盖了一枚小印 */
-.cal-day.on::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; box-shadow: inset 0 0 0 1px var(--zhu); transform: rotate(45deg); animation: cal-pick .35s var(--ease-out); }
-.cal-day.on .moon-dark { fill: rgba(255, 138, 92, .14); stroke: var(--zhu); }
-.cal-day.on .moon-lit { fill: var(--zhu); }
-.cal-day.on b { color: var(--ink); font-weight: 600; text-shadow: 0 0 6px rgba(16, 43, 85, .9); }
-.cal-day.on small { color: var(--zhu); }
-@keyframes cal-pick { from { transform: rotate(45deg) scale(.4); opacity: 0; } }
-.cal-grid.slide-l { animation: cal-in-l .35s var(--ease-out); }
-.cal-grid.slide-r { animation: cal-in-r .35s var(--ease-out); }
-@keyframes cal-in-l { from { opacity: 0; transform: translateX(16px); } }
-@keyframes cal-in-r { from { opacity: 0; transform: translateX(-16px); } }
-.cal-lunar { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--rule-soft); display: flex; align-items: baseline; gap: 8px; font-family: var(--display); font-size: 15px; letter-spacing: .08em; color: var(--ink); }
-.cal-lunar span { font-family: var(--text); font-size: 11px; letter-spacing: .3em; color: var(--ink-3); }
-.cal-lunar em { margin-left: auto; font-style: normal; font-size: 13px; color: var(--zhu); letter-spacing: .12em; }
-.cal-lunar.muted { font-family: var(--text); font-size: 13px; letter-spacing: .04em; color: var(--ink-3); }
+.band.dragging .band-window { cursor: grabbing; }
+.band-window:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.band-tape { position: absolute; left: 0; top: 0; will-change: transform; }
+.band-tape svg { display: block; }
+.bt-month { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 3; }
+.bt-mname { fill: var(--ink-3); font-family: var(--display); font-size: 11px; letter-spacing: .1em; }
+.bt-dark { fill: rgba(238, 242, 247, .05); stroke: rgba(238, 242, 247, .2); stroke-width: .8; }
+.bt-lit { fill: rgba(238, 242, 247, .55); }
+.bt-day.new .bt-dark { stroke: var(--zhu); stroke-opacity: .7; }
+.bt-num { fill: var(--ink-3); font-size: 9px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.bt-day { transition: opacity .2s ease; }
+.bt-day.on .bt-dark { fill: rgba(255, 138, 92, .16); stroke: var(--zhu); stroke-width: 1.2; }
+.bt-day.on .bt-lit { fill: var(--zhu); }
+.bt-day.on .bt-num { fill: var(--ink); font-weight: 600; }
+.band.empty .bt-day.on .bt-dark { fill: rgba(238, 242, 247, .05); stroke: rgba(238, 242, 247, .2); }
+.band.empty .bt-day.on .bt-lit { fill: rgba(238, 242, 247, .55); }
+/* 指针：一根朱红竖线，上下各一个小三角 */
+.band-needle { position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px; margin-left: -.75px; background: linear-gradient(var(--zhu), var(--zhu)) center / 1.5px 100% no-repeat; opacity: .85; pointer-events: none; }
+.band-needle::before, .band-needle::after { content: ""; position: absolute; left: 50%; margin-left: -5px; border: 5px solid transparent; }
+.band-needle::before { top: 0; border-top-color: var(--zhu); }
+.band-needle::after { bottom: 0; border-bottom-color: var(--zhu); }
+.band.empty .band-needle { opacity: .45; }
 
 .dial { position: relative; width: 100%; max-width: 200px; aspect-ratio: 1; touch-action: none; user-select: none; -webkit-user-select: none; outline-offset: 6px; border-radius: 50%; }
 .dial svg { display: block; width: 100%; height: 100%; overflow: visible; cursor: grab; }
@@ -1532,6 +1525,7 @@ body.casting .home-main > * {
   .nav-tag-text { font-size: 15px; letter-spacing: .26em; }
   .nav-tag-text::before { top: -12px; }
   .masthead-nav sup { right: -15px; }
+  .band-months button { font-size: 10.5px; letter-spacing: -.06em; }
   .home-title { font-size: 74px; }
   .question-area { margin-top: clamp(56px, 10vh, 96px); }
   #question { font-size: 19px; }
