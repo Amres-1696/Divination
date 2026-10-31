@@ -10,6 +10,12 @@
   inherits: true;
   initial-value: 0%;
 }
+/* 角标长度，注册后悬停时能平滑伸长 */
+@property --t {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 8px;
+}
 
 :root {
   --blue: #17396E;
@@ -272,30 +278,67 @@ body.scrolled .masthead::after { opacity: 1; }
 .brand b { font-family: var(--display); font-size: 21px; font-weight: 400; letter-spacing: .14em; }
 .brand span { font-size: 12.5px; color: var(--ink-3); padding-left: 12px; border-left: 1px solid var(--rule); letter-spacing: .12em; }
 body.view-home .brand { opacity: 0; pointer-events: none; }
-.masthead-nav { display: flex; gap: 6px; }
-.masthead-nav button { position: relative; font-size: 15.5px; color: var(--ink-2); padding: 6px 10px; transition: color .2s ease; }
-.masthead-nav button::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 2px;
-  height: 1.5px;
-  background: var(--ink);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform .35s var(--ease-out);
+/* 导航钮：图纸上的小图签——线描图标 + 字，四角制图角标，悬停时角标伸长、底色浮起 */
+.masthead-nav { display: flex; gap: 12px; }
+.nav-btn {
+  --c: var(--rule);
+  --t: 7px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px 0 13px;
+  font-family: var(--display);
+  font-size: 16.5px;
+  letter-spacing: .12em;
+  color: var(--ink-2);
+  background-color: rgba(238, 242, 247, .03);
+  background-image:
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+    linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c));
+  background-size:
+    var(--t) 1px, 1px var(--t), var(--t) 1px, 1px var(--t),
+    var(--t) 1px, 1px var(--t), var(--t) 1px, 1px var(--t);
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  transition: color .25s ease, background-color .25s ease, --t .35s var(--ease-out);
 }
-.masthead-nav button:hover { color: var(--ink); }
-.masthead-nav button:hover::after { transform: scaleX(1); }
-.masthead-nav sup { font-size: 10.5px; color: var(--zhu); margin-left: 3px; vertical-align: super; line-height: 0; }
-
-/* ---------- 首页 ---------- */
-.home-view {
-  min-height: calc(100svh - var(--head-h) - var(--frame));
-  padding: 0 var(--gutter) 4vh;
+.nav-btn:hover, .nav-btn:focus-visible { --c: var(--ink-2); --t: 12px; color: var(--ink); background-color: rgba(238, 242, 247, .08); outline: none; }
+.nav-btn:active { background-color: rgba(238, 242, 247, .12); }
+.nav-ico { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; transition: transform .35s var(--ease-out); }
+.nav-ico .fill { fill: var(--zhu); stroke: none; }
+.nav-btn:hover .nav-ico { transform: rotate(-8deg); }
+/* 记录数：一枚小朱印 */
+.masthead-nav sup {
   display: grid;
   place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  margin-left: 2px;
+  font-family: var(--text);
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1;
+  color: var(--zhu);
+  border: 1px solid var(--zhu);
+  transform: rotate(-6deg);
+}
+.masthead-nav sup:empty { display: none; }
+
+/* ---------- 首页 ---------- */
+/* 首页固定一屏，不能滚动：内容整体落在图框里，矮屏时按高度收紧 */
+html:has(> body.view-home), body.view-home { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body.view-home .site { min-height: 0; height: 100svh; }
+.home-view {
+  height: calc(100svh - var(--head-h) - var(--frame) * 2);
+  padding: 0 var(--gutter) 3vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
 }
 .home-main { width: min(400px, 100%); text-align: center; }
 .home-main > * { transition: opacity .35s ease, transform .5s var(--ease-out); }
@@ -734,23 +777,6 @@ body.casting .home-main > * {
 .btn:disabled { opacity: .45; cursor: default; }
 .result-warning { margin-top: 18px; font-size: 14.5px; color: var(--ink-3); }
 
-/* ---------- 页脚 ---------- */
-.site-footer {
-  margin: 0 calc(var(--frame) + 1px) var(--frame);
-  padding: 20px var(--gutter) 22px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 24px;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--ink-3);
-  border-top: 1px solid var(--rule-soft);
-}
-.github-support-link { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); }
-.github-support-link:hover { color: var(--ink); }
-.footer-copy { margin-left: auto; }
-body.view-ritual .site-footer { display: none; }
 
 /* ---------- 侧页：牌册 / 设置 ---------- */
 .history-overlay {
@@ -980,6 +1006,10 @@ body.view-ritual .site-footer { display: none; }
 .settings-label { display: block; font-size: 16.5px; }
 .settings-group > .settings-label { margin-bottom: 10px; }
 .settings-hint { margin-top: 8px; font-size: 13.5px; line-height: 1.7; color: var(--ink-3); }
+/* 关于：原来的页脚挪到设置最后 */
+.settings-about .github-support-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); }
+.settings-about .github-support-link:hover { color: var(--ink); }
+.about-copy { margin-top: 10px; font-size: 12.5px; color: var(--ink-3); }
 .settings-input, .settings-select, .seal-input {
   display: block;
   width: 100%;
@@ -1398,6 +1428,20 @@ body.view-ritual .site-footer { display: none; }
 .sc-reading { margin-top: 10px; font-size: 16px; line-height: 1.9; color: #B7C5DA; max-height: 214px; overflow: hidden; }
 .sc-foot { margin-top: auto; width: 100%; padding-top: 14px; border-top: 1px solid rgba(238, 242, 247, .26); display: flex; justify-content: space-between; font-size: 12.5px; color: #8FA3C4; }
 
+/* ---------- 矮屏：首页不滚动，按高度收紧 ---------- */
+@media (max-height: 720px) {
+  .home-title { font-size: clamp(52px, 10vh, 96px); }
+  .home-lede { margin-top: 10px; font-size: 15.5px; line-height: 1.6; }
+  .question-area { margin-top: 16px; }
+  .daily-gua { margin-top: 18px; }
+}
+/* 手机横屏这类实在放不下的高度，退回可以滚动，免得内容被裁掉 */
+@media (max-height: 500px) {
+  html:has(> body.view-home), body.view-home { height: auto; overflow: visible; }
+  body.view-home .site { height: auto; }
+  .home-view { height: auto; min-height: calc(100svh - var(--head-h) - var(--frame) * 2); padding-bottom: 24px; }
+}
+
 /* ---------- 手机 ---------- */
 @media (max-width: 768px) {
   :root { --frame: 7px; --head-h: 56px; --gutter: 16px; }
@@ -1405,6 +1449,9 @@ body.view-ritual .site-footer { display: none; }
   .frame-zones, .crop { display: none; }
   .frame { border-color: var(--rule-soft); }
   .brand span { display: none; }
+  .masthead-nav { gap: 8px; }
+  .nav-btn { height: 36px; padding: 0 12px 0 10px; gap: 6px; font-size: 15px; letter-spacing: .08em; }
+  .nav-ico { width: 16px; height: 16px; }
   .home-title { font-size: 74px; }
   .home-lede { font-size: 16px; margin-top: 16px; }
   .question-area { margin-top: 30px; }
@@ -1482,7 +1529,6 @@ body.view-ritual .site-footer { display: none; }
   .panel-title h3 { font-size: 22px; }
   .settings-content { padding: 4px 18px 24px; }
   .history-del { opacity: 1; }
-  .footer-copy { margin-left: 0; }
   .detail-box { padding: 26px 20px 22px; }
   .gua-sheet { padding: 26px 18px 22px; }
   .gs-name-row h2 { font-size: 34px; }
