@@ -64,6 +64,48 @@ function getCurrentGuaData() {
     };
 }
 
+// 分享卡的样式随卡片一起走（作为 <style> 放进卡片里）：html2canvas 出图时会在隐藏框架里重新加载页面样式表，
+// 样式表加载失败或太慢（断网、服务停了）时，卡片也不会变成没排版的纯文字
+const SHARE_CARD_CSS = `
+    :where(#shareCard, #shareCard *) { box-sizing: border-box; margin: 0; }
+    .sc-card { position: relative; overflow: hidden; width: 500px; height: 888px; padding: 40px 36px 34px; display: flex; flex-direction: column; background: linear-gradient(165deg, #1B4482 0%, #143668 46%, #0D2547 100%); color: #EEF2F7; font-family: 'Noto Serif SC', serif; line-height: 1.8; }
+    .sc-bg { position: absolute; left: 0; top: 0; }
+    .sc-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+    .sc-brand { font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 26px; line-height: 1; letter-spacing: .16em; }
+    .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-when { text-align: right; line-height: 1.5; }
+    .sc-when b { display: block; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
+    .sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
+    .sc-stage { position: relative; margin: 34px -36px 0; width: 500px; height: 300px; flex: none; }
+    .sc-ring { position: absolute; left: 0; top: 0; }
+    .sc-bar { position: absolute; left: -10px; width: 290px; height: 28px; background: #EEF2F7; }
+    .sc-bar.yin { background: transparent; }
+    .sc-bar.yin i { position: absolute; top: 0; height: 28px; width: 122px; background: #EEF2F7; }
+    .sc-bar.yin i + i { left: 168px; }
+    .sc-bar.moving, .sc-bar.moving i { background: #FF8A5C; }
+    .sc-bar.yin.moving { background: transparent; }
+    .sc-mark { position: absolute; left: 292px; width: 24px; text-align: center; font-size: 22px; line-height: 36px; color: #FF8A5C; }
+    .sc-name { position: absolute; left: 392px; top: 150px; width: 80px; margin: -96px 0 0 -40px; height: 192px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 54px; line-height: 1.08; }
+    .sc-name.long { font-size: 44px; }
+    .sc-name span { display: block; }
+    .sc-info { position: relative; display: flex; align-items: flex-start; gap: 18px; margin-top: 18px; }
+    .sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
+    .sc-seal { position: relative; flex: none; width: 82px; height: 82px; margin: -34px 31px 0 0; padding: 5px; border: 3px solid; background: #11305C; transform: rotate(-9deg); }
+    .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1.5px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 38px; line-height: 1; }
+    .sc-ji { color: #FF8A5C; border-color: #FF8A5C; }
+    .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
+    .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
+    .sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
+    .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
+    .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
+    .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
+    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #FF8A5C; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
+    .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
+    .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
+    .sc-foot { position: relative; margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; border-top: 1px dashed rgba(238, 242, 247, .3); font-size: 12px; letter-spacing: .1em; color: #A7B8D3; }
+`;
+
 // 起卦时刻写成干支农历（乙巳年九月初十 午时）；旧记录没有精确时间时退回原日期字符串
 function shareCardWhen(d) {
     const when = d.createdAt ? new Date(d.createdAt) : null;
@@ -130,7 +172,7 @@ function createShareCard(d) {
     const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
 
     // 9:16 竖版，宽 500
-    return `<div id="shareCard" class="sc-card">
+    return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
   ${shareCardBackdrop()}
   <div class="sc-head">
     <div class="sc-brand">天衍<span>起卦签</span></div>
@@ -235,8 +277,10 @@ async function shareAsImage() {
     if (!data) { showToast('请先占卜', 'error'); return; }
     preview.classList.remove('developing');
     preview.innerHTML = '<div class="share-paper"><span>显影中</span></div>';
+    // 上次关闭时卡片停在按钮处，先复位
+    const box = container.querySelector('.share-box');
+    if (box && box.getAnimations) box.getAnimations().forEach(a => a.cancel());
     container.classList.add('show');
-    const rising = shareBoxMotion(container, true);
 
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
@@ -245,13 +289,14 @@ async function shareAsImage() {
     tmp.style.cssText = 'position:fixed;left:-9999px;top:0;width:560px;pointer-events:none;opacity:0;';
     tmp.innerHTML = createShareCard(data);
     document.body.appendChild(tmp);
+    const flight = shareGlyphFlight(container, tmp.querySelector('#shareCard'));
     try {
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch(e) {}
         }
-        // 等弹层升起落定再出图：html2canvas 会占住主线程，和升起动画抢就会卡顿。
-        // 最多等 0.7 秒——标签页切到后台时动画不走，不能让出图一直等下去
-        if (rising) await Promise.race([rising.finished.catch(() => {}), sleep(700)]);
+        // 等卦画落到相纸上再出图：html2canvas 会占住主线程，和飞行动画抢就会卡顿。
+        // 最多等 0.9 秒——标签页切到后台时动画不走，不能让出图一直等下去
+        if (flight) await Promise.race([flight.anim.finished.catch(() => {}), sleep(900)]);
         else await sleep(80);
         const card = tmp.querySelector('#shareCard');
         scrubShareCardExternalUrls(card, window);
@@ -280,8 +325,10 @@ async function shareAsImage() {
             preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「下载图片」。</p>';
         };
         imgEl.src = objectUrl;
-        // 图片像蓝晒照片一样显影：先过曝发白，再慢慢显出蓝色，一道光从上往下扫过
+        // 图片像蓝晒照片一样显影：先过曝发白，再慢慢显出蓝色，一道光从上往下扫过；
+        // 飞来的卦画留在原处，随显影慢慢淡去，像是印进了纸里
         preview.classList.add('developing');
+        if (flight) fadeShareFlyer(flight.flyer);
 
         document.getElementById('shareDownloadBtn').onclick = () => {
             try {
@@ -323,6 +370,7 @@ async function shareAsImage() {
             }
         };
     } catch(e) {
+        if (flight) flight.flyer.remove();
         const msg = (e && e.message) ? e.message : String(e);
         preview.innerHTML = '<p class="share-error">分享图没有生成出来。<small>' + escHtml(msg) + '</small></p>';
     } finally {
@@ -330,31 +378,75 @@ async function shareAsImage() {
     }
 }
 
-// 分享弹层从「生成分享图」按钮的位置升起放大；关闭时缩回按钮
-function shareBoxMotion(container, open) {
-    const box = container && container.querySelector('.share-box');
+const _reduceShareMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+// 打开分享图：「生成分享图」按钮先被按下去；结果页上的大卦画飞起，沿弧线落到相纸上卦画的位置，
+// 相纸随之铺开。图片生成后在原处显影，飞来的卦画随显影淡去（fadeShareFlyer）。
+// card 是离屏排好版的分享卡，用来量出卦画在卡上的位置
+function shareGlyphFlight(container, card) {
     const btn = document.getElementById('shareBtn');
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!box || !btn || typeof box.animate !== 'function' || reduce) return null;
-    box.getAnimations().forEach(a => a.cancel());
+    const src = document.querySelector('#resultGlyph');
+    const paper = container.querySelector('.share-paper');
+    if (_reduceShareMotion() || !src || !paper || !card || typeof paper.animate !== 'function') return null;
+    if (btn && btn.animate) btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.93)', offset: .35 }, { transform: 'scale(1)' }],
+        { duration: 420, easing: 'ease-out' });
+    container.querySelectorAll('.share-flyer').forEach(el => el.remove());
+    document.querySelectorAll('.share-flyer').forEach(el => el.remove());
+    const s = src.getBoundingClientRect(), p = paper.getBoundingClientRect(), c = card.getBoundingClientRect();
+    const bars = Array.from(card.querySelectorAll('.sc-bar')).map(el => el.getBoundingClientRect());
+    if (!s.width || !p.width || !c.width || !bars.length) return null;
+    // 卡上卦画所占的区域（左边出血的部分不算），按比例换到相纸上
+    const k = p.width / c.width;
+    const left = Math.max(c.left, Math.min(...bars.map(r => r.left)));
+    const top = Math.min(...bars.map(r => r.top)), bottom = Math.max(...bars.map(r => r.bottom));
+    const right = Math.max(...bars.map(r => r.right));
+    const t = { left: p.left + (left - c.left) * k, top: p.top + (top - c.top) * k, width: (right - left) * k, height: (bottom - top) * k };
+    const flyer = document.createElement('div');
+    flyer.className = 'share-flyer';
+    flyer.innerHTML = src.innerHTML;
+    flyer.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
+    document.body.appendChild(flyer);
+    const dx = s.left - t.left, dy = s.top - t.top, sx = s.width / t.width, sy = s.height / t.height;
+    const anim = flyer.animate([
+        { transform: `translate(${dx}px, ${dy}px) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})` },
+        { transform: `translate(${dx * .4}px, ${dy * .4 - 70}px) scale(${((sx + 1) / 2 * 1.08).toFixed(3)}, ${((sy + 1) / 2 * 1.08).toFixed(3)})`, offset: .5 },
+        { transform: 'none' }
+    ], { duration: 820, easing: 'cubic-bezier(.45, 0, .2, 1)' });
+    paper.animate([
+        { opacity: 0, transform: 'scaleY(.04)', transformOrigin: '50% 30%' },
+        { opacity: 1, transform: 'scaleY(1)', transformOrigin: '50% 30%' }
+    ], { duration: 560, delay: 260, easing: 'cubic-bezier(.2, .8, .3, 1)', fill: 'backwards' });
+    return { anim, flyer };
+}
+
+function fadeShareFlyer(flyer) {
+    if (!flyer || !flyer.isConnected) return;
+    const a = flyer.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(3px)' }],
+        { duration: 900, delay: 150, easing: 'ease-in', fill: 'forwards' });
+    a.onfinish = () => flyer.remove();
+}
+
+// 关闭：卡片缩小飘回「生成分享图」按钮
+function shareCloseMotion(container) {
+    const box = container.querySelector('.share-box');
+    const btn = document.getElementById('shareBtn');
+    document.querySelectorAll('.share-flyer').forEach(el => el.remove());
+    if (_reduceShareMotion() || !box || !btn || typeof box.animate !== 'function') return;
     const b = box.getBoundingClientRect(), s = btn.getBoundingClientRect();
-    if (!s.width || !b.width) return null;
-    const dx = (s.left + s.width / 2) - (b.left + b.width / 2);
-    const dy = (s.top + s.height / 2) - (b.top + b.height / 2);
-    const at = `translate(${dx}px, ${dy}px) scale(${Math.max(.12, s.width / b.width).toFixed(3)})`;
-    const frames = [
-        { transform: at, opacity: 0, borderRadius: '2px' },
-        { transform: `translate(${dx * .18}px, ${dy * .18 - 18}px) scale(.94)`, opacity: 1, offset: .6 },
-        { transform: 'none', opacity: 1 }
-    ];
-    if (open) return box.animate(frames, { duration: 620, easing: 'cubic-bezier(.2, .8, .25, 1)' });
-    // 收回后停在按钮处（下次打开前会先取消），免得弹层淡出前闪回原位
-    return box.animate(frames.slice().reverse(), { duration: 300, easing: 'cubic-bezier(.5, 0, .75, .2)', fill: 'forwards' });
+    if (!s.width || !b.width) return;
+    const dx = (s.left + s.width / 2) - (b.left + b.width / 2), dy = (s.top + s.height / 2) - (b.top + b.height / 2);
+    box.getAnimations().forEach(a => a.cancel());
+    // 停在按钮处（下次打开前会先取消），免得弹层淡出前闪回原位
+    const a = box.animate([
+        { transform: 'none', opacity: 1 },
+        { transform: `translate(${dx}px, ${dy}px) scale(${Math.max(.08, s.width / b.width).toFixed(3)})`, opacity: 0 }
+    ], { duration: 320, easing: 'cubic-bezier(.5, 0, .75, .2)', fill: 'forwards' });
+    container._closing = a;
 }
 
 function closeShare() {
     const container = document.getElementById('shareImageContainer');
-    if (container.classList.contains('show')) shareBoxMotion(container, false);
+    if (container.classList.contains('show')) shareCloseMotion(container);
     container.classList.remove('show');
     if (_lastBlobUrl) {
         URL.revokeObjectURL(_lastBlobUrl);

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20261031-13">
+    <link rel="stylesheet" href="style.css?v=20261031-18">
     <script src="html2canvas.min.js" defer></script>
 </head>
 <body class="view-home intro">
@@ -153,14 +153,14 @@
 </div>
 <div class="share-overlay" id="shareImageContainer">
         <div class="share-box" role="dialog" aria-modal="true" aria-label="分享图">
-            <h3>分享图</h3>
+            <p class="share-caption">起卦签</p>
             <div class="share-preview" id="shareImagePreview"></div>
             <div class="share-actions">
-                <button class="btn btn-primary btn-download" id="shareDownloadBtn">下载图片</button>
-                <button class="btn btn-copy" id="shareCopyBtn">复制图片</button>
-                <button class="btn btn-quiet btn-close-share" id="closeShareBtn">关闭</button>
+                <button class="share-act" id="shareDownloadBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>保存图片</button>
+                <button class="share-act" id="shareCopyBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="9.5" height="9.5"/><path d="M13 7V3.5H3.5V13H7"/></svg>复制图片</button>
             </div>
         </div>
+        <button class="btn-close share-close" id="closeShareBtn" aria-label="关闭分享图"></button>
     </div>
 
     <!-- 回到顶部 -->
@@ -190,12 +190,12 @@
     <script src="js/ritual.js?v=20261031"></script>
     <script src="js/ai.js?v=20261031"></script>
     <script src="js/settings.js?v=20261031-2"></script>
-    <script src="js/share.js?v=20261031-5"></script>
+    <script src="js/share.js?v=20261031-7"></script>
     <script src="js/history.js?v=20261031"></script>
     <script src="js/daily.js?v=20261031-4"></script>
     <script src="js/divination.js?v=20261031"></script>
     <script src="js/instruments.js?v=20261031"></script>
-    <script src="js/theme.js?v=20261031-4"></script>
+    <script src="js/theme.js?v=20261031-7"></script>
     <script src="js/main.js?v=20261031"></script>
 </body>
 </html>
