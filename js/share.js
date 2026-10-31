@@ -64,6 +64,48 @@ function getCurrentGuaData() {
     };
 }
 
+// 分享卡的样式随卡片一起走（作为 <style> 放进卡片里）：html2canvas 出图时会在隐藏框架里重新加载页面样式表，
+// 样式表加载失败或太慢（断网、服务停了）时，卡片也不会变成没排版的纯文字
+const SHARE_CARD_CSS = `
+    :where(#shareCard, #shareCard *) { box-sizing: border-box; margin: 0; }
+    .sc-card { position: relative; overflow: hidden; width: 500px; height: 888px; padding: 40px 36px 34px; display: flex; flex-direction: column; background: linear-gradient(165deg, #1B4482 0%, #143668 46%, #0D2547 100%); color: #EEF2F7; font-family: 'Noto Serif SC', serif; line-height: 1.8; }
+    .sc-bg { position: absolute; left: 0; top: 0; }
+    .sc-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+    .sc-brand { font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 26px; line-height: 1; letter-spacing: .16em; }
+    .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-when { text-align: right; line-height: 1.5; }
+    .sc-when b { display: block; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
+    .sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
+    .sc-stage { position: relative; margin: 34px -36px 0; width: 500px; height: 300px; flex: none; }
+    .sc-ring { position: absolute; left: 0; top: 0; }
+    .sc-bar { position: absolute; left: -10px; width: 290px; height: 28px; background: #EEF2F7; }
+    .sc-bar.yin { background: transparent; }
+    .sc-bar.yin i { position: absolute; top: 0; height: 28px; width: 122px; background: #EEF2F7; }
+    .sc-bar.yin i + i { left: 168px; }
+    .sc-bar.moving, .sc-bar.moving i { background: #FF8A5C; }
+    .sc-bar.yin.moving { background: transparent; }
+    .sc-mark { position: absolute; left: 292px; width: 24px; text-align: center; font-size: 22px; line-height: 36px; color: #FF8A5C; }
+    .sc-name { position: absolute; left: 392px; top: 150px; width: 80px; margin: -96px 0 0 -40px; height: 192px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 54px; line-height: 1.08; }
+    .sc-name.long { font-size: 44px; }
+    .sc-name span { display: block; }
+    .sc-info { position: relative; display: flex; align-items: flex-start; gap: 18px; margin-top: 18px; }
+    .sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
+    .sc-seal { position: relative; flex: none; width: 82px; height: 82px; margin: -34px 31px 0 0; padding: 5px; border: 3px solid; background: #11305C; transform: rotate(-9deg); }
+    .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1.5px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 38px; line-height: 1; }
+    .sc-ji { color: #FF8A5C; border-color: #FF8A5C; }
+    .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
+    .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
+    .sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
+    .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
+    .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
+    .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
+    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #FF8A5C; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
+    .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
+    .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
+    .sc-foot { position: relative; margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; border-top: 1px dashed rgba(238, 242, 247, .3); font-size: 12px; letter-spacing: .1em; color: #A7B8D3; }
+`;
+
 // 起卦时刻写成干支农历（乙巳年九月初十 午时）；旧记录没有精确时间时退回原日期字符串
 function shareCardWhen(d) {
     const when = d.createdAt ? new Date(d.createdAt) : null;
@@ -130,7 +172,7 @@ function createShareCard(d) {
     const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
 
     // 9:16 竖版，宽 500
-    return `<div id="shareCard" class="sc-card">
+    return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
   ${shareCardBackdrop()}
   <div class="sc-head">
     <div class="sc-brand">天衍<span>起卦签</span></div>
