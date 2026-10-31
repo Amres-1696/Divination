@@ -835,6 +835,9 @@ body.casting .home-main > * {
 }
 .history-panel::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--rule-soft); pointer-events: none; }
 .history-panel.show { transform: none; visibility: visible; transition: transform .6s var(--ease-out); }
+/* 从挂签展开 / 收回的过程中：面板停在展开位置，形状交给 theme.js 的 clip-path 动画 */
+.history-panel.morphing,
+#historyPanel.archive.morphing { visibility: visible; transform: none; opacity: 1; transition: none; }
 .history-head {
   position: relative;
   flex: none;

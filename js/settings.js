@@ -153,6 +153,10 @@ function setFloatingPanelState(panelId, overlayId, shouldOpen) {
         }
     }
 
+    // 页面从顶栏挂签里展开、收回（theme.js 提供；没有它时照旧直接开合）
+    if (typeof morphPanelFromTag === 'function' && panel.classList.contains('show') !== shouldOpen) {
+        morphPanelFromTag(panel, shouldOpen);
+    }
     panel.classList.toggle('show', shouldOpen);
     overlay.classList.toggle('show', shouldOpen);
     panel.setAttribute('aria-hidden', String(!shouldOpen));

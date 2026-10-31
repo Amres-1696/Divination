@@ -57,6 +57,47 @@ async function returnToInquiry(opts) {
     _viewBusy = false;
 }
 
+// ---------- 挂签 → 页面：签条先往下拉长成一根竖条，再向两边铺开成整页；关闭时原路收回签条 ----------
+const PANEL_TAG = { historyPanel: 'historyBtn', settingsPanel: 'settingsGear' };
+function morphPanelFromTag(panel, open) {
+    const tag = document.getElementById(PANEL_TAG[panel.id]);
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!tag || !panel.animate || reduce) return;
+    // 打断上一次还没放完的开合
+    [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    // morphing 期间面板固定在展开位置、可见、不走 CSS 过渡，形状全由 clip-path 决定
+    panel.classList.add('morphing');
+    const p = panel.getBoundingClientRect(), t = tag.getBoundingClientRect();
+    const top = t.top - p.top, left = t.left - p.left, right = p.right - t.right, bottom = p.bottom - t.bottom;
+    const atTag = `inset(${top}px ${right}px ${bottom}px ${left}px)`;
+    const strip = `inset(${top}px ${right}px 0px ${left}px)`;
+    const full = 'inset(0px 0px 0px 0px)';
+    const shape = [{ clipPath: atTag }, { clipPath: strip, offset: .42 }, { clipPath: full }];
+    const ease = 'cubic-bezier(.65, 0, .25, 1)';
+    const kids = Array.from(panel.children);
+    let anim;
+    if (open) {
+        anim = panel.animate(shape, { duration: 720, easing: ease });
+        kids.forEach(el => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 420, easing: 'ease', fill: 'backwards' }));
+    } else {
+        kids.forEach(el => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease', fill: 'forwards' }));
+        anim = panel.animate(shape.slice().reverse().map((k, i) => ({ ...k, offset: [0, .58, 1][i] })),
+            { duration: 600, delay: 120, easing: ease, fill: 'forwards' });
+    }
+    // 收尾时关掉 CSS 过渡再撤 morphing：否则收回签条之后面板还会再滑走 / 淡出一遍
+    const settle = () => {
+        panel.style.transition = 'none';
+        panel.classList.remove('morphing');
+        panel.offsetHeight;
+        panel.style.transition = '';
+    };
+    anim.onfinish = () => {
+        settle();
+        if (!open) [panel, ...kids].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    };
+    anim.oncancel = settle;
+}
+
 // ---------- 起卦方式：两段式切换（保留原生 select 作为数据源） ----------
 const methodPickers = [];
 const METHOD_SHORT = { coin: '铜钱', bazi: '生辰' };
