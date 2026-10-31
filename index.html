@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20261031-10">
+    <link rel="stylesheet" href="style.css?v=20261031-13">
     <script src="html2canvas.min.js" defer></script>
 </head>
 <body class="view-home intro">
@@ -34,11 +34,9 @@
     <section id="homeView" class="view home-view" aria-labelledby="homeTitle">
       <div class="home-main">
         <h1 class="home-title" id="homeTitle" style="--k:0">天衍</h1>
-        <p class="home-lede" style="--k:1">六爻是六次二选一。<br>掷满六次，六十四卦只剩一卦。</p>
-        <form id="questionForm" class="question-area" style="--k:2">
-          <label class="field-label" for="question">想问什么</label>
+        <form id="questionForm" class="question-area" style="--k:1">
           <div class="q-field">
-            <input id="question" type="text" autocomplete="off" placeholder="比如：这份工作要不要换" maxlength="80">
+            <input id="question" type="text" autocomplete="off" aria-label="想问什么" maxlength="80">
             <span class="q-count" id="questionCount" aria-hidden="true"></span>
           </div>
           <div class="form-row">
@@ -46,7 +44,7 @@
             <button type="button" id="divineBtn" class="btn-divine"><span class="btn-text">起卦</span></button>
           </div>
         </form>
-        <div class="daily-gua" id="dailyGua" role="button" tabindex="0" aria-label="查看今日一卦" style="--k:3"></div>
+        <div class="daily-gua" id="dailyGua" role="button" tabindex="0" aria-label="查看今日一卦" style="--k:2"></div>
       </div>
     </section>
     <div id="resultArea" aria-live="polite"></div>
@@ -194,7 +192,7 @@
     <script src="js/settings.js?v=20261031-2"></script>
     <script src="js/share.js?v=20261031-5"></script>
     <script src="js/history.js?v=20261031"></script>
-    <script src="js/daily.js?v=20261031-2"></script>
+    <script src="js/daily.js?v=20261031-4"></script>
     <script src="js/divination.js?v=20261031"></script>
     <script src="js/instruments.js?v=20261031"></script>
     <script src="js/theme.js?v=20261031-4"></script>
