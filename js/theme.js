@@ -63,6 +63,7 @@ function morphPanelFromTag(panel, open) {
     const tag = document.getElementById(PANEL_TAG[panel.id]);
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!tag || !panel.animate || reduce) return;
+    if (panel.id === 'historyPanel') return archiveFlight(panel, tag, open);
     // 打断上一次还没放完的开合
     [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
     // morphing 期间面板固定在展开位置、可见、不走 CSS 过渡，形状全由 clip-path 决定
@@ -96,6 +97,92 @@ function morphPanelFromTag(panel, open) {
         if (!open) [panel, ...kids].forEach(el => el.getAnimations().forEach(a => a.cancel()));
     };
     anim.oncancel = settle;
+}
+
+// ---------- 牌册：六十四卦飞进方图 ----------
+// 点「牌册」时挂签被往下一拽；在首页时，圆图上的六十四卦各自从圆周飞进牌册的 8×8 方图，由圆变方；
+// 其他页面没有圆图，就从挂签里散出来落进格子。落定后抽到过的格子再依次亮起。关闭时原路飞回。
+// 飞行的是克隆，格子里的真卦画在落定前先藏起来（.flying）
+function archiveFlight(panel, tag, open) {
+    if (panel._flyers) panel._flyers.remove();
+    clearTimeout(panel._flightTimer);
+    [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+    panel.classList.add('morphing', 'flying');
+    tag.animate([{ height: getComputedStyle(tag).height }, { height: `calc(${getComputedStyle(tag).height} + 20px)`, offset: .4 },
+        { height: getComputedStyle(tag).height }], { duration: 520, easing: 'cubic-bezier(.3, 1.4, .5, 1)' });
+
+    // 目标：有记录时是方图格子里的卦画，没有记录时是空态的小方格
+    const cells = Array.from(panel.querySelectorAll('.am-cell'));
+    const targets = cells.length
+        ? cells.map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx'), square: false }))
+        : Array.from(panel.querySelectorAll('.history-empty .minimap i')).map((el, v) => ({ v, el, square: true }));
+    // 起点：首页圆图上同一卦的位置（带着它在圆周上的朝向）；否则是挂签
+    const ringOn = document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
+    const ring = ringOn ? document.querySelectorAll('.cosmos-ring .cg') : null;
+    const hv = document.getElementById('homeView').getBoundingClientRect();
+    const hcx = hv.left + hv.width / 2, hcy = hv.top + hv.height / 2;
+    const tr = tag.getBoundingClientRect();
+    const layer = document.createElement('div');
+    layer.className = 'archive-flyers';
+    const flights = [];
+    targets.forEach(({ v, el, square }) => {
+        if (!el) return;
+        const t = el.getBoundingClientRect();
+        if (!t.width) return;
+        let sx, sy, size, rot, op;
+        const cg = ring && ring[63 - v];
+        if (cg) {
+            const r = cg.getBoundingClientRect();
+            sx = r.left + r.width / 2; sy = r.top + r.height / 2;
+            size = r.width * .72;
+            rot = Math.atan2(sx - hcx, hcy - sy) * 180 / Math.PI;
+            op = .46;
+        } else {
+            sx = tr.left + tr.width / 2; sy = tr.top + tr.height * .6;
+            size = 6; rot = 0; op = 0;
+        }
+        const f = document.createElement('div');
+        f.className = 'archive-flyer';
+        f.innerHTML = buildHexBars(linesFromShao(v));
+        f.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
+        layer.appendChild(f);
+        // 都先落成未抽到时那样的淡卦（.09），抽到过的格子随后由 cell-lit 依次点亮
+        const endOp = square ? 0 : .09;
+        const from = `translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${(size / t.width).toFixed(3)})`;
+        const order = (v >> 3) + (v & 7);
+        flights.push({ f, from, op, endOp, order });
+    });
+    document.body.appendChild(layer);
+    panel._flyers = layer;
+    const ease = 'cubic-bezier(.5, 0, .2, 1)';
+    let longest = 0;
+    flights.forEach(({ f, from, op, endOp, order }) => {
+        const delay = open ? order * 16 : (14 - order) * 10;
+        const dur = open ? 760 : 520;
+        longest = Math.max(longest, delay + dur);
+        // 从挂签散出来的卦起点太小，先隐着，飞出一小段再显出来
+        // 飞行中途亮起来，看得清卦在飞；快落地时再暗成格子里的样子
+        const frames = op
+            ? [{ transform: from, opacity: op }, { opacity: .9, offset: .45 }, { opacity: .9, offset: .8 }, { transform: 'none', opacity: endOp }]
+            : [{ transform: from, opacity: 0 }, { opacity: .9, offset: .25 }, { opacity: .9, offset: .8 }, { transform: 'none', opacity: endOp }];
+        const back = frames.slice().reverse().map((k, i, a) => ({ ...k, offset: k.offset != null ? 1 - k.offset : i / (a.length - 1) }));
+        f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
+    });
+    // 面板本身：打开时稍晚一点从模糊里浮出，关闭时先淡去
+    if (open) panel.animate([{ opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)' }],
+        { duration: 520, delay: 80, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
+    else panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-in', fill: 'forwards' });
+
+    panel._flightTimer = setTimeout(() => {
+        layer.remove();
+        if (panel._flyers === layer) panel._flyers = null;
+        // 收尾时关掉 CSS 过渡再撤状态，免得面板再淡一遍；撤掉 flying 后抽到过的格子依次亮起
+        panel.style.transition = 'none';
+        panel.classList.remove('morphing', 'flying');
+        panel.offsetHeight;
+        panel.style.transition = '';
+        if (!open) panel.getAnimations().forEach(a => a.cancel());
+    }, longest + 30);
 }
 
 // ---------- 起卦方式：两段式切换（保留原生 select 作为数据源） ----------

@@ -119,7 +119,7 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .detail-box::-webkit-scrollbar-thumb { border-width: 4px; }
 
 /* ---------- 制图角标（按钮、卡片、弹层共用） ---------- */
-.btn, .share-box, .confirm-box, .detail-box, .ai-profile-bar, .title-block, .seg, .ben-zhi, .reading-sheet {
+.btn, .confirm-box, .detail-box, .ai-profile-bar, .title-block, .seg, .ben-zhi, .reading-sheet {
   --c: var(--rule);
   --t: 8px;
   background-image:
@@ -947,6 +947,10 @@ body.casting .home-main > * {
 .am-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .history-panel.show:not(.quiet) .am-cell.lit .hx { animation: cell-lit .6s var(--ease-out) both; animation-delay: calc(260ms + var(--o) * 32ms); }
 @keyframes cell-lit { from { opacity: 0; transform: scale(.4); } }
+/* 六十四卦飞进方图的过程中：格子里的真卦画先藏起来，落定后再换回，抽到过的格子随后依次点亮 */
+.history-panel.flying .am-cell .hx, .history-panel.flying .history-empty .minimap i { visibility: hidden; }
+.history-panel.flying .am-cell.lit .hx { animation: none; }
+.archive-flyer { position: fixed; z-index: 62; pointer-events: none; transform-origin: 50% 50%; }
 .am-caption { margin-top: 14px; font-size: 13.5px; color: var(--ink-3); min-height: 2.6em; }
 .am-caption b { font-family: var(--display); font-weight: 400; color: var(--ink); }
 .am-clear { margin-left: 8px; font-size: 13px; color: var(--zhu); text-decoration: underline; text-underline-offset: 4px; }
@@ -1286,19 +1290,40 @@ body.casting .home-main > * {
   transition: transform .5s var(--ease-out);
 }
 .show > .share-box, .show > .confirm-box, .show > .detail-box { transform: none; }
-.share-box { width: min(440px, 100%); max-height: calc(100svh - 32px); overflow-y: auto; padding: 22px 22px 20px; }
-.share-box h3 { font-family: var(--display); font-size: 19px; font-weight: 400; letter-spacing: .18em; }
-.share-preview { position: relative; margin: 16px 0 18px; min-height: 260px; display: grid; place-items: center; text-align: center; }
-.share-preview img { display: block; max-width: 100%; max-height: 60svh; box-shadow: 0 16px 36px -14px rgba(0, 0, 0, .7); }
+/* 分享图：不要外框，卡片像一张刚洗出来的照片直接放在暗下来的桌面上；
+   上方一行小字，下方两个带线描图标的文字按钮，右上角圆形关闭钮 */
+.share-overlay { flex-direction: column; background: radial-gradient(90% 70% at 50% 45%, rgba(6, 16, 34, .78), rgba(4, 10, 22, .92)); }
+.share-box {
+  --card-h: min(74svh, 760px);
+  width: auto;
+  max-width: 100%;
+  max-height: calc(100svh - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  box-shadow: none;
+  transform: none;
+  transition: none;
+}
+.share-caption { font-family: var(--display); font-size: 14px; letter-spacing: .6em; text-indent: .6em; color: var(--ink-3); }
+.share-preview { position: relative; margin: 14px 0 20px; min-height: 260px; display: grid; place-items: center; text-align: center; }
+.share-preview img {
+  display: block;
+  max-width: calc(100vw - 32px);
+  max-height: var(--card-h);
+  box-shadow: 0 2px 0 rgba(255, 255, 255, .06), 0 30px 60px -18px rgba(0, 0, 0, .8), 0 0 0 1px rgba(238, 242, 247, .12);
+}
 /* 显影前的空白相纸，和成图同比例 */
 .share-paper {
-  height: min(60svh, 640px);
-  max-width: 100%;
+  height: var(--card-h);
+  max-width: calc(100vw - 32px);
   aspect-ratio: 500 / 888;
   display: grid;
-  place-items: center;
-  background: linear-gradient(165deg, rgba(238, 242, 247, .14), rgba(238, 242, 247, .05));
-  box-shadow: inset 0 0 0 1px var(--rule);
+  place-items: end center;
+  padding-bottom: 18%;
+  background: linear-gradient(165deg, rgba(238, 242, 247, .16), rgba(238, 242, 247, .05));
+  box-shadow: inset 0 0 0 1px var(--rule), 0 30px 60px -18px rgba(0, 0, 0, .8);
 }
 .share-paper span { font-family: var(--display); font-size: 15px; letter-spacing: .5em; text-indent: .5em; color: var(--ink-3); animation: paper-breathe 1.6s ease-in-out infinite; }
 @keyframes paper-breathe { 50% { opacity: .35; } }
@@ -1314,7 +1339,7 @@ body.casting .home-main > * {
   position: absolute;
   left: 50%;
   top: 0;
-  width: min(100%, calc(60svh * 500 / 888));
+  width: min(calc(100vw - 32px), calc(var(--card-h) * 500 / 888));
   height: 70px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, transparent, rgba(238, 242, 247, .55) 55%, rgba(255, 138, 92, .5) 60%, transparent);
@@ -1330,8 +1355,28 @@ body.casting .home-main > * {
 .share-hint { margin-top: 10px; font-size: 13.5px; color: var(--ink-3); }
 .share-error { color: var(--zhu); font-size: 16px; }
 .share-error small { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-3); word-break: break-all; }
-.share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.btn-close-share { margin-left: auto; }
+.share-actions { display: flex; align-items: center; gap: 36px; }
+.share-act {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 2px;
+  font-family: var(--display);
+  font-size: 17px;
+  letter-spacing: .14em;
+  color: var(--ink-2);
+  transition: color .25s ease;
+}
+.share-act svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s var(--ease-out); }
+.share-act::after { content: ""; position: absolute; left: 0; right: 0; bottom: 2px; height: 1px; background: currentColor; transform: scaleX(.25); transform-origin: left; opacity: .6; transition: transform .35s var(--ease-out), opacity .25s ease; }
+.share-act:hover, .share-act:focus-visible { color: var(--ink); outline: none; }
+.share-act:hover::after, .share-act:focus-visible::after { transform: scaleX(1); opacity: 1; }
+.share-act:hover svg { transform: translateY(2px); }
+#shareCopyBtn:hover svg { transform: translate(-1px, -1px); }
+.share-close { position: absolute; top: calc(var(--frame) + 14px); right: calc(var(--frame) + 14px); }
+/* 从结果页飞到相纸上的那份卦画，显影时淡去 */
+.share-flyer { position: fixed; z-index: 72; pointer-events: none; transform-origin: 0 0; }
 
 .confirm-box { width: min(360px, 100%); padding: 26px 24px 22px; }
 .confirm-msg { font-size: 18px; line-height: 1.7; }
