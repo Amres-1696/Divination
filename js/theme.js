@@ -99,23 +99,23 @@ function morphPanelFromTag(panel, open) {
     anim.oncancel = settle;
 }
 
-// ---------- 牌册：六十四卦飞进方图 ----------
-// 点「牌册」时挂签被往下一拽；在首页时，圆图上的六十四卦各自从圆周飞进牌册的 8×8 方图，由圆变方；
-// 其他页面没有圆图，就从挂签里散出来落进格子。落定后抽到过的格子再依次亮起。关闭时原路飞回。
-// 飞行的是克隆，格子里的真卦画在落定前先藏起来（.flying）
+// ---------- 牌册：抽到过的卦飞进方图 ----------
+// 点「牌册」时挂签被往下一拽；只有亮着的（抽到过的）卦飞：在首页时从圆图上各自的位置飞进牌册的
+// 8×8 方图，其他页面没有圆图，就从挂签里散出来落进格子。没抽到过的淡格子原地不动。关闭时原路飞回。
+// 飞行的是克隆，亮格子里的真卦画在落定前先藏起来（.flying）
 function archiveFlight(panel, tag, open) {
     if (panel._flyers) panel._flyers.remove();
     clearTimeout(panel._flightTimer);
     [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
     panel.classList.add('morphing', 'flying');
+    // 卦是飞进格子亮起来的，落定后不再让亮格子另放一遍逐个点亮的动画
+    panel.classList.toggle('flown', open);
     tag.animate([{ height: getComputedStyle(tag).height }, { height: `calc(${getComputedStyle(tag).height} + 20px)`, offset: .4 },
         { height: getComputedStyle(tag).height }], { duration: 520, easing: 'cubic-bezier(.3, 1.4, .5, 1)' });
 
-    // 目标：有记录时是方图格子里的卦画，没有记录时是空态的小方格
-    const cells = Array.from(panel.querySelectorAll('.am-cell'));
-    const targets = cells.length
-        ? cells.map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx'), square: false }))
-        : Array.from(panel.querySelectorAll('.history-empty .minimap i')).map((el, v) => ({ v, el, square: true }));
+    // 目标：方图里亮着的格子；还没有记录时没有卦要飞，只剩面板本身的浮现
+    const targets = Array.from(panel.querySelectorAll('.am-cell.lit'))
+        .map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx') }));
     // 起点：首页圆图上同一卦的位置（带着它在圆周上的朝向）；否则是挂签
     const ringOn = document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
     const ring = ringOn ? document.querySelectorAll('.cosmos-ring .cg') : null;
@@ -125,7 +125,7 @@ function archiveFlight(panel, tag, open) {
     const layer = document.createElement('div');
     layer.className = 'archive-flyers';
     const flights = [];
-    targets.forEach(({ v, el, square }) => {
+    targets.forEach(({ v, el }) => {
         if (!el) return;
         const t = el.getBoundingClientRect();
         if (!t.width) return;
@@ -146,8 +146,8 @@ function archiveFlight(panel, tag, open) {
         f.innerHTML = buildHexBars(linesFromShao(v));
         f.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
         layer.appendChild(f);
-        // 都先落成未抽到时那样的淡卦（.09），抽到过的格子随后由 cell-lit 依次点亮
-        const endOp = square ? 0 : .09;
+        // 落地时正好是这一格的亮度（抽到次数越多越亮）
+        const endOp = Number(getComputedStyle(el).opacity) || 1;
         const from = `translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${(size / t.width).toFixed(3)})`;
         const order = (v >> 3) + (v & 7);
         flights.push({ f, from, op, endOp, order });
@@ -156,15 +156,18 @@ function archiveFlight(panel, tag, open) {
     panel._flyers = layer;
     const ease = 'cubic-bezier(.5, 0, .2, 1)';
     let longest = 0;
-    flights.forEach(({ f, from, op, endOp, order }) => {
-        const delay = open ? order * 16 : (14 - order) * 10;
+    // 按方图上从左上到右下的次序一个接一个飞；卦少时间隔大一些，卦多时总共也不超过约 0.7 秒
+    flights.sort((a, b) => a.order - b.order);
+    const step = flights.length > 1 ? Math.min(90, 700 / (flights.length - 1)) : 0;
+    flights.forEach(({ f, from, op, endOp }, rank) => {
+        const delay = open ? rank * step : (flights.length - 1 - rank) * step * .6;
         const dur = open ? 760 : 520;
         longest = Math.max(longest, delay + dur);
-        // 从挂签散出来的卦起点太小，先隐着，飞出一小段再显出来
-        // 飞行中途亮起来，看得清卦在飞；快落地时再暗成格子里的样子
+        // 从挂签散出来的卦起点太小，先隐着，飞出一小段再显出来；
+        // 飞行中途亮起来看得清，落地时正好是这一格的亮度
         const frames = op
-            ? [{ transform: from, opacity: op }, { opacity: .9, offset: .45 }, { opacity: .9, offset: .8 }, { transform: 'none', opacity: endOp }]
-            : [{ transform: from, opacity: 0 }, { opacity: .9, offset: .25 }, { opacity: .9, offset: .8 }, { transform: 'none', opacity: endOp }];
+            ? [{ transform: from, opacity: op }, { opacity: .95, offset: .45 }, { transform: 'none', opacity: endOp }]
+            : [{ transform: from, opacity: 0 }, { opacity: .95, offset: .25 }, { transform: 'none', opacity: endOp }];
         const back = frames.slice().reverse().map((k, i, a) => ({ ...k, offset: k.offset != null ? 1 - k.offset : i / (a.length - 1) }));
         f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
     });

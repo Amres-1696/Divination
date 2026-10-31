@@ -947,9 +947,9 @@ body.casting .home-main > * {
 .am-cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .history-panel.show:not(.quiet) .am-cell.lit .hx { animation: cell-lit .6s var(--ease-out) both; animation-delay: calc(260ms + var(--o) * 32ms); }
 @keyframes cell-lit { from { opacity: 0; transform: scale(.4); } }
-/* 六十四卦飞进方图的过程中：格子里的真卦画先藏起来，落定后再换回，抽到过的格子随后依次点亮 */
-.history-panel.flying .am-cell .hx, .history-panel.flying .history-empty .minimap i { visibility: hidden; }
-.history-panel.flying .am-cell.lit .hx { animation: none; }
+/* 亮着的卦飞进方图的过程中：亮格子里的真卦画先藏起来，落定后换回；卦是飞进来亮起的，不再另放点亮动画 */
+.history-panel.flying .am-cell.lit .hx { visibility: hidden; }
+.history-panel.flying .am-cell.lit .hx, .history-panel.show.flown:not(.quiet) .am-cell.lit .hx { animation: none; }
 .archive-flyer { position: fixed; z-index: 62; pointer-events: none; transform-origin: 50% 50%; }
 .am-caption { margin-top: 14px; font-size: 13.5px; color: var(--ink-3); min-height: 2.6em; }
 .am-caption b { font-family: var(--display); font-weight: 400; color: var(--ink); }
