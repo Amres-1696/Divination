@@ -21,7 +21,7 @@ async function divine() {
 
     // 八字起卦需要检查八字数据
     if (settings.method === 'bazi' && !settings.bazi) {
-        showToast('请先在设置中填写并保存生辰八字', 'error');
+        showToast('请先在设置中填写并保存公历生辰', 'error');
         _divineRunning = false;
         return;
     }
@@ -178,8 +178,10 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
         ? `<section class="block card-ai" id="aiReadingCard"><h3>AI 解读</h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
         : '';
 
-    // 记录本卦所问，供分享卡读取（不读实时输入框：回看历史或起卦后改输入会导致分享卡答非所问）
+    // 记录本卦所问和起卦时间，供分享卡读取（不读实时输入框和当前时间：回看历史时分享卡要对得上那一卦）
     resultArea.dataset.question = question || '';
+    resultArea.dataset.createdAt = readingContext.createdAt || '';
+    resultArea.dataset.date = readingContext.date || '';
     if (typeof setPageView === 'function') setPageView('result');
 
     resultArea.innerHTML = `

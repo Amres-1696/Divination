@@ -49,13 +49,17 @@ function getCurrentGuaData() {
             });
         }
     }
+    // 分享卡上写起卦那一刻，而不是生成图片的时间；旧记录只有本地化日期字符串时原样用
+    const when = r.dataset.createdAt ? new Date(r.dataset.createdAt) : null;
+    const date = when && !isNaN(when)
+        ? when.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
+        : (r.dataset.date || new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }));
     return {
         name: nameEl.textContent, title: titleEl ? titleEl.textContent : '',
         symbol: symbolEl ? symbolEl.textContent : '',
         question: (r.dataset.question || '').trim(),
         analysisList: list, changingYaoTexts, changingYaos, hexagramLines,
-        hasChange, cgName, cgSymbol, cgExplain, changePos,
-        date: new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
+        hasChange, cgName, cgSymbol, cgExplain, changePos, date
     };
 }
 

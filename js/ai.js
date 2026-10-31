@@ -2,7 +2,7 @@
 // 必须在 settings.js 之前加载（DEFAULT_SETTINGS 引用了本文件的 DEFAULT_AI）
 
 /* ============ AI 解卦 ============ */
-const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '八字起卦（生辰八字）' };
+const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '生辰起卦（公历生日换算农历，梅花易数取数）' };
 
 function buildAiContext(gua, change, question, readingContext = {}) {
     const posCN = ['初', '二', '三', '四', '五', '上'];
@@ -111,24 +111,28 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         const reader = resp.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
+        const eat = (raw) => {
+            const line = raw.trim();
+            if (!line || !line.startsWith('data:')) return;
+            const payload = line.slice(5).trim();
+            if (payload === '[DONE]') return;
+            try {
+                const json = JSON.parse(payload);
+                const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
+                if (delta) { acc += delta; paint(acc); }
+            } catch (e) { /* 分片不完整，留待下一轮拼接 */ }
+        };
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
             const parts = buffer.split('\n');
             buffer = parts.pop();
-            for (const raw of parts) {
-                const line = raw.trim();
-                if (!line || !line.startsWith('data:')) continue;
-                const payload = line.slice(5).trim();
-                if (payload === '[DONE]') continue;
-                try {
-                    const json = JSON.parse(payload);
-                    const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
-                    if (delta) { acc += delta; paint(acc); }
-                } catch (e) { /* 分片不完整，留待下一轮拼接 */ }
-            }
+            parts.forEach(eat);
         }
+        // 流结束时最后一行可能没有换行符，别把它丢掉
+        buffer += decoder.decode();
+        if (buffer) eat(buffer);
         paint(acc || '（接口未返回内容）');
         return acc;
     } catch (err) {

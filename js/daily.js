@@ -1,6 +1,7 @@
 // daily —— 每日一卦与箴言（按用户种子+日期或生辰推定）、卦象详解弹层
 
-// 每日一卦 
+// 每日一卦
+let _volatileUid = null;
 function getUserSeed() {
     try {
         let uid = localStorage.getItem('tianyan_uid');
@@ -10,8 +11,9 @@ function getUserSeed() {
         }
         return uid;
     } catch (e) {
-
-        return Math.random().toString(36).substring(2) + Date.now().toString(36);
+        // 存储不可用（隐私模式等）：本次打开页面内保持同一个种子，卦和箴言不会每次重算都变
+        if (!_volatileUid) _volatileUid = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        return _volatileUid;
     }
 }
 
@@ -48,7 +50,8 @@ function getDailyGua(d = new Date()) {
 
 function getDailyMotto(d = new Date()) {
     const uid = getUserSeed();
-    const str = d.getDate() + uid;
+    // 用完整日期：只用「几号」的话，每个月同一天的箴言都一样
+    const str = dailyDateKey(d) + uid;
     let seed = 0;
     for (let i = 0; i < str.length; i++) seed = ((seed << 5) - seed + str.charCodeAt(i)) | 0;
     return DAILY_MOTTOS[Math.abs(seed) % DAILY_MOTTOS.length];
@@ -140,9 +143,4 @@ function closeGuaDetail(overlay) {
     overlay._closing = true;
     overlay.classList.remove('show');
     setTimeout(() => overlay.remove(), 320);
-}
-
-function getTrigramName(sym) {
-    const map = {'☰':'乾天','☱':'兑泽','☲':'离火','☳':'震雷','☴':'巽风','☵':'坎水','☶':'艮山','☷':'坤地'};
-    return map[sym] || sym;
 }

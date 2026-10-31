@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // 选八字起卦但尚未填八字：就地提示并高亮表单，避免回到主页起卦时才报错
         if (this.value === 'bazi' && !loadSettings().bazi) {
-            showToast('八字起卦需先填写并保存生辰八字', 'error');
+            showToast('生辰起卦需先填写并保存公历生辰', 'error');
             const seals = document.querySelector('.bazi-seals');
             if (seals) {
                 seals.scrollIntoView({ behavior: 'smooth', block: 'center' });

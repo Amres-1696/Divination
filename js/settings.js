@@ -50,7 +50,7 @@ function saveBazi() {
     const status = document.getElementById('baziStatus');
 
     if (!year || !month || !day || hour === '') {
-        status.textContent = '请填写完整的生辰八字信息';
+        status.textContent = '请填写完整的公历生辰';
         status.className = 'bazi-status error';
         return;
     }
@@ -130,24 +130,7 @@ function restoreSettingsUI() {
         }
     }
 
-    // 时辰印章双层显示（章节 2.9）：把 hour select 选中项的 data-range 同步到父级
-    syncHourSealRange();
-    const hourEl = document.getElementById('baziHour');
-    if (hourEl && !hourEl._hourSealHooked) {
-        hourEl.addEventListener('change', syncHourSealRange);
-        hourEl._hourSealHooked = true;
-    }
-
     applySettings(settings);
-}
-
-function syncHourSealRange() {
-    const sel = document.getElementById('baziHour');
-    if (!sel) return;
-    const seal = sel.closest('.bazi-seal-hour');
-    if (!seal) return;
-    const opt = sel.options[sel.selectedIndex];
-    seal.dataset.range = (opt && opt.dataset && opt.dataset.range) || '';
 }
 
 function setFloatingPanelState(panelId, overlayId, shouldOpen) {
