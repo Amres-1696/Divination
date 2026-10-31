@@ -335,6 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('请先填写并保存公历生辰');
         }
     });
+    // 首页生辰说明：点已存的生辰或「还没有保存」都去设置里填写
+    document.getElementById('methodHint').addEventListener('click', e => { if (e.target.closest('.mh-edit')) toggleSettings(true); });
     const daily = document.getElementById('dailyGua');
     daily.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); daily.click(); } });
     enhanceMethodSelect(method);

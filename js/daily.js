@@ -72,10 +72,11 @@ function renderDailyGua(now = new Date()) {
     if (!el) return;
     const gua = getDailyGua(now);
     const motto = getDailyMotto(now);
+    // 卦画居中，左边「今日一卦」和卦名，右边箴言
     el.innerHTML = `
+<span class="daily-side left"><span class="daily-eyebrow">今日一卦</span><span class="daily-name">${gua[0]}</span></span>
 <span class="daily-symbol" aria-hidden="true">${buildYaoArtSvg(binToHexLines(guaBinary(gua)), [])}</span>
-<span class="daily-copy"><span class="daily-eyebrow">今日一卦</span><span class="daily-name">${gua[0]}</span><span class="daily-motto">${motto}</span></span>
-<span class="daily-link">看卦辞</span>`;
+<span class="daily-side right"><span class="daily-motto">${motto}</span></span>`;
     _dailyDateKey = dailyDateKey(now);
     // 详情与可见卡片共用快照，避免跨日/设置变化时点击到另一卦。
     el.onclick = () => showGuaDetail(gua);

@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('historyCloseBtn').addEventListener('click', toggleHistory);
     document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
     document.getElementById('saveBaziBtn').addEventListener('click', saveBazi);
+    // 年、月日、时辰任一改动后，刷新保存按钮是「已保存」还是「保存改动」
+    document.getElementById('baziSettings').addEventListener('change', updateBaziSaveState);
     document.getElementById('closeShareBtn').addEventListener('click', closeShare);
     document.getElementById('settingMethod').addEventListener('change', function() {
         if (!saveSetting('method', this.value)) {

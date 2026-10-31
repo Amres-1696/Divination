@@ -80,6 +80,58 @@ function saveBazi() {
     const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
     status.textContent = `已保存：${year}年${month}月${day}日 ${shiChen[hour]}时` + (lunar ? ` · ${formatLunar(lunar)}` : '');
     status.className = 'bazi-status success';
+    renderMethodHint(settings);
+    updateBaziSaveState();
+}
+
+const SHI_CHEN = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+// 生辰的一句话说法：农历年月日 + 时辰；早于农历历表时用公历
+function baziSummary(b) {
+    const lu = solarToLunar(b.year, b.month, b.day);
+    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${SHI_CHEN[b.hour]}时`;
+}
+
+// 首页起卦方式下面的一行：铜钱和生辰各说各的起法；生辰模式直接亮出已存的生辰，没存就引导去填
+function renderMethodHint(settings) {
+    const el = document.getElementById('methodHint');
+    if (!el) return;
+    const bazi = settings.method === 'bazi';
+    const coins = '<svg class="mh-ico" viewBox="0 0 30 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><rect x="4.4" y="4.4" width="3.2" height="3.2"/><circle cx="15" cy="6" r="5"/><rect x="13.4" y="4.4" width="3.2" height="3.2"/><circle cx="24" cy="6" r="5"/><rect x="22.4" y="4.4" width="3.2" height="3.2"/></svg>';
+    const moon = '<svg class="mh-ico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><path class="lit" d="M6 1A5 5 0 0 1 6 11A2.6 5 0 0 0 6 1Z"/></svg>';
+    let html;
+    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱，自下而上掷六次</span>`;
+    else if (settings.bazi) html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>`;
+    else html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit need">还没有保存生辰，点这里填写</button>`;
+    if (el.innerHTML === html) return;
+    el.innerHTML = html;
+    // 换一种起法时整行淡入一次
+    if (el.classList) {
+        el.classList.toggle('is-bazi', bazi);
+        el.classList.remove('swap');
+        el.offsetWidth;
+        el.classList.add('swap');
+    }
+}
+
+// 设置里生辰的保存状态：表单和已存的一致时按钮常亮为「已保存」，改了没存就提示还没保存
+function updateBaziSaveState() {
+    const btn = document.getElementById('saveBaziBtn');
+    const status = document.getElementById('baziStatus');
+    if (!btn || !status) return;
+    const read = id => document.getElementById(id).value;
+    const cur = { year: parseInt(read('baziYear'), 10), month: parseInt(read('baziMonth'), 10), day: parseInt(read('baziDay'), 10), hour: parseInt(read('baziHour'), 10) };
+    const saved = loadSettings().bazi;
+    const same = saved && ['year', 'month', 'day', 'hour'].every(k => saved[k] === cur[k]);
+    btn.classList.toggle('is-saved', !!same);
+    btn.classList.toggle('is-dirty', !!saved && !same);
+    btn.textContent = same ? '生辰已保存' : saved ? '保存改动' : '保存生辰';
+    if (same) {
+        status.textContent = `已保存 · ${baziSummary(saved)}`;
+        status.className = 'bazi-status success';
+    } else if (saved) {
+        status.textContent = `有改动，还没保存（现存的是 ${baziSummary(saved)}）`;
+        status.className = 'bazi-status dirty';
+    }
 }
 
 function applySettings(settings) {
@@ -93,6 +145,7 @@ function applySettings(settings) {
     // 每日启示
     const dailyEl = document.getElementById('dailyGua');
     if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';
+    renderMethodHint(settings);
 }
 
 function restoreSettingsUI() {
@@ -131,6 +184,7 @@ function restoreSettingsUI() {
     }
 
     applySettings(settings);
+    updateBaziSaveState();
 }
 
 function setFloatingPanelState(panelId, overlayId, shouldOpen) {
