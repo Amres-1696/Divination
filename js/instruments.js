@@ -1,5 +1,5 @@
 // instruments —— 生辰与配置的输入器具
-// 年份拨算盘，月日是一条可拖动的月相带，时辰是一面十二时辰钟（拖指针选）。
+// 年份是一列竖向的年轮，月日是一条可拖动的月相带，时辰是一面十二时辰钟（拖指针选）。
 // 原生 input / select 仍是数据源（settings.js 照常读写），这里只负责画和同步。
 
 function hookValue(el, onSet) {
@@ -14,33 +14,32 @@ function hookValue(el, onSet) {
 }
 const _reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-// ---------- 年：算盘 ----------
-// 四档算珠是千、百、十、个位：上面一颗「五」珠，下面四颗「一」珠，靠梁的才算数。
-// 点一颗珠子就拨上或拨下；拨出的年份超出 1900–2100 时归到边界，算珠跟着滑过去。
-// 右边大字读出年份，写出干支、生肖和正月初一的公历日期（春节前出生算上一年）。
+// ---------- 年：年轮 ----------
+// 竖向滚轮：一列年份上下滚，停在中间读数框里的就是出生年份。每一行写出年份和这一年的干支、生肖，
+// 中间一行最大最亮，越往上下越小越淡。拖动带惯性、松手吸附到整年；滚轮、点某一行、上下键也都能选。
+// 方向是竖的，和下面横向拖动的月相带、圆形的时辰钟区分开。
 const YEAR_ZODIAC = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
 
-function makeYearAbacus(input, onChange) {
-    const MIN = 1900, MAX = 2100, PLACES = ['千', '百', '十', '个'];
+function makeYearWheel(input, onChange) {
+    const MIN = 1900, MAX = 2100, ROW = 40, DEFAULT = 1990;
     const root = document.createElement('div');
-    root.className = 'abacus-year';
-    const rod = (p, i) => `
-<div class="ab-rod" data-i="${i}" tabindex="0" role="spinbutton" aria-label="${p}位" aria-valuemin="0" aria-valuemax="9">
-  <i class="ab-line" aria-hidden="true"></i>
-  <button type="button" class="ab-bead heaven" data-k="5" tabindex="-1" aria-hidden="true"></button>
-  ${[0, 1, 2, 3].map(k => `<button type="button" class="ab-bead earth" data-k="${k}" tabindex="-1" aria-hidden="true"></button>`).join('')}
-  <span class="ab-digit" aria-hidden="true"></span>
-</div>`;
+    root.className = 'yw';
+    const rows = [];
+    for (let y = MIN; y <= MAX; y++) {
+        rows.push(`<div class="yw-row" data-y="${y}"><b>${y}</b><span>${ganZhiYear(y)} · ${YEAR_ZODIAC[lunarYearBranch(y) - 1]}</span></div>`);
+    }
     root.innerHTML = `
-<div class="ab-frame">
-  <i class="ab-beam" aria-hidden="true"></i>
-  ${PLACES.map(rod).join('')}
+<div class="yw-window" tabindex="0" role="slider" aria-label="出生年份（公历）" aria-valuemin="${MIN}" aria-valuemax="${MAX}">
+  <div class="yw-list">${rows.join('')}</div>
+  <i class="yw-frame" aria-hidden="true"></i>
 </div>
-<div class="ab-read" aria-live="polite"><b class="ab-year">—</b><span class="ab-gz"></span><small class="ab-ny"></small></div>`;
-    const rods = Array.from(root.querySelectorAll('.ab-rod'));
-    const yearEl = root.querySelector('.ab-year'), gzEl = root.querySelector('.ab-gz'), nyEl = root.querySelector('.ab-ny');
-    const setRaw = hookValue(input, () => fromInput());
-    let value = null;
+<p class="yw-note" aria-live="polite"></p>`;
+    const win = root.querySelector('.yw-window');
+    const list = root.querySelector('.yw-list');
+    const rowEls = Array.from(list.children);
+    const note = root.querySelector('.yw-note');
+    const setRaw = hookValue(input, () => fromInput(true));
+    let pos = DEFAULT - MIN, has = false, anim = 0, drag = null, drawn = [];
 
     // 这一年正月初一落在公历哪天
     function newYearDay(y) {
@@ -50,68 +49,104 @@ function makeYearAbacus(input, onChange) {
         }
         return '';
     }
-    const digitsOf = y => String(y).padStart(4, '0').split('').map(Number);
-    // 按每档数字摆算珠：五珠 ≥5 时靠梁；一珠靠梁的颗数 = 数字除以 5 的余数
-    function place(y) {
-        digitsOf(y).forEach((d, i) => {
-            const r = rods[i];
-            r.querySelector('.heaven').classList.toggle('on', d >= 5);
-            r.querySelectorAll('.earth').forEach(b => b.classList.toggle('on', Number(b.dataset.k) < d % 5));
-            r.querySelector('.ab-digit').textContent = d;
-            r.setAttribute('aria-valuenow', d);
+    const clamp = v => Math.min(MAX - MIN, Math.max(0, v));
+    function draw() {
+        const mid = win.clientHeight / 2;
+        list.style.transform = `translate3d(0,${(mid - (pos * ROW + ROW / 2)).toFixed(1)}px,0)`;
+        // 只给中间附近几行算大小和亮度：离中间越远越小越淡；上一次画过、这次不在范围里的行先复位
+        const c = Math.round(pos);
+        const near = [];
+        for (let i = Math.max(0, c - 4); i <= Math.min(rowEls.length - 1, c + 4); i++) near.push(i);
+        drawn.forEach(i => { if (!near.includes(i)) { rowEls[i].style.setProperty('--k', 0); rowEls[i].classList.remove('on'); } });
+        near.forEach(i => {
+            const dist = Math.min(3, Math.abs(i - pos));
+            rowEls[i].style.setProperty('--k', (1 - dist / 3).toFixed(3));
+            rowEls[i].classList.toggle('on', i === c);
         });
-    }
-    function show() {
-        root.classList.toggle('empty', value == null);
-        place(value == null ? 1990 : value);
-        if (value == null) {
-            yearEl.textContent = '—';
-            gzEl.textContent = '拨动算珠，定出生年份';
-            nyEl.textContent = '';
-            return;
+        drawn = near;
+        const y = MIN + c, shown = has || !!drag;
+        root.classList.toggle('empty', !shown);
+        if (shown) {
+            const ny = newYearDay(y);
+            note.textContent = ny ? `正月初一在 ${ny}，之前出生算上一年（${ganZhiYear(y - 1)}）` : '';
+        } else {
+            note.textContent = '上下滑动年轮，选出生年份';
         }
-        yearEl.innerHTML = `${value}<span>年</span>`;
-        gzEl.textContent = `${ganZhiYear(value)}年 · 属${YEAR_ZODIAC[lunarYearBranch(value) - 1]}`;
-        const ny = newYearDay(value);
-        nyEl.textContent = ny ? `正月初一在 ${ny}，之前出生算上一年` : '';
+        win.setAttribute('aria-valuenow', y);
+        win.setAttribute('aria-valuetext', has ? `${y} 年，${ganZhiYear(y)}年，属${YEAR_ZODIAC[lunarYearBranch(y) - 1]}` : '未选择');
     }
-    function commit(y) {
-        value = Math.min(MAX, Math.max(MIN, y));
-        setRaw(String(value));
-        show();
-        if (onChange) onChange(value);
+    function commit(i) {
+        has = true;
+        setRaw(String(MIN + i));
+        draw();
+        if (onChange) onChange(MIN + i);
     }
-    function setDigit(i, d) {
-        const ds = digitsOf(value == null ? 1990 : value);
-        ds[i] = Math.min(9, Math.max(0, d));
-        commit(Number(ds.join('')));
+    function animateTo(target, doCommit) {
+        cancelAnimationFrame(anim);
+        target = clamp(Math.round(target));
+        const from = pos, t0 = performance.now();
+        const dur = _reduceMotion() ? 0 : Math.min(800, 260 + Math.abs(target - from) * 12);
+        const stepFn = now => {
+            const t = dur ? Math.min(1, (now - t0) / dur) : 1;
+            pos = from + (target - from) * (1 - Math.pow(1 - t, 3));
+            draw();
+            if (t < 1) anim = requestAnimationFrame(stepFn);
+            else if (doCommit) commit(target);
+        };
+        anim = requestAnimationFrame(stepFn);
     }
-    function fromInput() {
+    function fromInput(animated) {
         const v = parseInt(input.value, 10);
-        value = v >= MIN && v <= MAX ? v : null;
-        show();
-        if (onChange) onChange(value);
+        if (v >= MIN && v <= MAX) {
+            has = true;
+            if (animated && root.isConnected && root.offsetParent) animateTo(v - MIN, false);
+            else { pos = v - MIN; draw(); }
+        } else { has = false; pos = DEFAULT - MIN; draw(); }
+        if (onChange) onChange(has ? v : null);
     }
 
-    rods.forEach((r, i) => {
-        r.addEventListener('click', e => {
-            const b = e.target.closest('.ab-bead');
-            if (!b) return;
-            const d = digitsOf(value == null ? 1990 : value)[i];
-            if (b.classList.contains('heaven')) { setDigit(i, d >= 5 ? d - 5 : d + 5); return; }
-            // 和真算盘一样：点一颗靠梁的一珠，它和外侧的珠子一起拨开；点一颗离梁的，它和内侧的一起拨上梁
-            const k = Number(b.dataset.k), count = d % 5, base = d - count;
-            setDigit(i, base + (k < count ? k : k + 1));
-        });
-        r.addEventListener('keydown', e => {
-            const map = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 };
-            if (map[e.key] === undefined) return;
-            e.preventDefault();
-            const d = digitsOf(value == null ? 1990 : value)[i];
-            setDigit(i, d + map[e.key]);
-        });
+    // 上下拖动：松手带一点惯性再吸附到整年；轻点某一行就滚到那一年
+    win.addEventListener('pointerdown', e => {
+        cancelAnimationFrame(anim);
+        win.setPointerCapture(e.pointerId);
+        drag = { y: e.clientY, pos, lastY: e.clientY, lastT: performance.now(), v: 0, moved: false };
+        root.classList.add('dragging');
     });
-    fromInput();
+    win.addEventListener('pointermove', e => {
+        if (!drag) return;
+        const now = performance.now(), dy = e.clientY - drag.y;
+        if (Math.abs(dy) > 3) drag.moved = true;
+        pos = clamp(drag.pos - dy / ROW);
+        drag.v = (e.clientY - drag.lastY) / Math.max(1, now - drag.lastT);
+        drag.lastY = e.clientY; drag.lastT = now;
+        draw();
+    });
+    const end = e => {
+        if (!drag) return;
+        root.classList.remove('dragging');
+        const r = win.getBoundingClientRect();
+        const target = drag.moved ? pos - drag.v * 220 / ROW : pos + (e.clientY - (r.top + r.height / 2)) / ROW;
+        drag = null;
+        animateTo(target, true);
+    };
+    win.addEventListener('pointerup', end);
+    win.addEventListener('pointercancel', end);
+    // 滚轮转年轮：鼠标停在年轮上时才接管，滚一格走一年
+    win.addEventListener('wheel', e => {
+        if (!e.deltaY) return;
+        e.preventDefault();
+        animateTo(Math.round(pos) + Math.sign(e.deltaY) * (Math.abs(e.deltaY) > 90 ? 2 : 1), true);
+    }, { passive: false });
+    win.addEventListener('keydown', e => {
+        const i = Math.round(pos);
+        const map = { ArrowUp: -1, ArrowDown: 1, PageUp: -10, PageDown: 10 };
+        let target = map[e.key] !== undefined ? i + map[e.key] : e.key === 'Home' ? 0 : e.key === 'End' ? MAX - MIN : null;
+        if (target == null) return;
+        e.preventDefault();
+        animateTo(target, true);
+    });
+    if (window.ResizeObserver) new ResizeObserver(draw).observe(win);
+    fromInput(false);
     return root;
 }
 
@@ -476,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     if (year && month && day && hour && slots.year) {
         let cal = null;
-        slots.year.appendChild(makeYearAbacus(year, () => { if (cal) cal._refresh(); }));
+        slots.year.appendChild(makeYearWheel(year, () => { if (cal) cal._refresh(); }));
         cal = makeMoonBand(year, month, day);
         slots.cal.appendChild(cal);
         slots.dial.appendChild(makeHourDial(hour));
