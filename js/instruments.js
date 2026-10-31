@@ -80,6 +80,8 @@ function makeYearWheel(input, onChange) {
         setRaw(String(MIN + i));
         draw();
         if (onChange) onChange(MIN + i);
+        // 告诉设置面板生辰有变化（判断「已保存 / 有改动」）
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     }
     function animateTo(target, doCommit) {
         cancelAnimationFrame(anim);
@@ -258,6 +260,7 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
         setMonthRaw(String(x.m));
         setDayRaw(String(x.d));
         draw();
+        dayInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     function animateTo(target, doCommit) {
         cancelAnimationFrame(anim);

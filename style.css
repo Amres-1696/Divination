@@ -418,6 +418,19 @@ body.casting .home-main > * {
 }
 .q-count { position: absolute; right: 0; top: calc(100% + 7px); font-size: 11px; color: var(--ink-3); letter-spacing: .05em; }
 .form-row { margin-top: 34px; display: flex; align-items: center; justify-content: center; gap: 22px; }
+/* 起卦方式下面的一行：铜钱是素白的三枚铜钱，生辰用朱红点出月亮和已存的生辰；换一种起法时整行淡入 */
+.method-hint { margin-top: 16px; min-height: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; font-size: 13px; line-height: 1.6; color: var(--ink-3); }
+.method-hint b { font-family: var(--display); font-weight: 400; font-size: 14.5px; letter-spacing: .12em; color: var(--ink-2); }
+.mh-ico { height: 12px; width: auto; fill: none; stroke: var(--ink-2); stroke-width: 1; overflow: visible; }
+.mh-ico .lit { fill: var(--ink-2); stroke: none; }
+.method-hint.is-bazi b { color: var(--zhu); }
+.method-hint.is-bazi .mh-ico { stroke: var(--zhu); }
+.method-hint.is-bazi .mh-ico .lit { fill: var(--zhu); }
+.mh-edit { color: var(--ink); text-decoration: underline dotted; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease, text-decoration-color .2s ease; }
+.mh-edit:hover { text-decoration-color: var(--ink); }
+.mh-edit.need { color: var(--zhu); text-decoration-color: rgba(255, 138, 92, .5); }
+.method-hint.swap { animation: hint-swap .45s var(--ease-out); }
+@keyframes hint-swap { from { opacity: 0; transform: translateY(6px); } }
 
 /* 主按钮：实底，外加一道细线（像图纸上的双线框） */
 .btn-divine, .cast-btn, .btn-primary {
@@ -1228,6 +1241,12 @@ body.casting .home-main > * {
 .bazi-status:empty { display: none; }
 .bazi-status.success { color: var(--ink-2); }
 .bazi-status.error { color: var(--zhu); }
+.bazi-status.dirty { color: var(--zhu); opacity: .85; }
+/* 保存按钮的状态：和已存生辰一致时常亮为「✓ 生辰已保存」；改了没存时右上角一个朱红小点，写「保存改动」 */
+.btn-save-bazi.is-saved { --c: var(--zhu); color: var(--zhu); box-shadow: inset 0 0 0 1px rgba(255, 138, 92, .45); background-color: rgba(255, 138, 92, .08); cursor: default; }
+.btn-save-bazi.is-saved::before { content: "✓"; margin-right: 6px; }
+.btn-save-bazi.is-dirty { box-shadow: inset 0 0 0 1px var(--ink-2); }
+.btn-save-bazi.is-dirty::after { content: ""; position: absolute; top: -3px; right: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--zhu); box-shadow: 0 0 0 3px var(--blue-deep); }
 
 /* 爻开关：关是阴爻，开是阳爻 */
 .toggle-switch { position: relative; flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 40px; cursor: pointer; }
