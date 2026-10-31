@@ -255,7 +255,7 @@ function loadHistoryItem(id, fromRect) {
     const bin = item.binary || guaBinary(gua);
     // 从牌册缩略图的位置飞到结果页
     const source = fromRect ? { cosmosValue: shaoValue(bin), fromRect } : null;
-    // 打开某一卦：牌册不要走「卦飞回圆图」的普通关闭，只淡去，把舞台交给这一卦飞向结果页
+    // 打开某一卦：牌册关闭时卦不飞回圆图，收回牌册挂签，这一卦自己飞向结果页
     const panel = document.getElementById('historyPanel');
     if (panel) panel._toItem = true;
     toggleHistory(false);

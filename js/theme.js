@@ -113,22 +113,8 @@ function archiveFlight(panel, tag, open) {
     const toItem = !open && panel._toItem;
     panel._toItem = false;
     [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
-    // 从牌册打开某一卦：不让卦飞回圆图，圆图空位立刻还原（被点的那一卦要从它的位置起飞），面板轻轻淡去
-    if (toItem) {
-        showRingSlots();
-        panel.classList.add('morphing');
-        panel.classList.remove('flying', 'flown');
-        panel.animate([{ opacity: 1, transform: 'none', filter: 'blur(0px)' }, { opacity: 0, transform: 'scale(.985)', filter: 'blur(6px)' }],
-            { duration: 300, easing: 'ease-in', fill: 'forwards' });
-        panel._flightTimer = setTimeout(() => {
-            panel.style.transition = 'none';
-            panel.classList.remove('morphing');
-            panel.offsetHeight;
-            panel.style.transition = '';
-            panel.getAnimations().forEach(a => a.cancel());
-        }, 330);
-        return;
-    }
+    // 从牌册打开某一卦：要去结果页了，卦不飞回圆图，圆图空位立刻还原，亮着的卦收回牌册挂签里
+    if (toItem) showRingSlots();
     panel.classList.add('morphing', 'flying');
     // 卦是飞进格子亮起来的，落定后不再让亮格子另放一遍逐个点亮的动画
     panel.classList.toggle('flown', open);
@@ -139,7 +125,7 @@ function archiveFlight(panel, tag, open) {
     const targets = Array.from(panel.querySelectorAll('.am-cell.lit'))
         .map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx') }));
     // 起点：首页圆图上同一卦的位置（带着它在圆周上的朝向）；否则是挂签
-    const ringOn = document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
+    const ringOn = !toItem && document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
     const ring = ringOn ? document.querySelectorAll('.cosmos-ring .cg') : null;
     const hv = document.getElementById('homeView').getBoundingClientRect();
     const hcx = hv.left + hv.width / 2, hcy = hv.top + hv.height / 2;
