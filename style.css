@@ -1498,12 +1498,15 @@ body.casting .home-main > * {
 }
 .sc-name.long { font-size: 44px; }
 .sc-name span { display: block; }
+/* 朱印像书画落款处的印章：落在卦画下方右侧，和卦序那几行同一排，上沿略压住圆环底边 */
+.sc-info { position: relative; display: flex; align-items: flex-start; gap: 18px; margin-top: 18px; }
+.sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
 .sc-seal {
-  position: absolute;
-  left: 188px;
-  top: 206px;
+  position: relative;
+  flex: none;
   width: 82px;
   height: 82px;
+  margin: -34px 31px 0 0;
   padding: 5px;
   border: 3px solid;
   background: #11305C;
@@ -1524,9 +1527,9 @@ body.casting .home-main > * {
 .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
 .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
 
-.sc-meta { position: relative; margin-top: 26px; font-size: 14px; letter-spacing: .14em; color: #C5D1E2; }
+.sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
 .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
-.sc-change { position: relative; margin-top: 4px; font-size: 14px; letter-spacing: .14em; color: #FF8A5C; }
+.sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
 .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
 .sc-ask {
   position: relative;

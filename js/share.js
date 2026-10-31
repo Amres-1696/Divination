@@ -77,28 +77,30 @@ function shareCardWhen(d) {
     };
 }
 
-// 背景：蓝晒纸的细网格、四角裁切线，和压在卦名后面的先天圆环（橙色刻度＝六十四取一）
+// 背景：蓝晒纸的细网格、四角裁切线，和压在卦名后面的先天圆环（橙色刻度＝六十四取一）。
+// 每组线都合成一条 path：html2canvas 会给每个节点复制一遍计算样式，上百根 <line> 会让出图卡顿
 function shareCardBackdrop() {
-    const lines = [];
-    for (let x = 24; x < 500; x += 24) lines.push(`<line x1="${x}" y1="0" x2="${x}" y2="888"/>`);
-    for (let y = 24; y < 888; y += 24) lines.push(`<line x1="0" y1="${y}" x2="500" y2="${y}"/>`);
+    let grid = '';
+    for (let x = 24; x < 500; x += 24) grid += `M${x} 0V888`;
+    for (let y = 24; y < 888; y += 24) grid += `M0 ${y}H500`;
     const crop = [[18, 18, 1, 1], [482, 18, -1, 1], [18, 870, 1, -1], [482, 870, -1, -1]]
-        .map(([x, y, sx, sy]) => `<path d="M${x} ${y + sy * 22}V${y}H${x + sx * 22}"/>`).join('');
+        .map(([x, y, sx, sy]) => `M${x} ${y + sy * 22}V${y}H${x + sx * 22}`).join('');
     return `<svg class="sc-bg" width="500" height="888" viewBox="0 0 500 888" aria-hidden="true">
-<g stroke="#EEF2F7" stroke-opacity=".05" stroke-width="1">${lines.join('')}</g>
-<g stroke="#EEF2F7" stroke-opacity=".5" stroke-width="1.2" fill="none">${crop}</g></svg>`;
+<path d="${grid}" stroke="#EEF2F7" stroke-opacity=".05" stroke-width="1"/>
+<path d="${crop}" stroke="#EEF2F7" stroke-opacity=".5" stroke-width="1.2" fill="none"/></svg>`;
 }
 function shareCardRing() {
-    const cx = 392, cy = 150, ticks = [];
-    for (let k = 0; k < 64; k++) {
-        const a = k * 5.625 * Math.PI / 180, on = k === 0;
-        const r1 = on ? 100 : 118, r2 = on ? 146 : (k % 8 === 0 ? 132 : 126);
-        ticks.push(`<line x1="${(cx + r1 * Math.sin(a)).toFixed(1)}" y1="${(cy - r1 * Math.cos(a)).toFixed(1)}" x2="${(cx + r2 * Math.sin(a)).toFixed(1)}" y2="${(cy - r2 * Math.cos(a)).toFixed(1)}" stroke="${on ? '#FF8A5C' : '#EEF2F7'}" stroke-opacity="${on ? 1 : .32}" stroke-width="${on ? 2.4 : 1}"/>`);
+    const cx = 392, cy = 150, pt = (r, a) => `${(cx + r * Math.sin(a)).toFixed(1)} ${(cy - r * Math.cos(a)).toFixed(1)}`;
+    let ticks = '';
+    for (let k = 1; k < 64; k++) {
+        const a = k * 5.625 * Math.PI / 180;
+        ticks += `M${pt(118, a)}L${pt(k % 8 === 0 ? 132 : 126, a)}`;
     }
     return `<svg class="sc-ring" width="500" height="300" viewBox="0 0 500 300" aria-hidden="true">
 <circle cx="${cx}" cy="${cy}" r="138" fill="none" stroke="#EEF2F7" stroke-opacity=".14"/>
 <circle cx="${cx}" cy="${cy}" r="104" fill="none" stroke="#EEF2F7" stroke-opacity=".22" stroke-dasharray="2 5"/>
-${ticks.join('')}</svg>`;
+<path d="${ticks}" stroke="#EEF2F7" stroke-opacity=".32" stroke-width="1"/>
+<path d="M${pt(100, 0)}L${pt(146, 0)}" stroke="#FF8A5C" stroke-width="2.4"/></svg>`;
 }
 
 function createShareCard(d) {
@@ -113,6 +115,9 @@ function createShareCard(d) {
     const main = (d.analysisList || [])[0] || '';
     const reading = (d.analysisList || []).slice(1).join('');
     const when = shareCardWhen(d);
+    // 「变爻位置：第 二、三 爻」→「二、三爻动」
+    const movingPos = String(d.changePos || '').replace(/^变爻位置：/, '').replace(/^第\s*/, '').replace(/\s*爻$/, '').trim();
+    const movingText = movingPos ? movingPos + '爻动' : '';
     // 大卦画：六根爻条从卡片左缘伸进来，动爻橙色，并按古法在末端标 ○（老阳）/ ×（老阴）
     const bars = hexLines.map((line, i) => {
         const yang = line === 7 || line === 9, moving = line === 9 || line === 6;
@@ -135,10 +140,15 @@ function createShareCard(d) {
     ${shareCardRing()}
     ${bars}
     <div class="sc-name${chars.length > 3 ? ' long' : ''}">${nameHtml}</div>
+  </div>
+  <div class="sc-info">
+    <div class="sc-info-text">
+      <div class="sc-meta">${ordinal}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}</div>
+      ${d.title ? `<div class="sc-meta">${escHtml(d.title)}</div>` : ''}
+      ${d.hasChange && d.cgName ? `<div class="sc-change">之卦　${escHtml(d.cgName)}${movingText ? `　<span>${escHtml(movingText)}</span>` : ''}</div>` : ''}
+    </div>
     <div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div>
   </div>
-  <div class="sc-meta">${ordinal}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}${d.title ? `<em>·</em>${escHtml(d.title)}` : ''}</div>
-  ${d.hasChange && d.cgName ? `<div class="sc-change">之卦　${escHtml(d.cgName)}${d.changePos ? `　<span>${escHtml(d.changePos.replace('变爻位置：', ''))}</span>` : ''}</div>` : ''}
   ${d.question ? `<div class="sc-ask"><span>所问</span>${escHtml(d.question)}</div>` : ''}
   ${main ? `<div class="sc-main">${escHtml(main)}</div>` : ''}
   ${reading ? `<div class="sc-reading">${escHtml(reading)}</div>` : ''}
@@ -226,7 +236,7 @@ async function shareAsImage() {
     preview.classList.remove('developing');
     preview.innerHTML = '<div class="share-paper"><span>显影中</span></div>';
     container.classList.add('show');
-    shareBoxMotion(container, true);
+    const rising = shareBoxMotion(container, true);
 
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
@@ -239,7 +249,10 @@ async function shareAsImage() {
         if (document.fonts && document.fonts.ready) {
             try { await document.fonts.ready; } catch(e) {}
         }
-        await sleep(80);
+        // 等弹层升起落定再出图：html2canvas 会占住主线程，和升起动画抢就会卡顿。
+        // 最多等 0.7 秒——标签页切到后台时动画不走，不能让出图一直等下去
+        if (rising) await Promise.race([rising.finished.catch(() => {}), sleep(700)]);
+        else await sleep(80);
         const card = tmp.querySelector('#shareCard');
         scrubShareCardExternalUrls(card, window);
 
@@ -322,10 +335,10 @@ function shareBoxMotion(container, open) {
     const box = container && container.querySelector('.share-box');
     const btn = document.getElementById('shareBtn');
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!box || !btn || typeof box.animate !== 'function' || reduce) return;
+    if (!box || !btn || typeof box.animate !== 'function' || reduce) return null;
     box.getAnimations().forEach(a => a.cancel());
     const b = box.getBoundingClientRect(), s = btn.getBoundingClientRect();
-    if (!s.width || !b.width) return;
+    if (!s.width || !b.width) return null;
     const dx = (s.left + s.width / 2) - (b.left + b.width / 2);
     const dy = (s.top + s.height / 2) - (b.top + b.height / 2);
     const at = `translate(${dx}px, ${dy}px) scale(${Math.max(.12, s.width / b.width).toFixed(3)})`;
@@ -334,9 +347,9 @@ function shareBoxMotion(container, open) {
         { transform: `translate(${dx * .18}px, ${dy * .18 - 18}px) scale(.94)`, opacity: 1, offset: .6 },
         { transform: 'none', opacity: 1 }
     ];
-    if (open) box.animate(frames, { duration: 620, easing: 'cubic-bezier(.2, .8, .25, 1)' });
+    if (open) return box.animate(frames, { duration: 620, easing: 'cubic-bezier(.2, .8, .25, 1)' });
     // 收回后停在按钮处（下次打开前会先取消），免得弹层淡出前闪回原位
-    else box.animate(frames.slice().reverse(), { duration: 300, easing: 'cubic-bezier(.5, 0, .75, .2)', fill: 'forwards' });
+    return box.animate(frames.slice().reverse(), { duration: 300, easing: 'cubic-bezier(.5, 0, .75, .2)', fill: 'forwards' });
 }
 
 function closeShare() {
