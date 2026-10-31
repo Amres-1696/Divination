@@ -77,7 +77,8 @@ function simpleHash(str) {
 }
 
 function escHtml(s) {
-    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    // 旧记录或手改过的存储里字段可能缺失，按空串处理，不让整张列表渲染中断
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 // 通行本（文王）卦序，用于显示「第几卦」。GUA 数组本身按伏羲二进制排列，不能直接当卦序用。
 const KING_WEN_ORDER = '乾坤屯蒙需讼师比小畜履泰否同人大有谦豫随蛊临观噬嗑贲剥复无妄大畜颐大过坎离咸恒遁大壮晋明夷家人睽蹇解损益夬姤萃升困井革鼎震艮渐归妹丰旅巽兑涣节中孚小过既济未济';
@@ -101,15 +102,7 @@ function guaOrdinal(gua) {
     const n = guaNumber(gua);
     return n ? `第${toChineseNum(n)}卦` : '';
 }
-function guaIndex(gua) {
-    const i = GUA.indexOf(gua);
-    return i >= 0 ? i + 1 : 1;
-}
-function isRareGua(bin) {
-    return bin === '111111' || bin === '000000';
-}
 function getVerdict(gua) {
-
     return VERDICT_MAP[gua[0]] || 'ping';
 }
 function binToHexLines(bin) {

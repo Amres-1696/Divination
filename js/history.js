@@ -110,7 +110,6 @@ function renderArchiveMap(history) {
     const filtered = _archiveFilter != null
         ? lookupGua(linesFromShao(_archiveFilter).map(x => x % 2 ? '1' : '0').reverse().join(''))
         : null;
-    const total = history.length || 1;
     map.innerHTML = history.length ? `
 <div class="am-stats">
   <p class="am-big"><b>${history.length}</b> 卦，落在 <b>${lit}</b> 格</p>
@@ -130,7 +129,7 @@ function renderArchiveMap(history) {
         cell.addEventListener('click', () => {
             const v = Number(cell.dataset.v);
             _archiveFilter = _archiveFilter === v ? null : v;
-            loadHistory({ quiet: true, listOnly: false });
+            loadHistory({ quiet: true });
         });
         cell.addEventListener('mouseenter', () => {
             const g = lookupGua(linesFromShao(Number(cell.dataset.v)).map(x => x % 2 ? '1' : '0').reverse().join(''));

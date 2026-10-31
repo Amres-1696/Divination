@@ -130,7 +130,6 @@ function initFrameScroll() {
     };
     const update = () => {
         raf = 0;
-        document.body.classList.toggle('scrolled', window.scrollY > 4);
         const m = metrics();
         if (m.range <= 2 || document.body.classList.contains('dialog-open')) { track.classList.remove('on'); return; }
         track.classList.add('on');

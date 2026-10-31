@@ -355,3 +355,49 @@ test('card numbers follow the received (King Wen) sequence, not the binary array
     assert.equal(f.run("guaOrdinal(GUA.find(g=>g[0]==='山风蛊'))"), '第十八卦');
     assert.equal(f.run("guaOrdinal(GUA.find(g=>g[0]==='火水未济'))"), '第六十四卦');
 });
+
+test('escHtml tolerates fields missing from old or hand-edited records', () => {
+    const f = fixture();
+    assert.equal(f.run(`escHtml(undefined) + '|' + escHtml(null) + '|' + escHtml('<a>')`), '||&lt;a&gt;');
+});
+
+test('daily motto uses the full date, so the same day number in different months can differ', () => {
+    const f = fixture();
+    const distinct = f.run(`new Set(Array.from({length: 12}, (_, m) => getDailyMotto(new Date(2026, m, 7)))).size`);
+    assert.ok(distinct > 1);
+});
+
+test('without storage the daily seed stays the same for the whole page session', () => {
+    const f = fixture();
+    f.context.localStorage.getItem = () => { throw new Error('SecurityError'); };
+    assert.equal(f.run('getUserSeed() === getUserSeed()'), true);
+});
+
+test('AI stream keeps the final event even when it has no trailing newline', async () => {
+    const f = fixture();
+    configureAi(f);
+    const enc = new TextEncoder();
+    const chunks = [
+        enc.encode('data: {"choices":[{"delta":{"content":"甲"}}]}\n'),
+        enc.encode('data: {"choices":[{"delta":{"content":"乙"}}]}')
+    ];
+    f.context.fetch = async () => {
+        let i = 0;
+        return {
+            ok: true,
+            headers: { get: () => 'text/event-stream' },
+            body: { getReader: () => ({ read: async () => i < chunks.length ? { done: false, value: chunks[i++] } : { done: true } }) }
+        };
+    };
+    const text = await f.run(`requestAiReading(gua, change, '问', document.getElementById('aiBody'), {})`);
+    assert.equal(text, '甲乙');
+});
+
+test('share card shows when the reading was cast, not when the image is made', () => {
+    const f = fixture();
+    const date = f.run(`var r = document.getElementById('resultArea');
+        r.dataset.createdAt = new Date(2020, 0, 2, 3, 4).toISOString();
+        getCurrentGuaData().date`);
+    assert.match(date, /2020/);
+    assert.doesNotMatch(date, /2026/);
+});

@@ -118,9 +118,11 @@ function makeYearRuler(input, onChange) {
     };
     win.addEventListener('pointerup', end);
     win.addEventListener('pointercancel', end);
+    // 只认横向滚动（触控板左右划、Shift+滚轮）；竖向滚轮留给设置面板滚动，免得划过刻度尺时误改年份
     root.addEventListener('wheel', e => {
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!d) return;
         e.preventDefault();
-        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
         const base = has ? Math.round(pos) : DEFAULT;
         animateTo(base + Math.sign(d) * (Math.abs(d) > 60 ? 2 : 1), true);
     }, { passive: false });
@@ -187,9 +189,11 @@ function makeBirthCalendar(yearInput, monthSel, dayInput) {
     }
     root.querySelectorAll('.cal-nav').forEach(b => b.addEventListener('click', () => {
         let m = viewMonth + Number(b.dataset.d);
-        let y = readYear();
-        if (m < 1) { m = 12; if (y > 1900) yearInput.value = String(y - 1); }
-        if (m > 12) { m = 1; if (y < 2100) yearInput.value = String(y + 1); }
+        const y = readYear();
+        // 到了 1900 年正月 / 2100 年腊月就停住，不要绕回同一年的另一头
+        if ((m < 1 && y <= 1900) || (m > 12 && y >= 2100)) return;
+        if (m < 1) { m = 12; yearInput.value = String(y - 1); }
+        if (m > 12) { m = 1; yearInput.value = String(y + 1); }
         setMonthRaw(String(m));
         render(Number(b.dataset.d));
     }));

@@ -10,10 +10,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap">
-    <link rel="stylesheet" href="style.css?v=20261030-7">
+    <link rel="stylesheet" href="style.css?v=20261031-4">
     <script src="html2canvas.min.js" defer></script>
 </head>
-<body>
+<body class="view-home">
 <div class="cosmos" id="cosmos" aria-hidden="true"></div>
 <div class="mat" aria-hidden="true"></div>
 <div class="frame" aria-hidden="true">
@@ -25,8 +25,8 @@
 <header class="masthead">
   <button class="brand" id="homeBtn" aria-label="回到首页"><b>天衍</b><span>周易六十四卦图</span></button>
   <nav class="masthead-nav" aria-label="主要导航">
-    <button id="historyBtn">牌册<sup id="historyCount"></sup></button>
-    <button id="settingsGear">设置</button>
+    <button id="historyBtn" class="nav-tag"><span class="nav-tag-text">牌册</span><sup id="historyCount"></sup></button>
+    <button id="settingsGear" class="nav-tag"><span class="nav-tag-text">设置</span></button>
   </nav>
 </header>
 <div class="site">
@@ -51,14 +51,6 @@
     </section>
     <div id="resultArea" aria-live="polite"></div>
   </main>
-  <footer class="site-footer">
-    <p>天衍免费开源，按占卜游戏来做，不保证预测结果。</p>
-    <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
-      <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.1 1.2A10.8 10.8 0 0 1 12 6.2c1.1 0 2.1.1 3.1.4 2.2-1.5 3.1-1.2 3.1-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.4 5.7.4.4.8 1.1.8 2.1v3c0 .3.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/></svg>
-      在 GitHub 上加星或提建议
-    </a>
-    <p class="footer-copy">&copy; 2026 天衍</p>
-  </footer>
 </div>
 <div class="history-overlay" id="settingsOverlay" aria-hidden="true"></div>
 <div class="history-panel settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true">
@@ -90,7 +82,7 @@
         <input type="number" id="baziYear" min="1900" max="2100" tabindex="-1">
         <select id="baziMonth" tabindex="-1"><option value="">—</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
         <input type="number" id="baziDay" min="1" max="31" tabindex="-1">
-        <select id="baziHour" tabindex="-1"><option value="">—</option><option value="0" data-range="23-1">子时</option><option value="1" data-range="1-3">丑时</option><option value="2" data-range="3-5">寅时</option><option value="3" data-range="5-7">卯时</option><option value="4" data-range="7-9">辰时</option><option value="5" data-range="9-11">巳时</option><option value="6" data-range="11-13">午时</option><option value="7" data-range="13-15">未时</option><option value="8" data-range="15-17">申时</option><option value="9" data-range="17-19">酉时</option><option value="10" data-range="19-21">戌时</option><option value="11" data-range="21-23">亥时</option></select>
+        <select id="baziHour" tabindex="-1"><option value="">—</option><option value="0">子时</option><option value="1">丑时</option><option value="2">寅时</option><option value="3">卯时</option><option value="4">辰时</option><option value="5">巳时</option><option value="6">午时</option><option value="7">未时</option><option value="8">申时</option><option value="9">酉时</option><option value="10">戌时</option><option value="11">亥时</option></select>
       </div>
       <button class="btn btn-small btn-save-bazi" id="saveBaziBtn">保存生辰</button>
       <div class="bazi-status" id="baziStatus"></div>
@@ -138,6 +130,15 @@
         <div class="settings-hint ai-warn">密钥只保存在本机浏览器中；请求 AI 时会发给你填写的接口。浏览器直连若被跨域（CORS）拦截，请改用支持跨域的服务或自建代理。</div>
       </div>
     </div>
+    <div class="settings-group settings-about" style="--k:4">
+      <div class="settings-label">关于天衍</div>
+      <div class="settings-hint">天衍免费开源，按占卜游戏来做，不保证预测结果。</div>
+      <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
+        <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.1 1.2A10.8 10.8 0 0 1 12 6.2c1.1 0 2.1.1 3.1.4 2.2-1.5 3.1-1.2 3.1-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.4 5.7.4.4.8 1.1.8 2.1v3c0 .3.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/></svg>
+        在 GitHub 上加星或提建议
+      </a>
+      <p class="about-copy">&copy; 2026 天衍</p>
+    </div>
   </div>
 </div>
 <div class="history-overlay" id="historyOverlay" aria-hidden="true"></div>
@@ -182,21 +183,21 @@
         </div>
     </div>
 
-    <script src="data.js"></script>
+    <script src="data.js?v=20261031"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
-    <script src="js/core.js"></script>
-    <script src="js/lunar.js"></script>
-    <script src="js/glyphs.js"></script>
-    <script src="js/cosmos.js"></script>
-    <script src="js/ritual.js"></script>
-    <script src="js/ai.js"></script>
-    <script src="js/settings.js?v=20261030"></script>
-    <script src="js/share.js?v=20261030-2"></script>
-    <script src="js/history.js"></script>
-    <script src="js/daily.js"></script>
-    <script src="js/divination.js?v=20261030"></script>
-    <script src="js/instruments.js"></script>
-    <script src="js/theme.js?v=20261030"></script>
-    <script src="js/main.js"></script>
+    <script src="js/core.js?v=20261031"></script>
+    <script src="js/lunar.js?v=20261031"></script>
+    <script src="js/glyphs.js?v=20261031"></script>
+    <script src="js/cosmos.js?v=20261031"></script>
+    <script src="js/ritual.js?v=20261031"></script>
+    <script src="js/ai.js?v=20261031"></script>
+    <script src="js/settings.js?v=20261031"></script>
+    <script src="js/share.js?v=20261031"></script>
+    <script src="js/history.js?v=20261031"></script>
+    <script src="js/daily.js?v=20261031"></script>
+    <script src="js/divination.js?v=20261031"></script>
+    <script src="js/instruments.js?v=20261031"></script>
+    <script src="js/theme.js?v=20261031-2"></script>
+    <script src="js/main.js?v=20261031"></script>
 </body>
 </html>
