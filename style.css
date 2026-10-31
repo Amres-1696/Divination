@@ -1125,10 +1125,13 @@ body.casting .home-main > * {
 }
 .ruler.empty .ruler-needle { opacity: .45; }
 
-.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.cal-title { font-size: 13.5px; color: var(--ink-3); }
-.cal-title b { font-family: var(--display); font-weight: 400; font-size: 16px; color: var(--ink); }
-.cal-nav { position: relative; width: 28px; height: 28px; border-radius: 50%; transition: background-color .2s ease; }
+/* 月相历：标题是大号的「五月」配年份，下面注明跨了哪几个农历月；每天一枚月相，选中的月亮变朱红 */
+.cal-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.cal-title { display: grid; grid-template-columns: auto auto; align-items: baseline; justify-content: center; column-gap: 8px; text-align: center; }
+.cal-month { font-family: var(--display); font-weight: 400; font-size: 26px; line-height: 1.1; letter-spacing: .08em; color: var(--ink); }
+.cal-year { font-size: 13px; letter-spacing: .08em; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cal-span { grid-column: 1 / -1; margin-top: 2px; font-style: normal; font-size: 11.5px; letter-spacing: .12em; color: var(--ink-3); }
+.cal-nav { position: relative; width: 30px; height: 30px; margin-top: 2px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--rule-soft); transition: background-color .2s ease, box-shadow .2s ease; }
 .cal-nav::before {
   content: "";
   position: absolute;
@@ -1142,32 +1145,42 @@ body.casting .home-main > * {
   transform: rotate(45deg);
 }
 .cal-nav.next::before { margin-left: -4px; transform: rotate(-135deg); }
-.cal-nav:hover { background: var(--rule-soft); }
+.cal-nav:hover { background: var(--rule-soft); box-shadow: inset 0 0 0 1px var(--rule); }
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
-.cal-week { font-size: 11px; color: var(--ink-3); padding-bottom: 4px; border-bottom: 1px solid var(--rule-soft); }
-.cal-grid { gap: 1px; margin-top: 4px; }
+.cal-week { font-size: 10.5px; letter-spacing: .1em; color: var(--ink-3); padding-bottom: 6px; }
+.cal-week span:first-child, .cal-week span:last-child { color: var(--ink-2); }
+.cal-grid { row-gap: 2px; }
 .cal-day {
+  position: relative;
+  height: 40px;
   display: grid;
-  justify-items: center;
-  gap: 1px;
-  padding: 3px 0 2px;
-  font-size: 13.5px;
-  line-height: 1.15;
-  color: var(--ink-2);
+  place-items: center;
   font-variant-numeric: tabular-nums;
-  transition: background-color .15s ease, color .15s ease;
 }
-.cal-day small { font-size: 9px; color: var(--ink-3); letter-spacing: -.02em; white-space: nowrap; }
-.cal-day.new-moon small { color: var(--ink-2); }
-.cal-day:hover { background: rgba(238, 242, 247, .1); color: var(--ink); }
-.cal-day.on { background: var(--ink); color: var(--blue-deep); }
-.cal-day.on small { color: var(--blue-deep); opacity: .75; }
+.cal-day .moon { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; transition: transform .3s var(--ease-out); }
+.moon-dark { fill: rgba(238, 242, 247, .06); stroke: rgba(238, 242, 247, .16); stroke-width: .6; }
+.moon-lit { fill: rgba(238, 242, 247, .2); }
+.cal-day b { position: relative; font-weight: 400; font-size: 13px; line-height: 1; color: var(--ink-2); transition: color .2s ease; }
+.cal-day small { position: absolute; left: 0; right: 0; bottom: -1px; font-size: 8.5px; line-height: 1; letter-spacing: 0; color: var(--ink-3); white-space: nowrap; }
+.cal-day.new-moon small { color: var(--zhu); opacity: .85; }
+.cal-day:hover .moon { transform: scale(1.12); }
+.cal-day:hover b { color: var(--ink); }
+.cal-day:hover .moon-lit { fill: rgba(238, 242, 247, .32); }
+/* 选中：月亮变朱红，外面套一圈细框，像盖了一枚小印 */
+.cal-day.on::before { content: ""; position: absolute; left: 50%; top: 50%; width: 36px; height: 36px; margin: -18px 0 0 -18px; box-shadow: inset 0 0 0 1px var(--zhu); transform: rotate(45deg); animation: cal-pick .35s var(--ease-out); }
+.cal-day.on .moon-dark { fill: rgba(255, 138, 92, .14); stroke: var(--zhu); }
+.cal-day.on .moon-lit { fill: var(--zhu); }
+.cal-day.on b { color: var(--ink); font-weight: 600; text-shadow: 0 0 6px rgba(16, 43, 85, .9); }
+.cal-day.on small { color: var(--zhu); }
+@keyframes cal-pick { from { transform: rotate(45deg) scale(.4); opacity: 0; } }
 .cal-grid.slide-l { animation: cal-in-l .35s var(--ease-out); }
 .cal-grid.slide-r { animation: cal-in-r .35s var(--ease-out); }
 @keyframes cal-in-l { from { opacity: 0; transform: translateX(16px); } }
 @keyframes cal-in-r { from { opacity: 0; transform: translateX(-16px); } }
-.cal-lunar { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
-.cal-lunar.muted { color: var(--ink-3); }
+.cal-lunar { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--rule-soft); display: flex; align-items: baseline; gap: 8px; font-family: var(--display); font-size: 15px; letter-spacing: .08em; color: var(--ink); }
+.cal-lunar span { font-family: var(--text); font-size: 11px; letter-spacing: .3em; color: var(--ink-3); }
+.cal-lunar em { margin-left: auto; font-style: normal; font-size: 13px; color: var(--zhu); letter-spacing: .12em; }
+.cal-lunar.muted { font-family: var(--text); font-size: 13px; letter-spacing: .04em; color: var(--ink-3); }
 
 .dial { position: relative; width: 100%; max-width: 200px; aspect-ratio: 1; touch-action: none; user-select: none; -webkit-user-select: none; outline-offset: 6px; border-radius: 50%; }
 .dial svg { display: block; width: 100%; height: 100%; overflow: visible; cursor: grab; }

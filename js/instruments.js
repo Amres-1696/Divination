@@ -138,7 +138,34 @@ function makeYearRuler(input, onChange) {
     return root;
 }
 
-// ---------- 月、日：带农历的小月历 ----------
+// ---------- 月、日：月相历 ----------
+// 每一天画成那天的月相（按农历日：初一朔、十五望），公历数字叠在月亮上；农历只在初一写月名、十五写「望」。
+// 选中的那天月亮变朱红并套一圈细框。
+
+// 农历日 → 月相小图：暗面一整圆，亮面由外侧半圆和明暗交界的半椭圆围成
+function moonSvg(lunarDay) {
+    const r = 8, p = ((lunarDay - 1) % 29.53) / 29.53;
+    const k = Math.cos(2 * Math.PI * p);           // 1 = 朔（全暗），-1 = 望（全亮）
+    const rx = (r * Math.abs(k)).toFixed(2);
+    const waxing = p < .5;                         // 上半月右边亮，下半月左边亮
+    const outer = waxing ? 1 : 0;
+    const inner = waxing ? (k > 0 ? 0 : 1) : (k > 0 ? 1 : 0);
+    const lit = lunarDay <= 1 ? '' : `<path class="moon-lit" d="M0 ${-r}A${r} ${r} 0 0 ${outer} 0 ${r}A${rx} ${r} 0 0 ${inner} 0 ${-r}Z"/>`;
+    return `<svg class="moon" viewBox="-10 -10 20 20" aria-hidden="true"><circle class="moon-dark" r="${r}"/>${lit}</svg>`;
+}
+function moonPhaseName(lunarDay) {
+    if (lunarDay <= 1) return '朔';
+    if (lunarDay <= 6) return '蛾眉月';
+    if (lunarDay <= 8) return '上弦月';
+    if (lunarDay <= 14) return '盈凸月';
+    if (lunarDay <= 16) return '望';
+    if (lunarDay <= 21) return '亏凸月';
+    if (lunarDay <= 23) return '下弦月';
+    if (lunarDay <= 29) return '残月';
+    return '晦';
+}
+const CAL_MONTH_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
+
 function makeBirthCalendar(yearInput, monthSel, dayInput) {
     const root = document.createElement('div');
     root.className = 'cal';
@@ -167,14 +194,24 @@ function makeBirthCalendar(yearInput, monthSel, dayInput) {
         const first = new Date(viewYear, viewMonth - 1, 1).getDay();
         let d = parseInt(dayInput.value, 10);
         if (d > days) { d = days; setDayRaw(String(d)); }
-        title.innerHTML = `<b>${viewYear}</b> 年 <b>${viewMonth}</b> 月`;
+        // 这个公历月跨了哪几个农历月
+        const luFirst = solarToLunar(viewYear, viewMonth, 1), luLast = solarToLunar(viewYear, viewMonth, days);
+        const span = luFirst && luLast
+            ? `${ganZhiYear(luFirst.year)}年 ${lunarMonthName(luFirst.month, luFirst.isLeap)}` +
+              (luLast.month !== luFirst.month || luLast.isLeap !== luFirst.isLeap
+                  ? ` — ${luLast.year !== luFirst.year ? ganZhiYear(luLast.year) + '年 ' : ''}${lunarMonthName(luLast.month, luLast.isLeap)}` : '')
+            : '';
+        title.innerHTML = `<b class="cal-month">${CAL_MONTH_CN[viewMonth - 1]}月</b><span class="cal-year">${viewYear}</span>` +
+            (span ? `<em class="cal-span">${span}</em>` : '');
         const cells = [];
         for (let k = 0; k < first; k++) cells.push('<span class="cal-blank"></span>');
         for (let day = 1; day <= days; day++) {
             const lu = solarToLunar(viewYear, viewMonth, day);
-            const lname = lu ? (lu.day === 1 ? lunarMonthName(lu.month, lu.isLeap) : lunarDayName(lu.day)) : '';
+            const lname = lu ? (lu.day === 1 ? lunarMonthName(lu.month, lu.isLeap) : lu.day === 15 ? '望' : '') : '';
             const sel = day === d && monthSel.value !== '';
-            cells.push(`<button type="button" class="cal-day${sel ? ' on' : ''}${lu && lu.day === 1 ? ' new-moon' : ''}" data-day="${day}" aria-pressed="${sel}" aria-label="${viewMonth}月${day}日">${day}<small>${lname}</small></button>`);
+            const label = `${viewMonth}月${day}日` + (lu ? `，农历${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)}` : '');
+            cells.push(`<button type="button" class="cal-day${sel ? ' on' : ''}${lu && lu.day === 1 ? ' new-moon' : ''}" data-day="${day}" aria-pressed="${sel}" aria-label="${label}">` +
+                `${lu ? moonSvg(lu.day) : ''}<b>${day}</b>${lname ? `<small>${lname}</small>` : ''}</button>`);
         }
         grid.innerHTML = cells.join('');
         if (dir) {
@@ -184,7 +221,9 @@ function makeBirthCalendar(yearInput, monthSel, dayInput) {
         }
         const hasDate = d >= 1 && monthSel.value !== '';
         const lu = hasDate ? solarToLunar(viewYear, viewMonth, d) : null;
-        lunarLine.textContent = hasDate ? (lu ? formatLunar(lu) : '') : '点选出生那天，下面会显示农历';
+        lunarLine.innerHTML = hasDate
+            ? (lu ? `<span>农历</span>${formatLunar(lu).replace(/^农历/, '')}<em>${moonPhaseName(lu.day)}</em>` : '')
+            : '点选出生那天，下面会显示农历和月相';
         lunarLine.classList.toggle('muted', !hasDate);
     }
     root.querySelectorAll('.cal-nav').forEach(b => b.addEventListener('click', () => {
