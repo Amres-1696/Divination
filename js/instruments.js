@@ -100,8 +100,10 @@ function makeYearWheel(input, onChange) {
     // 生辰这一组展开时，年轮从二十几年前顺势转过来，停在所选（或默认）的那一年
     root.spinIn = () => {
         if (_reduceMotion() || drag) return;
-        const target = Math.round(pos);
-        pos = clamp(target - 24);
+        // 终点按已选的年份算，不按此刻的位置（上一次还没转完时会停在半路）
+        const v = parseInt(input.value, 10);
+        const target = v >= MIN && v <= MAX ? v - MIN : DEFAULT - MIN;
+        pos = clamp(target - 24 < 0 ? target + 24 : target - 24);   // 靠近 1900 年时从另一头转过来
         draw();
         animateTo(target, false);
     };
@@ -352,6 +354,17 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
     }));
     if (window.ResizeObserver) new ResizeObserver(draw).observe(win);
     root._refresh = () => fromInputs(false);
+    // 生辰这一组展开时，月相带跟着年轮一起从一个多月前滑过来，停在所选（或默认）的那一天
+    root.spinIn = () => {
+        if (_reduceMotion() || drag) return;
+        // 终点按已选的月日算，不按此刻的位置（上一次还没滑完时会停在半路）
+        if (readYear() !== year) build();
+        const m = parseInt(monthSel.value, 10), d = parseInt(dayInput.value, 10);
+        const target = m >= 1 && m <= 12 && d >= 1 ? indexOf(m, d) : indexOf(6, 15);
+        pos = clamp(target - 40 < 0 ? target + 40 : target - 40);   // 年初的日子从另一头滑过来
+        draw();
+        animateTo(target, false);
+    };
     build();
     fromInputs(false);
     return root;
@@ -473,6 +486,14 @@ function makeHourDial(sel) {
         const map = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
         if (map[e.key] !== undefined) { e.preventDefault(); commit(((cur < 0 ? 0 : cur + map[e.key]) + 12) % 12); }
     });
+    // 生辰这一组展开时，指针和选中的时辰格一起顺时针转一整圈回到原位
+    root.spinIn = () => {
+        if (_reduceMotion() || dragging || !hand.animate) return;
+        const sweep = { duration: 1000, easing: 'cubic-bezier(.25, .7, .3, 1)' };
+        hand.animate([{ transform: `rotate(${angle - 360}deg)` }, { transform: `rotate(${angle}deg)` }], sweep);
+        const selDeg = parseFloat((selG.style.transform.match(/-?[\d.]+/) || [0])[0]) || 0;
+        selG.animate([{ transform: `rotate(${selDeg - 360}deg)` }, { transform: `rotate(${selDeg}deg)` }], sweep);
+    };
     fromSel();
     return root;
 }

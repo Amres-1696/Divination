@@ -132,6 +132,8 @@ function openBaziSettings() {
     group.classList.remove('beckon');
     group.offsetWidth;
     group.classList.add('beckon');
+    // 和 CSS 里三件器具依次亮起的时间对上
+    spinBirthInstruments(group, [700, 850, 1000]);
     clearTimeout(openBaziSettings._t);
     openBaziSettings._t = setTimeout(() => group.classList.remove('beckon'), 2400);
 }
@@ -203,10 +205,15 @@ function setBaziGroupShown(group, show) {
         if (!show) group.hidden = true;
     };
     fold.onfinish = group._settle;
-    if (show) {
-        const wheel = group.querySelector('.yw');
-        if (wheel && wheel.spinIn) setTimeout(() => wheel.spinIn(), 140);
-    }
+    if (show) spinBirthInstruments(group, [140, 220, 300]);
+}
+
+// 年轮、月相带、时辰钟依次顺势转到所选的位置（delays 依次是三件的延迟）
+function spinBirthInstruments(group, delays) {
+    ['.yw', '.band', '.dial'].forEach((sel, k) => {
+        const el = group.querySelector(sel);
+        if (el && el.spinIn) setTimeout(() => el.spinIn(), delays[k]);
+    });
 }
 
 function restoreSettingsUI() {
