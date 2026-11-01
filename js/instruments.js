@@ -97,6 +97,14 @@ function makeYearWheel(input, onChange) {
         };
         anim = requestAnimationFrame(stepFn);
     }
+    // 生辰这一组展开时，年轮从二十几年前顺势转过来，停在所选（或默认）的那一年
+    root.spinIn = () => {
+        if (_reduceMotion() || drag) return;
+        const target = Math.round(pos);
+        pos = clamp(target - 24);
+        draw();
+        animateTo(target, false);
+    };
     function fromInput(animated) {
         const v = parseInt(input.value, 10);
         if (v >= MIN && v <= MAX) {

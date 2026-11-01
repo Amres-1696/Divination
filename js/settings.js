@@ -161,11 +161,42 @@ function applySettings(settings) {
     if (settingMethod) settingMethod.value = settings.method;
     if (typeof syncMethodPickers === 'function') syncMethodPickers();
     const birthGroup = document.getElementById('baziSettings');
-    if (birthGroup) birthGroup.hidden = settings.method !== 'bazi';
+    if (birthGroup) setBaziGroupShown(birthGroup, settings.method === 'bazi');
     // 每日启示
     const dailyEl = document.getElementById('dailyGua');
     if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';
     renderMethodHint(settings);
+}
+
+// 设置里切换起卦方式：生辰这一组顺着展开、收起，展开后年轮顺势滚到所选的年份；面板关着时直接切
+function setBaziGroupShown(group, show) {
+    // 上一次展开 / 收起还没放完：直接落到它的终态（onfinish 是异步的，不能等它）
+    if (group._fold) { group._fold.cancel(); group._settle(); }
+    if (group.hidden === !show) return;
+    const panel = document.getElementById('settingsPanel');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!group.animate || reduce || !(panel && panel.classList && panel.classList.contains('show'))) {
+        group.hidden = !show;
+        return;
+    }
+    group.hidden = false;
+    const cs = getComputedStyle(group);
+    const open = { height: `${group.offsetHeight}px`, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 1 };
+    const shut = { height: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 };
+    group.style.overflow = 'hidden';
+    const fold = group._fold = group.animate(show ? [shut, open] : [open, shut],
+        { duration: show ? 520 : 380, easing: show ? 'cubic-bezier(.2, .7, .3, 1)' : 'cubic-bezier(.5, 0, .7, .4)' });
+    group._settle = () => {
+        if (group._fold !== fold) return;
+        group._fold = null;
+        group.style.overflow = '';
+        if (!show) group.hidden = true;
+    };
+    fold.onfinish = group._settle;
+    if (show) {
+        const wheel = group.querySelector('.yw');
+        if (wheel && wheel.spinIn) setTimeout(() => wheel.spinIn(), 140);
+    }
 }
 
 function restoreSettingsUI() {
