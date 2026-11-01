@@ -623,7 +623,28 @@ body.casting .home-main > * {
 .back-link:hover { color: var(--ink); transform: translateX(-3px); }
 .result-question { margin-top: 22px; max-width: 32em; }
 .rq-label { display: block; font-size: 13px; letter-spacing: .3em; color: var(--ink-3); }
-.result-question h1 { font-size: clamp(25px, 3.2vw, 32px); font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; }
+.result-question h1 { font-size: clamp(25px, 3.2vw, 32px); font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; transition: opacity .22s ease; }
+/* 问题从顶栏飞下来时：标题先空着、这一块不再上浮（落点要稳），「所问」小字照常浮现 */
+.result.entering .result-question.carried { animation: none; }
+.result-question.carried h1 { opacity: 0; transition: none; }
+.result.entering .result-question.carried .rq-label { animation: rise .8s var(--ease-out) .27s both; }
+/* 起卦时从输入框升到顶栏正中的问题（theme.js carryQuestion） */
+.q-carry {
+  position: fixed;
+  z-index: 5;
+  left: 0;
+  top: 0;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+.q-carry i { font-style: normal; font-size: 12px; letter-spacing: .3em; color: var(--ink-3); }
+.q-carry b { display: block; max-width: min(40vw, 520px); overflow: hidden; text-overflow: ellipsis; font-weight: 400; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+.q-carry b.wrap { max-width: none; white-space: normal; overflow: visible; overflow-wrap: anywhere; color: var(--ink); }
 
 .reading-layout {
   margin-top: 44px;
@@ -1565,6 +1586,8 @@ body.casting .home-main > * {
   .frame-zones, .crop { display: none; }
   .frame { border-color: var(--rule-soft); }
   .brand span { display: none; }
+  .q-carry i { display: none; }
+  .q-carry b { max-width: 34vw; }
   .masthead-nav { gap: 12px; }
   .nav-tag { width: 34px; padding-top: 20px; --notch: 7px; }
   .nav-tag-text { font-size: 15px; letter-spacing: .26em; }

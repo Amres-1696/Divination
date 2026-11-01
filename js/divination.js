@@ -30,6 +30,8 @@ async function divine() {
     if (btnText) btnText.textContent = '演卦';
 
     try {
+        // 问题从输入框升到顶栏挂着，结果出来时落成「所问」标题
+        if (typeof carryQuestion === 'function') carryQuestion(question);
         await showInvocation();
 
         if (typeof setPageView === 'function') setPageView('ritual');
@@ -66,6 +68,7 @@ async function divine() {
         readingContext.fresh = !!readingContext.historyId;   // 刚收进牌册：结果页的卦落定后，牌册挂签盖上新的数
         renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
     } catch (error) {
+        if (typeof dropQuestionCarry === 'function') dropQuestionCarry();
         if (typeof setPageView === 'function') setPageView('home');
         resultArea.innerHTML = '';
         showToast('起卦未完成，请重试', 'error');
@@ -285,6 +288,7 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
     }
 
     if (window.scrollTo) window.scrollTo({ top: 0 });
+    if (typeof landQuestion === 'function') landQuestion(resultArea.querySelector('.result-question'));
     const glyphEl = resultArea.querySelector('#resultGlyph');
     const header = resultArea.querySelector('.result-header');
     const land = () => {

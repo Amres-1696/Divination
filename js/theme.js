@@ -57,6 +57,66 @@ async function returnToInquiry(opts) {
     _viewBusy = false;
 }
 
+// ---------- 所问：问题从输入框升到顶栏正中，仪式期间一直挂着，结果出来时落成「所问」大标题 ----------
+// 飞的是 .q-carry（「所问」小字 + 问题），输入框里的字在起飞时藏起来；没写问题、减少动态效果时不飞
+function carryQuestion(question) {
+    const input = document.getElementById('question');
+    const head = document.querySelector('.masthead');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    dropQuestionCarry();
+    if (!question || !input || !head || !document.body.animate || reduce) return;
+    const carry = document.createElement('p');
+    carry.className = 'q-carry';
+    carry.innerHTML = '<i>所问</i><b></b>';
+    const text = carry.querySelector('b');
+    text.textContent = question;
+    document.body.appendChild(carry);
+    // 停在顶栏正中
+    const hr = head.getBoundingClientRect(), cr = carry.getBoundingClientRect();
+    const L = hr.left + (hr.width - cr.width) / 2, T = hr.top + (hr.height - cr.height) / 2;
+    carry.style.left = `${L}px`;
+    carry.style.top = `${T}px`;
+    // 起点：输入框里那行字（居中、21px）
+    const ir = input.getBoundingClientRect(), br = text.getBoundingClientRect();
+    const s = parseFloat(getComputedStyle(input).fontSize) / parseFloat(getComputedStyle(text).fontSize);
+    const bx = br.left + br.width / 2 - L, by = br.top + br.height / 2 - T;
+    const tx = ir.left + ir.width / 2 - L - s * bx, ty = ir.top + ir.height / 2 - T - s * by;
+    input.style.color = 'transparent';
+    carry.animate([{ transform: `translate(${tx}px, ${ty}px) scale(${s.toFixed(3)})` }, { transform: 'none' }],
+        { duration: 980, delay: 60, easing: 'cubic-bezier(.6, 0, .2, 1)', fill: 'backwards' });
+    carry.querySelector('i').animate([{ opacity: 0, transform: 'translateX(8px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 500, delay: 820, easing: 'ease-out', fill: 'backwards' });
+}
+
+function dropQuestionCarry() {
+    document.querySelectorAll('.q-carry').forEach(el => el.remove());
+    const input = document.getElementById('question');
+    if (input && input.style) input.style.color = '';
+}
+
+// 结果页渲染后调用：顶栏里挂着的问题飞到「所问」大标题的位置，换成页面上的标题
+function landQuestion(box) {
+    const carry = document.querySelector('.q-carry');
+    const h1 = box && box.querySelector('h1');
+    if (!carry || !h1) { dropQuestionCarry(); return; }
+    box.classList.add('carried');
+    const text = carry.querySelector('b');
+    const s = parseFloat(getComputedStyle(h1).fontSize) / parseFloat(getComputedStyle(text).fontSize);
+    const hr = h1.getBoundingClientRect();
+    // 按标题的宽度折行（同一字体、按比例缩放），落地时和页面上的标题一行对一行
+    text.classList.add('wrap');
+    text.style.width = `${hr.width / s}px`;
+    const cr = carry.getBoundingClientRect(), br = text.getBoundingClientRect();
+    const tx = hr.left - cr.left - s * (br.left - cr.left), ty = hr.top - cr.top - s * (br.top - cr.top);
+    carry.querySelector('i').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-in', fill: 'forwards' });
+    const fly = carry.animate([{ transform: 'none' }, { transform: `translate(${tx}px, ${ty}px) scale(${s.toFixed(3)})` }],
+        { duration: 820, delay: 120, easing: 'cubic-bezier(.5, 0, .2, 1)', fill: 'forwards' });
+    fly.onfinish = () => {
+        box.classList.remove('carried');
+        carry.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }).onfinish = dropQuestionCarry;
+    };
+}
+
 // ---------- 挂签 → 页面：签条先往下拉长成一根竖条，再向两边铺开成整页；关闭时原路收回签条 ----------
 const PANEL_TAG = { historyPanel: 'historyBtn', settingsPanel: 'settingsGear' };
 function morphPanelFromTag(panel, open) {
