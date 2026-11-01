@@ -104,13 +104,33 @@ function renderMethodHint(settings) {
     else html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit need">还没有保存生辰，点这里填写</button>`;
     if (el.innerHTML === html) return;
     el.innerHTML = html;
-    // 换一种起法时整行淡入一次
-    if (el.classList) {
-        el.classList.toggle('is-bazi', bazi);
-        el.classList.remove('swap');
-        el.offsetWidth;
-        el.classList.add('swap');
-    }
+    if (!el.classList) return;
+    el.classList.toggle('is-bazi', bazi);
+    // 换一种起法、存了新的生辰时整行淡入一次；改动发生在设置里时首页被盖着看不见，等设置收起再放
+    const settingsPanel = document.getElementById('settingsPanel');
+    if (settingsPanel && settingsPanel.classList && settingsPanel.classList.contains('show')) el._swapLater = true;
+    else playMethodHintSwap(el);
+}
+
+function playMethodHintSwap(el) {
+    el._swapLater = false;
+    el.classList.remove('swap');
+    el.offsetWidth;
+    el.classList.add('swap');
+}
+
+// 从首页那一行生辰点进来：设置照常从挂签展开，但直接停在生辰这一组，三件器具依次亮起
+function openBaziSettings() {
+    toggleSettings(true);
+    const group = document.getElementById('baziSettings');
+    if (!group || group.hidden) return;
+    const scroller = group.closest('.settings-content');
+    if (scroller && group.offsetTop + group.offsetHeight > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = group.offsetTop - 8;
+    group.classList.remove('beckon');
+    group.offsetWidth;
+    group.classList.add('beckon');
+    clearTimeout(openBaziSettings._t);
+    openBaziSettings._t = setTimeout(() => group.classList.remove('beckon'), 2400);
 }
 
 // 设置里生辰的保存状态：表单和已存的一致时按钮常亮为「已保存」，改了没存就提示还没保存
@@ -219,6 +239,10 @@ function setFloatingPanelState(panelId, overlayId, shouldOpen) {
 
     if (shouldOpen) {
         window.setTimeout(() => panel.querySelector('.btn-close')?.focus({ preventScroll: true }), 180);
+    } else if (panelId === 'settingsPanel') {
+        // 设置收回签条之后，首页起卦方式那一行再换上新的说法
+        const hint = document.getElementById('methodHint');
+        if (hint && hint._swapLater) window.setTimeout(() => playMethodHintSwap(hint), 560);
     }
     return shouldOpen;
 }

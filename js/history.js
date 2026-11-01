@@ -61,6 +61,28 @@ function updateHistoryCount(n) {
     if (meta) meta.textContent = n ? `共 ${n} 卦` : '';
 }
 
+// 新的一卦收进牌册：挂签被往下一拽，签角的朱印抬起来换成新的数，再重新盖下去
+function stampHistoryCount(n) {
+    const badge = document.getElementById('historyCount');
+    const tag = document.getElementById('historyBtn');
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!badge || !tag || !badge.animate || reduce || badge.textContent === String(n)) { updateHistoryCount(n); return; }
+    if (typeof tugTag === 'function') tugTag(tag, 12);
+    badge.getAnimations().forEach(a => a.cancel());
+    const stamp = () => {
+        badge.getAnimations().forEach(a => a.cancel());
+        updateHistoryCount(n);
+        badge.animate([
+            { transform: 'translateY(-10px) rotate(-22deg) scale(1.9)', opacity: 0 },
+            { transform: 'rotate(-10deg) scale(.88)', opacity: 1, offset: .62 },
+            { transform: 'rotate(-10deg) scale(1)', opacity: 1 }
+        ], { duration: 460, easing: 'cubic-bezier(.3, 1.3, .5, 1)' });
+    };
+    if (!badge.textContent) { setTimeout(stamp, 160); return; }
+    badge.animate([{ transform: 'rotate(-10deg)', opacity: 1 }, { transform: 'translateY(-10px) rotate(-22deg) scale(1.3)', opacity: 0 }],
+        { duration: 220, delay: 120, easing: 'ease-in', fill: 'forwards' }).onfinish = stamp;
+}
+
 // ---------- 图册：左边是先天方图总览，右边是按日期分组的时间线 ----------
 let _archiveFilter = null;     // 只看某一卦（邵雍序数），null 为全部
 const VERDICT_CN = { ji: '吉', xiong: '凶', ping: '平' };
@@ -267,6 +289,15 @@ function loadHistoryItem(id, fromRect) {
     }
 }
 
+// 方图格子熄灭 / 暗一档：像灯芯最后亮一下，再落到新的亮度（没记录了就暗回淡格子）
+function douseCell(hx, to, delay) {
+    return hx.animate([
+        { opacity: getComputedStyle(hx).opacity, transform: 'none' },
+        { opacity: 1, transform: 'scale(1.18)', offset: .28 },
+        { opacity: to, transform: to < .1 ? 'scale(.9)' : 'none' }
+    ], { duration: 560, delay: delay || 0, easing: 'ease-out', fill: 'forwards' });
+}
+
 function deleteHistoryItem(id) {
     const el = document.querySelector('.history-item[data-id="' + id + '"]');
     if (el && el.classList.contains('deleting')) return;
@@ -282,6 +313,21 @@ function deleteHistoryItem(id) {
 
     el.classList.add('deleting');
     updateHistoryCount(history.length);
+    // 方图上这一卦的格子跟着暗一档，删到一条不剩就熄灭；格角的次数一起改
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const v = Number(el.dataset.v);
+    const cell = document.querySelector(`.am-cell[data-v="${v}"]`);
+    const hx = cell && cell.querySelector('.hx');
+    let cellAnim = null;
+    if (hx && hx.animate && !reduce) {
+        const counts = new Array(64).fill(0);
+        history.forEach(h => counts[historyValue(h)]++);
+        const left = counts[v], max = Math.max(1, ...counts);
+        cellAnim = douseCell(hx, left ? .38 + left / max * .62 : .09);
+        const em = cell.querySelector('em');
+        if (em) { if (left > 1) em.textContent = String(left); else em.remove(); }
+    }
+    let pending = cellAnim ? 2 : 1;
     let finished = false;
     const finish = () => {
         if (finished) return;
@@ -289,16 +335,18 @@ function deleteHistoryItem(id) {
         el.remove();
         loadHistory({ quiet: true });
     };
+    const done = () => { if (--pending <= 0) finish(); };
+    if (cellAnim) cellAnim.onfinish = done;
     // 只认 .history-item 自身的过渡结束：子元素/伪元素（删除按钮、装饰条）的
     // transitionend 会冒泡上来提前触发收尾，截断退场动画
     const onEnd = (e) => {
         if (e.target !== el) return;
         el.removeEventListener('animationend', onEnd);
-        finish();
+        done();
     };
     el.addEventListener('animationend', onEnd);
     // 兜底：transitionend 未触发（如系统开启减少动态效果）时也能收尾
-    setTimeout(() => { if (el.isConnected) finish(); }, 800);
+    setTimeout(() => { if (el.isConnected) finish(); }, 900);
 }
 
 async function clearHistory() {
@@ -306,6 +354,28 @@ async function clearHistory() {
     if (yes) {
         try { localStorage.removeItem('divinationHistory'); } catch (e) {}
         _archiveFilter = null;
+        // 方图从右下到左上逐格熄灭（和打开牌册时点亮的次序相反），时间线和统计同时收起，熄完再换成空牌册
+        const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const cells = Array.from(document.querySelectorAll('#historyMap .am-cell.lit'));
+        if (!reduce && cells.length && cells[0].animate) {
+            const panel = document.getElementById('historyPanel');
+            if (panel) panel.classList.add('dousing');
+            let longest = 0;
+            cells.forEach(cell => {
+                const hx = cell.querySelector('.hx');
+                const em = cell.querySelector('em');
+                if (em) em.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' });
+                if (!hx) return;
+                const delay = (14 - Number(cell.style.getPropertyValue('--o') || 0)) * 45;
+                longest = Math.max(longest, delay + 560);
+                douseCell(hx, .09, delay);
+            });
+            const fold = [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }];
+            document.querySelectorAll('#historyList .tl-group, #historyMap .am-stats, #historyMap .am-caption').forEach((g, i) =>
+                g.animate(fold, { duration: 320, delay: i * 50, easing: 'ease-in', fill: 'forwards' }));
+            await sleep(longest + 80);
+            if (panel) panel.classList.remove('dousing');
+        }
         loadHistory();
     }
 }

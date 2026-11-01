@@ -63,6 +63,7 @@ async function divine() {
 
         // 先落库拿到唯一 ID，自动 AI 解读和重试都绑定本条记录。
         readingContext.historyId = saveToHistory(question, gua, fullBin, hexLines, change, readingContext);
+        readingContext.fresh = !!readingContext.historyId;   // 刚收进牌册：结果页的卦落定后，牌册挂签盖上新的数
         renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
     } catch (error) {
         if (typeof setPageView === 'function') setPageView('home');
@@ -289,6 +290,10 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
     const land = () => {
         if (glyphEl) glyphEl.classList.remove('awaiting');
         if (header) header.classList.add('landed');
+        if (readingContext.fresh && typeof stampHistoryCount === 'function') {
+            readingContext.fresh = false;
+            setTimeout(() => stampHistoryCount(readHistorySafe().length), 380);
+        }
     };
     if (sourceCard && typeof Cosmos !== 'undefined') {
         // 方图（或牌册缩略图）里的那一卦飞到这里，落定后换成页面上的卦画

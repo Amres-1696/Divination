@@ -964,7 +964,7 @@ body.casting .home-main > * {
 @keyframes cell-lit { from { opacity: 0; transform: scale(.4); } }
 /* 亮着的卦飞进方图的过程中：亮格子里的真卦画先藏起来，落定后换回；卦是飞进来亮起的，不再另放点亮动画 */
 .history-panel.flying .am-cell.lit .hx { visibility: hidden; }
-.history-panel.flying .am-cell.lit .hx, .history-panel.show.flown:not(.quiet) .am-cell.lit .hx { animation: none; }
+#historyPanel.dousing { pointer-events: none; }.history-panel.flying .am-cell.lit .hx, .history-panel.show.flown:not(.quiet) .am-cell.lit .hx { animation: none; }
 .archive-flyer { position: fixed; z-index: 62; pointer-events: none; transform-origin: 50% 50%; }
 .am-caption { margin-top: 14px; font-size: 13.5px; color: var(--ink-3); min-height: 2.6em; }
 .am-caption b { font-family: var(--display); font-weight: 400; color: var(--ink); }
@@ -1053,6 +1053,28 @@ body.casting .home-main > * {
 .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .settings-label { display: block; font-size: 16.5px; }
 .settings-group > .settings-label { margin-bottom: 10px; }
+/* 从首页的生辰那一行点进设置：左边一道朱线自上而下引出，标题转朱，年轮、月相带、时辰钟依次亮起 */
+#baziSettings { position: relative; }
+#baziSettings.beckon::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  background: var(--zhu);
+  transform-origin: 50% 0;
+  animation: bz-mark 1.7s var(--ease-out) .55s both;
+}
+#baziSettings.beckon > .settings-label { animation: bz-label 1.7s ease .55s both; }
+#baziSettings.beckon .birth-year,
+#baziSettings.beckon .birth-cal,
+#baziSettings.beckon .birth-dial { animation: bz-wake .7s var(--ease-out) .7s both; }
+#baziSettings.beckon .birth-cal { animation-delay: .85s; }
+#baziSettings.beckon .birth-dial { animation-delay: 1s; }
+@keyframes bz-mark { 0% { transform: scaleY(0); opacity: 1; } 35% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+@keyframes bz-label { 0%, 70% { color: var(--zhu); } }
+@keyframes bz-wake { from { opacity: .18; filter: blur(3px); transform: translateY(8px); } }
 .settings-hint { margin-top: 8px; font-size: 13.5px; line-height: 1.7; color: var(--ink-3); }
 /* 关于：原来的页脚挪到设置最后 */
 .settings-about .github-support-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); }
