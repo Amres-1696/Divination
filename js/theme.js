@@ -99,6 +99,8 @@ function landQuestion(box) {
     const carry = document.querySelector('.q-carry');
     const h1 = box && box.querySelector('h1');
     if (!carry || !h1) { dropQuestionCarry(); return; }
+    // 升到顶栏那一段要是还没飞完（仪式很快被跳过），先让它落定再量
+    carry.getAnimations({ subtree: true }).forEach(a => a.finish());
     box.classList.add('carried');
     const text = carry.querySelector('b');
     const s = parseFloat(getComputedStyle(h1).fontSize) / parseFloat(getComputedStyle(text).fontSize);

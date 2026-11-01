@@ -299,6 +299,12 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
             setTimeout(() => stampHistoryCount(readHistorySafe().length), 380);
         }
     };
+    // 卦的飞行被打断（比如落定前就点了返回）时 land 不会再来，牌册挂签的数也要更新
+    if (readingContext.fresh) setTimeout(() => {
+        if (!readingContext.fresh) return;
+        readingContext.fresh = false;
+        updateHistoryCount(readHistorySafe().length);
+    }, 2600);
     if (sourceCard && typeof Cosmos !== 'undefined') {
         // 方图（或牌册缩略图）里的那一卦飞到这里，落定后换成页面上的卦画
         requestAnimationFrame(() => Cosmos.toResult(sourceCard.cosmosValue, glyphEl, {

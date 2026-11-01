@@ -125,7 +125,10 @@ function openBaziSettings() {
     const group = document.getElementById('baziSettings');
     if (!group || group.hidden) return;
     const scroller = group.closest('.settings-content');
-    if (scroller && group.offsetTop + group.offsetHeight > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = group.offsetTop - 8;
+    // 生辰组不在视野里（上次滚到了下面，或者底部露不全）时滚到它的顶上
+    if (scroller && (group.offsetTop < scroller.scrollTop || group.offsetTop + group.offsetHeight > scroller.scrollTop + scroller.clientHeight)) {
+        scroller.scrollTop = group.offsetTop - 8;
+    }
     group.classList.remove('beckon');
     group.offsetWidth;
     group.classList.add('beckon');
@@ -170,8 +173,15 @@ function applySettings(settings) {
 
 // 设置里切换起卦方式：生辰这一组顺着展开、收起，展开后年轮顺势滚到所选的年份；面板关着时直接切
 function setBaziGroupShown(group, show) {
-    // 上一次展开 / 收起还没放完：直接落到它的终态（onfinish 是异步的，不能等它）
-    if (group._fold) { group._fold.cancel(); group._settle(); }
+    // 上一次展开 / 收起还没放完：记下它此刻的样子，落到它的终态（onfinish 是异步的，不能等它），
+    // 新的一次从这个样子接着走，不先跳到头再折回来
+    let midway = null;
+    if (group._fold) {
+        const cs = getComputedStyle(group);
+        midway = { height: cs.height, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: Number(cs.opacity) };
+        group._fold.cancel();
+        group._settle();
+    }
     if (group.hidden === !show) return;
     const panel = document.getElementById('settingsPanel');
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -184,7 +194,7 @@ function setBaziGroupShown(group, show) {
     const open = { height: `${group.offsetHeight}px`, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, opacity: 1 };
     const shut = { height: '0px', paddingTop: '0px', paddingBottom: '0px', opacity: 0 };
     group.style.overflow = 'hidden';
-    const fold = group._fold = group.animate(show ? [shut, open] : [open, shut],
+    const fold = group._fold = group.animate(show ? [midway || shut, open] : [midway || open, shut],
         { duration: show ? 520 : 380, easing: show ? 'cubic-bezier(.2, .7, .3, 1)' : 'cubic-bezier(.5, 0, .7, .4)' });
     group._settle = () => {
         if (group._fold !== fold) return;
@@ -249,6 +259,9 @@ function setFloatingPanelState(panelId, overlayId, shouldOpen) {
         const peerPanel = document.getElementById(peerPanelId);
         const peerOverlay = document.getElementById(peerOverlayId);
         if (peerPanel) {
+            // 设置被牌册直接顶掉时，首页那一行攒着的换新也要放出来
+            const hint = peerPanelId === 'settingsPanel' && document.getElementById('methodHint');
+            if (hint && hint._swapLater) window.setTimeout(() => playMethodHintSwap(hint), 560);
             peerPanel.classList.remove('show');
             peerPanel.setAttribute('aria-hidden', 'true');
         }
