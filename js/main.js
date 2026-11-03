@@ -99,7 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const questionInput = document.getElementById('question');
     const divineButton = document.getElementById('divineBtn');
     questionInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); divine(); }
+        // 输入法选字时的回车只是上屏，不起卦（Safari 上屏后还会补发一次 keyCode 229 的 Enter）
+        if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
+        e.preventDefault();
+        divine();
     });
     questionInput.addEventListener('input', () => {
         divineButton.classList.toggle('charged', questionInput.value.trim().length > 0);

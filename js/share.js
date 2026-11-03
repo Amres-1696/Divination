@@ -266,9 +266,25 @@ function assertCanvasExportable(canvas) {
     ctx.getImageData(0, 0, 1, 1);
 }
 
+// html2canvas 近 200KB，只有出分享图才用：不放进首屏，页面空闲时再悄悄取来，点分享时多半已经在了
+let _html2canvasLoad = null;
+function loadHtml2canvas() {
+    if (typeof html2canvas === 'function') return Promise.resolve(true);
+    if (!_html2canvasLoad) {
+        _html2canvasLoad = new Promise(resolve => {
+            const s = document.createElement('script');
+            s.src = 'html2canvas.min.js';
+            s.onload = () => resolve(typeof html2canvas === 'function');
+            s.onerror = () => { _html2canvasLoad = null; s.remove(); resolve(false); };
+            document.head.appendChild(s);
+        });
+    }
+    return _html2canvasLoad;
+}
+
 async function shareAsImage() {
-    if (typeof html2canvas !== 'function') {
-        showToast('分享功能加载失败，请刷新页面后重试', 'error');
+    if (!(await loadHtml2canvas())) {
+        showToast('分享功能加载失败，请检查网络后重试', 'error');
         return;
     }
     const container = document.getElementById('shareImageContainer');
