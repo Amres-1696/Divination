@@ -50,6 +50,7 @@ function persistAiReading(reading, historyId) {
     }
 }
 
+const AI_IDLE_TIMEOUT_MS = 90000;
 async function requestAiReading(gua, change, question, bodyEl, readingContext = {}) {
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
@@ -79,8 +80,14 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         });
     };
 
+    // 接口久不回话（连不上、流卡在半路）就掐断，换成可重试的错误，不让「叩问」一直转下去
+    const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+    let idle = 0;
+    const watch = () => { clearTimeout(idle); if (ctrl) idle = setTimeout(() => ctrl.abort(), AI_IDLE_TIMEOUT_MS); };
     try {
+        watch();
         const resp = await fetch(url, {
+            signal: ctrl ? ctrl.signal : undefined,
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + profile.apiKey },
             body: JSON.stringify({
@@ -103,7 +110,8 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         const canStream = resp.body && typeof resp.body.getReader === 'function';
         if (!canStream || ctype.indexOf('json') !== -1) {
             const data = await resp.json();
-            acc = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '（接口未返回内容）';
+            acc = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+            if (!acc) { fail('接口没有返回解读内容。'); return; }
             paint(acc);
             return acc;
         }
@@ -125,6 +133,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
+            watch();
             buffer += decoder.decode(value, { stream: true });
             const parts = buffer.split('\n');
             buffer = parts.pop();
@@ -133,10 +142,17 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         // 流结束时最后一行可能没有换行符，别把它丢掉
         buffer += decoder.decode();
         if (buffer) eat(buffer);
-        paint(acc || '（接口未返回内容）');
+        if (!acc) { fail('接口没有返回解读内容。'); return; }
+        paint(acc);
         return acc;
     } catch (err) {
+        if (err && err.name === 'AbortError') {
+            fail(`接口超过 ${AI_IDLE_TIMEOUT_MS / 1000} 秒没有回应，已中断。`);
+            return;
+        }
         fail('请求失败：' + (err && err.message ? err.message : String(err)) + '。可能是网络问题或接口被跨域(CORS)拦截。');
+    } finally {
+        clearTimeout(idle);
     }
 }
 

@@ -223,6 +223,8 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .cosmos.instant-show { transition: none; }
 .cosmos-ring, .cosmos-deco { position: absolute; inset: 0; animation: cosmos-spin 520s linear infinite; }
 @keyframes cosmos-spin { to { transform: rotate(360deg); } }
+/* 牌册 / 设置铺满整页时圆图被盖住，停转省得一直重绘；关上后接着原来的角度转 */
+body.dialog-open .cosmos-ring, body.dialog-open .cosmos-deco { animation-play-state: paused; }
 .cosmos-deco { opacity: 0; transition: opacity .7s ease; }
 .cosmos.show-deco .cosmos-deco { opacity: 1; }
 .cosmos-deco svg { position: absolute; inset: 0; overflow: visible; }
@@ -370,6 +372,8 @@ body.view-home .site { min-height: 0; height: 100svh; }
 }
 .home-main { width: min(400px, 100%); text-align: center; }
 .home-main > * { transition: opacity .35s ease, transform .5s var(--ease-out); }
+/* 首次打开、脚本还没接手时先不露首页内容：否则未装好的原生下拉框等会先闪一下，接着入场动画又从头放一遍 */
+body.intro .home-view:not(.entering) .home-main > * { opacity: 0; }
 .home-view.entering .home-main > * {
   animation: rise .9s var(--ease-out) both;
   animation-delay: calc(var(--enter-delay, 0ms) + var(--k, 0) * 110ms);
@@ -872,6 +876,8 @@ body.casting .home-main > * {
 /* 从挂签展开 / 收回的过程中：面板停在展开位置，形状交给 theme.js 的 clip-path 动画 */
 .history-panel.morphing,
 #historyPanel.archive.morphing { visibility: visible; transform: none; opacity: 1; transition: none; }
+/* 收回途中面板还看得见，但已经关了：点击要穿过去落到底下的页面上 */
+.history-panel.morphing:not(.show) { pointer-events: none; }
 .history-head {
   position: relative;
   flex: none;

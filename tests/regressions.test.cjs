@@ -401,3 +401,38 @@ test('share card shows when the reading was cast, not when the image is made', (
     assert.match(date, /2020/);
     assert.doesNotMatch(date, /2026/);
 });
+
+test('every line label (九/六) matches the hexagram bars', () => {
+    const f = fixture();
+    // 二进制串上爻在前：第 i 爻（自下而上）是 b[5 - i]
+    const bad = f.run(`Object.keys(GUA_LOOKUP).flatMap(b => lookupGua(b)[3].split('|').map((y, i) =>
+        (y.charAt(i === 0 || i === 5 ? 1 : 0) === '九') === (b[5 - i] === '1') ? null : lookupGua(b)[0] + ' ' + y).filter(Boolean))`);
+    assert.deepEqual(Array.from(bad), []);
+});
+
+test('AI JSON reply without content offers a retry instead of saving a placeholder', async () => {
+    const f = fixture();
+    configureAi(f);
+    f.context.fetch = async () => ({ ok: true, headers: { get: () => 'application/json' }, body: null, json: async () => ({ choices: [{ message: { content: '' } }] }) });
+    const body = f.byId('aiBody');
+    const text = await f.run(`requestAiReading(gua, change, '问', document.getElementById('aiBody'), {})`);
+    assert.equal(text, undefined);
+    assert.match(body.innerHTML, /ai-error/);
+    assert.match(body.innerHTML, /aiRetryBtn/);
+});
+
+test('AI request that stops answering is aborted and offers a retry', async () => {
+    const f = fixture();
+    configureAi(f);
+    f.context.AbortController = AbortController;
+    f.context.fetch = (_, options) => new Promise((_, reject) => options.signal.addEventListener('abort', () => {
+        const err = new Error('aborted'); err.name = 'AbortError'; reject(err);
+    }));
+    const body = f.byId('aiBody');
+    const pending = f.run(`requestAiReading(gua, change, '问', document.getElementById('aiBody'), {})`);
+    const [id] = [...f.timers].find(([, t]) => t.delay === 90000);
+    f.fireTimer(id);
+    assert.equal(await pending, undefined);
+    assert.match(body.innerHTML, /90 秒没有回应/);
+    assert.match(body.innerHTML, /aiRetryBtn/);
+});
