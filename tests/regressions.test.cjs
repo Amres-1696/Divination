@@ -281,6 +281,19 @@ test('birth save refreshes daily display and its matching detail', () => {
     assert.ok(f.byId('dailyGua').innerHTML.includes(f.run('clicked')));
 });
 
+test('with a saved birth the daily hexagram does not loop through 8 hexagrams within a lunar month', () => {
+    const f = fixture(); setBirthForm(f);
+    f.run('saveBazi()');
+    assert.notEqual(f.run('loadSettings().bazi'), null);
+    // 2026-11-09 是农历十月初一，往后 29 天同属一个农历月
+    const month = f.run(`Array.from({length: 29}, (_, i) => getDailyGua(new Date(2026, 10, 9 + i))[0])`);
+    assert.ok(new Set(month).size > 16, 'distinct in one lunar month: ' + new Set(month).size);
+    assert.ok(month.some((g, i) => i >= 8 && g !== month[i - 8]), 'must not repeat every 8 days');
+    const year = f.run(`new Set(Array.from({length: 730}, (_, i) => getDailyGua(new Date(2026, 0, 1 + i))[0])).size`);
+    assert.equal(year, 64);
+    assert.equal(f.run('getDailyGua(new Date(2026, 10, 10))[0] === getDailyGua(new Date(2026, 10, 10))[0]'), true);
+});
+
 test('daily refresh is skipped on same day and occurs when date changes', () => {
     const f = fixture();
     f.run(`renderDailyGua();var count=0;var renderDailyOriginal=renderDailyGua;
