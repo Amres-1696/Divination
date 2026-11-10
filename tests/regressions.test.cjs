@@ -263,6 +263,23 @@ test('each cast keeps exactly the hexagrams that match every line so far', () =>
     assert.equal(f.run("TRIGRAM_BY_VALUE[shaoValue(TRIGRAM_TO_BINARY['☵']+TRIGRAM_TO_BINARY['☳'])>>3]"), '震');
 });
 
+test('main reading exposes its source lines for every one of the 4,096 casts', () => {
+    const f = fixture();
+    const bad = f.run(`(()=>{let bad=0;for(let n=0;n<4096;n++){const l=[];let x=n;for(let i=0;i<6;i++){l.push([6,7,8,9][x%4]);x=Math.floor(x/4)}
+        const b=l.map(v=>(v===7||v===9)?'1':'0').reverse().join('');const c=calculateChangeGua(l,b);const m=getMainReading(lookupGua(b),c);
+        const want=c.changingYaos.length===3?2:1;
+        if(!m.how||m.lines.length!==want||m.lines.some(x=>!x.text||!x.from||x.text.includes('：')||!m.text.includes(x.text)))bad++}return bad})()`);
+    assert.equal(bad, 0);
+    const two = f.run(`(()=>{const l=[7,7,9,7,7,9];const c=calculateChangeGua(l,'111111');return getMainReading(lookupGua('111111'),c).lines[0]})()`);
+    assert.equal(two.text, '亢龙有悔');
+    assert.equal(two.from, '本卦《乾为天》上九');
+});
+
+test('hexagram readings are plain prose, not the old fortune-teller template', () => {
+    const f = fixture();
+    assert.equal(f.run(`GUA.filter(g=>/^此卦为|之象。|运势/.test(g[4])||!g[4].endsWith('。')||g[4].length<40).length`), 0);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];

@@ -726,6 +726,10 @@ body.casting .home-main > * {
 .title-block dt { font-size: 11px; letter-spacing: .3em; color: var(--ink-3); line-height: 1.6; }
 .title-block dd { font-size: 14.5px; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .title-block .tb-wide:first-child dd { font-family: var(--display); font-weight: 400; font-size: 16px; }
+/* 结果页图签：卦序｜上下 / 起卦｜方图 / 时间 */
+.title-block.tb-result > div:nth-child(3), .title-block.tb-result > div:nth-child(5) { border-right: 1px solid var(--rule-soft); }
+.title-block.tb-result > div:nth-child(2n):not(.tb-wide) { border-right: 0; }
+.title-block.tb-result > div.tb-wide { border-right: 0; }
 
 .reading { max-width: 39em; }
 /* 读纸：正文区铺一层很淡的浅灰，和满屏的蓝图装饰分开；随结果页一起慢慢浮现 */
@@ -767,6 +771,21 @@ body.casting .home-main > * {
 .result.entering .verdict-seal { animation: stamp .5s cubic-bezier(.3, 1.5, .5, 1) 1.15s both; }
 @keyframes stamp { from { opacity: 0; transform: scale(1.9) rotate(-14deg); } to { opacity: 1; transform: scale(1) rotate(-6deg); } }
 .hex-title { margin-top: 8px; font-size: 20px; color: var(--ink-2); }
+/* 结果页的印章只说本卦的底色，不是结论：缩小、褪成淡色、不做盖印动作，旁边注明 */
+.seal-wrap { display: flex; align-items: center; gap: 12px; flex: none; }
+.seal-wrap.aside .verdict-seal { width: 40px; height: 40px; padding: 2px; border-width: 1px; color: var(--ink-3); transform: rotate(-4deg); }
+.seal-wrap.aside .verdict-seal span { font-size: 18px; }
+.result.entering .seal-wrap.aside .verdict-seal { animation: none; }
+.seal-note { font-size: 12.5px; line-height: 1.5; color: var(--ink-3); }
+
+/* 主断：结果页的主角。辞用展示字放大，出处和取法是两行小字 */
+.main-reading { margin-top: 34px; padding-left: 22px; border-left: 2px solid var(--ink); }
+.mr-label { font-family: var(--display); font-size: 15px; font-weight: 400; letter-spacing: .24em; color: var(--ink-2); }
+.mr-line { margin-top: 10px; }
+.mr-line + .mr-line { margin-top: 18px; }
+.mr-quote { display: block; quotes: none; font-family: var(--display); font-size: clamp(30px, 3.5vw, 42px); line-height: 1.35; letter-spacing: .04em; overflow-wrap: anywhere; }
+.mr-from { display: block; margin-top: 6px; font-style: normal; font-size: 15px; color: var(--ink-2); }
+.mr-how { margin-top: 12px; font-size: 13.5px; color: var(--ink-3); }
 
 .block { margin-top: 46px; }
 .block > h3 {
@@ -1629,12 +1648,14 @@ body.casting .home-main > * {
   .reading-layout { display: flex; flex-direction: column; align-items: stretch; gap: 0; margin-top: 26px; }
   .result-header, .reading { display: contents; }
   .glyph-figure { order: 1; }
-  .reading-head { order: 2; margin-top: 26px; }
-  .ben-zhi, .zhi-none { order: 3; align-self: start; min-width: 240px; }
-  .reading-sheet { order: 4; margin-top: 30px; padding: 24px 18px 28px; }
-  .title-block { order: 5; margin-top: 40px; }
-  .result-actions { order: 6; }
-  .result-warning { order: 7; }
+  .ben-zhi, .zhi-none { order: 2; align-self: start; min-width: 240px; }
+  .reading-head { order: 3; margin-top: 30px; }
+  .main-reading { order: 4; margin-top: 26px; padding-left: 16px; }
+  .reading-sheet { order: 5; margin-top: 30px; padding: 24px 18px 28px; }
+  .title-block { order: 6; margin-top: 40px; }
+  .result-actions { order: 7; }
+  .result-warning { order: 8; }
+  .mr-quote { font-size: 28px; }
   .glyph-figure, .result-glyph { width: 116px; height: 116px; }
   .callouts { width: 110px; }
   .co::before { width: 14px; }

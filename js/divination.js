@@ -83,6 +83,8 @@ async function divine() {
 
 // 主断：依朱熹《易学启蒙》变爻取辞法，明确「该以哪一条为主断」
 // changingYaos 为升序（0=初爻 … 5=上爻）
+// 返回：rule 规则名；text 完整一句（给 AI 和分享图）；
+//       lines 主断的原文，每条 { from: 出处, text: 辞 }；how 一句话说明为什么取这一条（给结果页）
 function getMainReading(gua, change) {
     const yaoArr = gua[3].split('|');
     const changing = change.changingYaos;
@@ -91,28 +93,47 @@ function getMainReading(gua, change) {
     const zhi = change.changeGua;
     const posCN = ['初', '二', '三', '四', '五', '上'];
     const all = [0, 1, 2, 3, 4, 5];
+    // 「上九：亢龙有悔」→ 出处「本卦《乾为天》上九」+ 辞「亢龙有悔」
+    const yaoLine = (label, name, raw) => {
+        const cut = String(raw || '').indexOf('：');
+        return cut > 0
+            ? { from: `${label}《${name}》${raw.slice(0, cut)}`, text: raw.slice(cut + 1) }
+            : { from: `${label}《${name}》`, text: raw || '' };
+    };
 
     if (n === 0)
-        return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」` };
+        return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」`,
+            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '六爻皆静，看本卦卦辞' };
     if (n === 1)
-        return { rule: '一爻动', text: `以本卦《${benName}》${posCN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}` };
+        return { rule: '一爻动', text: `以本卦《${benName}》${posCN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
+            lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: '一爻动，看动的这一爻' };
     if (n === 2)
-        return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}` };
+        return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}`,
+            lines: [yaoLine('本卦', benName, yaoArr[changing[1]])], how: '二爻动，以上面那一爻为主' };
     if (n === 3)
-        return { rule: '三爻动', text: `三爻变，本卦《${benName}》与之卦《${zhi[0]}》卦辞并参 —— 本卦「${gua[1]}」，之卦「${zhi[1]}」。` };
+        return { rule: '三爻动', text: `三爻变，本卦《${benName}》与之卦《${zhi[0]}》卦辞并参 —— 本卦「${gua[1]}」，之卦「${zhi[1]}」。`,
+            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }, { from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }],
+            how: '三爻动，本卦和之卦的卦辞合看' };
     if (n === 4) {
         const low = all.filter(i => !changing.includes(i))[0];
-        return { rule: '四爻动', text: `四爻变，看之卦《${zhi[0]}》中二不变爻，以下爻为主 —— ${zhi[3].split('|')[low] || ''}` };
+        const raw = zhi[3].split('|')[low] || '';
+        return { rule: '四爻动', text: `四爻变，看之卦《${zhi[0]}》中二不变爻，以下爻为主 —— ${raw}`,
+            lines: [yaoLine('之卦', zhi[0], raw)], how: '四爻动，看之卦里没动的两爻，以下面那一爻为主' };
     }
     if (n === 5) {
         const only = all.filter(i => !changing.includes(i))[0];
-        return { rule: '五爻动', text: `五爻变，以之卦《${zhi[0]}》唯一不变之爻为主 —— ${zhi[3].split('|')[only] || ''}` };
+        const raw = zhi[3].split('|')[only] || '';
+        return { rule: '五爻动', text: `五爻变，以之卦《${zhi[0]}》唯一不变之爻为主 —— ${raw}`,
+            lines: [yaoLine('之卦', zhi[0], raw)], how: '五爻动，看之卦里唯一没动的那一爻' };
     }
     if (benName === '乾为天')
-        return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」' };
+        return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」',
+            lines: [{ from: '乾卦用九', text: '见群龙无首，吉' }], how: '乾卦六爻全动，看「用九」' };
     if (benName === '坤为地')
-        return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」' };
-    return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」` };
+        return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」',
+            lines: [{ from: '坤卦用六', text: '利永贞' }], how: '坤卦六爻全动，看「用六」' };
+    return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」`,
+        lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
 }
 
 function buildCallouts(hexLines, changingYaos) {
@@ -123,7 +144,7 @@ function buildCallouts(hexLines, changingYaos) {
         const moving = changingYaos.includes(i);
         const after = moving ? yaoLabel(line === 9 ? 8 : 7, i) : '';
         rows.push(`<li class="co${moving ? ' moving' : ''}" style="--r:${5 - i}" data-i="${i}">
-<span class="co-name" data-ben="${yaoLabel(line, i)}" data-zhi="${moving ? after : yaoLabel(line, i)}">${yaoLabel(line, i)}</span>${moving ? `<span class="co-note">动 → ${after}</span>` : ''}</li>`);
+<span class="co-name" data-ben="${yaoLabel(line, i)}" data-zhi="${moving ? after : yaoLabel(line, i)}">${yaoLabel(line, i)}</span>${moving ? `<span class="co-note" data-ben="动 → ${after}" data-zhi="由${yaoLabel(line, i)}变">动 → ${after}</span>` : ''}</li>`);
     }
     return `<ol class="callouts" aria-hidden="true">${rows.join('')}</ol>`;
 }
@@ -141,6 +162,20 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     const mainReading = getMainReading(gua, change);
     const zhi = change.hasChange ? change.changeGua : null;
     const v = shaoValue(fullBin || guaBinary(gua));
+
+    // 印章是每一卦固定的粗略标注，既不看动爻，也不等于卦辞（比如困卦标凶，卦辞却是亨）。
+    // 所以它不再当结论盖在卦名旁：缩成一枚淡色小印，注明说的是本卦的底色，结论交给主断
+    const sealMoving = change.changingYaos.length > 0;
+    const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">本卦的底色${sealMoving ? '<br>不计动爻' : ''}</span></span>`;
+    // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示（节点留给分享图读）
+    const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
+    // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字
+    const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
+        <h3 class="mr-label">主断</h3>
+        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
+        <p class="mr-how">${mainReading.how}</p>
+        <span class="analysis-item" hidden>${mainReading.text}</span>
+      </section>`;
 
     const yaoArr = gua[3].split('|');
     const yaoHtml = hexLines.map((line, i) => {
@@ -167,13 +202,15 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
     let changeHtml = '';
     if (zhi) {
         const pos = change.changingYaos.map(p => YAO_POS_CN[p]);
-        changeHtml = `<section class="block change-section"><h3>变卦</h3>
-<div class="change-comparison">
+        // 并排的两个小卦画和左栏的「本卦/之卦」切换是同一件事，这里不再显示；
+        // 节点保留（hidden），分享图从这里读之卦名和变爻位置
+        changeHtml = `<section class="block change-section"><h3>之卦 <span class="rule-tag">${zhi[0]}</span></h3>
+<div class="change-comparison" hidden>
   <div class="gua-box"><div class="gua-mini">${buildYaoArtSvg(hexLines, change.changingYaos)}</div><div class="gua-label">本卦</div><div class="gua-name">${gua[0]}</div><span class="gua-symbol" hidden>${gua[2]}</span></div>
   <div class="change-arrow" aria-hidden="true"><svg viewBox="0 0 48 12"><path d="M0 6h44M39 1l6 5-6 5"/></svg></div>
   <div class="gua-box changed"><div class="gua-mini">${buildYaoArtSvg(binToHexLines(change.changeBinary), change.changingYaos)}</div><div class="gua-label">之卦</div><div class="gua-name">${zhi[0]}</div><span class="gua-symbol" hidden>${zhi[2]}</span></div>
 </div>
-<div class="change-details"><p>变爻位置：第 ${pos.join('、')} 爻</p><p>${zhi[4]}</p></div></section>`;
+<div class="change-details"><p hidden>变爻位置：第 ${pos.join('、')} 爻</p><p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};
@@ -203,23 +240,22 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
         <button type="button" class="bz-opt" id="zhiBtn" aria-pressed="false">之卦<b>${zhi[0]}</b></button>
         <span class="bz-mark" aria-hidden="true"></span>
       </div>` : '<p class="zhi-none" style="--d:4">六爻皆静，没有之卦</p>'}
-      <dl class="title-block" style="--d:5">
-        <div class="tb-wide"><dt>卦名</dt><dd>${gua[0]}${buildMiniMap(v)}</dd></div>
+      <dl class="title-block tb-result" style="--d:5">
         <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
         <div><dt>上下</dt><dd>上${upperName} 下${lowerName}</dd></div>
         <div><dt>起卦</dt><dd>${methodText}</dd></div>
-        <div><dt>动爻</dt><dd>${change.changingYaos.length ? change.changingYaos.map(p => YAO_POS_CN[p]).join('、') : '无'}</dd></div>
+        <div><dt>方图</dt><dd>${buildMiniMap(v)}</dd></div>
         <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
       </dl>
     </aside>
     <article class="reading" id="readingColumn">
       <header class="reading-head" style="--d:2">
-        <div class="reading-name-row"><h2 class="hex-name">${gua[0]}</h2><span class="verdict-seal ${verdict}" aria-label="${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span></div>
-        <p class="hex-title">${gua[1]}</p>
+        <div class="reading-name-row"><h2 class="hex-name">${gua[0]}</h2>${sealHtml}</div>
+        <p class="hex-title"${titleInMain ? ' hidden' : ''}>${gua[1]}</p>
         <span class="hex-symbol" hidden>${gua[2]}</span>
       </header>
+      ${mainHtml}
       <div class="reading-sheet">
-      <section class="block main-reading" style="--d:3"><h3>主断 <span class="rule-tag">${mainReading.rule}</span></h3><p class="analysis-list lead"><span class="analysis-item">${mainReading.text}</span></p></section>
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
@@ -258,7 +294,7 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
             b.classList.toggle('yang');
             b.classList.toggle('yin');
         });
-        if (header.querySelectorAll) header.querySelectorAll('.co-name').forEach(n => {
+        if (header.querySelectorAll) header.querySelectorAll('.co-name, .co-note').forEach(n => {
             n.textContent = on ? n.dataset.zhi : n.dataset.ben;
         });
         benBtn.setAttribute('aria-pressed', String(!on));
