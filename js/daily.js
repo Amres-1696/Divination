@@ -17,6 +17,14 @@ function getUserSeed() {
     }
 }
 
+// 整数打散（murmur3 收尾步骤）：相邻的输入得到互不相近的输出，返回非负 32 位整数
+function mixInt(n) {
+    let x = n | 0;
+    x = Math.imul(x ^ (x >>> 16), 0x85ebca6b);
+    x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
+    return (x ^ (x >>> 16)) >>> 0;
+}
+
 function getDailyGua(d = new Date()) {
     const dateStr = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
     const settings = loadSettings();
@@ -29,10 +37,18 @@ function getDailyGua(d = new Date()) {
         const bMonth = lunarBazi ? lunarBazi.month : b.month;
         const bDay = lunarBazi ? lunarBazi.day : b.day;
         const nowLunar = solarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
-        const nowDay = nowLunar ? nowLunar.day : d.getDate();
-        const nowMonth = nowLunar ? nowLunar.month : (d.getMonth() + 1);
-        const sumUpper = yearNum + bMonth + bDay + nowDay;
-        const sumLower = sumUpper + (b.hour + 1) + nowMonth;
+        // 今日之数：把农历年月日（含闰月）打散成一个整数，再拆成两份分别融入上下卦。
+        // 以前是把「日」直接加进上卦、「日+月」加进下卦，日子每过一天上下卦同进一位，
+        // 一个农历月里只会在 8 个卦之间循环；拆成两份互不相关的数后，六十四卦都能轮到。
+        // 写法与生辰起卦融入「所问之事」一致（取质数模 97 / 89）。
+        const dayKey = nowLunar
+            ? nowLunar.year * 10000 + nowLunar.month * 100 + nowLunar.day + (nowLunar.isLeap ? 5000000 : 0)
+            : d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+        const dNum = mixInt(dayKey);
+        const baseUpper = yearNum + bMonth + bDay;
+        const baseLower = baseUpper + (b.hour + 1);
+        const sumUpper = baseUpper + (dNum % 97);
+        const sumLower = baseLower + (Math.floor(dNum / 97) % 89);
         const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
         const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
         const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
