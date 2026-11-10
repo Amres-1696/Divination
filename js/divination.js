@@ -137,6 +137,39 @@ function getMainReading(gua, change) {
         lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
 }
 
+// 六爻那一段画成一张标注图：左边是卦画，每一爻引一条线到右边对应的爻辞。
+// 行高随文字换行变化，所以量出每根爻和每行字的位置再画线；尺寸一变就重画。
+function drawYaoLeaders(plate) {
+    const svg = plate && plate.querySelector && plate.querySelector('.yp-leaders');
+    if (!svg || !plate.getBoundingClientRect) return;
+    const box = plate.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    let out = '';
+    plate.querySelectorAll('.yao-item').forEach(row => {
+        const bar = plate.querySelector(`.yp-glyph .bar[data-i="${row.dataset.i}"]`);
+        const name = row.querySelector('.yao-name');
+        if (!bar || !name) return;
+        const b = bar.getBoundingClientRect(), n = name.getBoundingClientRect();
+        const x1 = b.right - box.left + 7, y1 = b.top + b.height / 2 - box.top;
+        const x2 = n.left - box.left - 9, y2 = n.top + n.height / 2 - box.top;
+        if (x2 - x1 < 8) return;
+        const k = Math.min(12, (x2 - x1) / 4);
+        const f = v => v.toFixed(1);
+        out += `<g${row.classList.contains('changing') ? ' class="chg"' : ''}><circle cx="${f(x1)}" cy="${f(y1)}" r="1.6"/>` +
+            `<path d="M${f(x1)} ${f(y1)}H${f(x1 + k)}L${f(x2 - k)} ${f(y2)}H${f(x2)}"/></g>`;
+    });
+    svg.setAttribute('viewBox', `0 0 ${f2(box.width)} ${f2(box.height)}`);
+    svg.innerHTML = out;
+}
+function f2(v) { return Math.round(v * 10) / 10; }
+function watchYaoLeaders(root) {
+    const plate = root && root.querySelector && root.querySelector('.yao-plate');
+    if (!plate || !plate.querySelectorAll) return;
+    const redraw = () => drawYaoLeaders(plate);
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(redraw); else redraw();
+    if (typeof ResizeObserver === 'function') new ResizeObserver(redraw).observe(plate);
+}
+
 function buildCallouts(hexLines, changingYaos) {
     // 卦画右侧的标注：每一爻一条引线，动爻用橙色并注明变后的爻
     const rows = [];
@@ -186,11 +219,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         const yaoName = cut > 0 ? raw.slice(0, cut) : yaoLabel(line, i);
         const yaoText = cut > 0 ? raw.slice(cut + 1) : raw;
         const isChanging = change.changingYaos.includes(i);
-        const lineVis = isYang
-            ? '<span class="yao-line yang" aria-hidden="true"><span></span></span>'
-            : '<span class="yao-line yin" aria-hidden="true"><span></span><span></span></span>';
         return `<li class="yao-item${isChanging ? ' changing' : ''}" data-i="${i}">
-${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span></li>`;
+<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span></li>`;
     }).reverse().join('');
 
     const analysisHtml = gua[4].split('。').filter(s => s.trim()).map(s =>
@@ -260,7 +290,11 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
-      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3><ol class="yao-list">${yaoHtml}</ol></section>
+      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3><div class="yao-plate">
+        <div class="yp-glyph">${buildHexBars(hexLines, change.changingYaos, 'hx-plate')}</div>
+        <svg class="yp-leaders" aria-hidden="true"></svg>
+        <ol class="yao-list">${yaoHtml}</ol>
+      </div></section>
       </div>
       <div class="result-actions" style="--d:7">
         <button class="btn btn-primary" id="shareBtn">生成分享图</button>
@@ -273,6 +307,8 @@ ${lineVis}<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoTe
 </div>`;
     const backBtn = resultArea.querySelector('#backHomeBtn');
     if (backBtn) backBtn.addEventListener('click', () => { if (typeof returnToInquiry === 'function') returnToInquiry(); });
+
+    watchYaoLeaders(resultArea);
 
     resultArea.querySelector('#shareBtn').addEventListener('click', shareAsImage);
     const newBtn = resultArea.querySelector('#newDivineBtn');
