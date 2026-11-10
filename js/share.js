@@ -74,7 +74,7 @@ const SHARE_CARD_CSS = `
     .sc-brand { font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 26px; line-height: 1; letter-spacing: .16em; }
     .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
     .sc-when { text-align: right; line-height: 1.5; }
-    .sc-when b { display: block; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
+    .sc-when b { display: block; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
     .sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
     .sc-stage { position: relative; margin: 34px -36px 0; width: 500px; height: 300px; flex: none; }
     .sc-ring { position: absolute; left: 0; top: 0; }
@@ -92,14 +92,15 @@ const SHARE_CARD_CSS = `
     .sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
     .sc-seal { position: relative; flex: none; width: 82px; height: 82px; margin: -34px 31px 0 0; padding: 5px; border: 3px solid; background: #11305C; transform: rotate(-9deg); }
     .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1.5px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 38px; line-height: 1; }
-    .sc-ji { color: #FF8A5C; border-color: #FF8A5C; }
+    .sc-ji { color: #EEF2F7; border-color: #EEF2F7; }
     .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
+    .sc-xiong span { background: #EEF2F7; color: #11305C; border-color: #EEF2F7; }
     .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
     .sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
     .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
     .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
     .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
-    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #FF8A5C; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
+    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #EEF2F7; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
     .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
     .sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
     .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
@@ -142,7 +143,7 @@ function shareCardRing() {
 <circle cx="${cx}" cy="${cy}" r="138" fill="none" stroke="#EEF2F7" stroke-opacity=".14"/>
 <circle cx="${cx}" cy="${cy}" r="104" fill="none" stroke="#EEF2F7" stroke-opacity=".22" stroke-dasharray="2 5"/>
 <path d="${ticks}" stroke="#EEF2F7" stroke-opacity=".32" stroke-width="1"/>
-<path d="M${pt(100, 0)}L${pt(146, 0)}" stroke="#FF8A5C" stroke-width="2.4"/></svg>`;
+<path d="M${pt(100, 0)}L${pt(146, 0)}" stroke="#EEF2F7" stroke-width="2.4"/></svg>`;
 }
 
 function createShareCard(d) {

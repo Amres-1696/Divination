@@ -213,7 +213,9 @@ async function showInvocation() {
         return;
     }
     _invocationShown = true;
-    const text = '心若不诚，卦不应人';
+    // 写了问题：所问既定；没写：默念所问
+    const asked = (document.getElementById('question') || {}).value;
+    const text = asked && asked.trim() ? '所问既定，六爻将起' : '默念所问，六爻将起';
     const inv = document.createElement('div');
     inv.className = 'invocation';
     inv.innerHTML = '<p>' + text.split('').map((ch, i) => `<span style="--k:${i}">${ch}</span>`).join('') + '</p>';
