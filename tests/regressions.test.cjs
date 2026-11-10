@@ -280,6 +280,19 @@ test('hexagram readings are plain prose, not the old fortune-teller template', (
     assert.equal(f.run(`GUA.filter(g=>/^此卦为|之象。|运势/.test(g[4])||!g[4].endsWith('。')||g[4].length<40).length`), 0);
 });
 
+test('the bundled display-font subset covers every hexagram name, judgement, line text and page label', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const root = path.join(__dirname, '..');
+    const [included, absent = ''] = fs.readFileSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.chars.txt'), 'utf8').split('\n');
+    const known = new Set([...included, ...absent]);
+    const f = fixture();
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    const text = f.run(`GUA.map(g=>g[0]+g[1]+g[3]).join('')`) + html;
+    const fresh = [...new Set([...text].filter(ch => ch.codePointAt(0) > 0x7f && !/\s/.test(ch) && !known.has(ch)))];
+    assert.deepEqual(fresh, [], '改了文案后请重新运行 tools/subset-font.py');
+    assert.ok(fs.statSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.woff2')).size > 50000);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];

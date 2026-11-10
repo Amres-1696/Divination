@@ -1,9 +1,19 @@
 /* 天衍 —— 样式
    整站是一张蓝晒图纸：外框带天干地支分区，按钮、卡片用制图的角标，
    开关画成一根爻（关是阴爻，开是阳爻），结果页附图签和引线标注。
-   展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei），正文用思源宋体（Noto Serif SC）。
+   展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei，子集随仓库），正文用思源宋体（Noto Serif SC）。
    结果页的正文铺一层淡淡的浅灰读纸，和满屏的蓝图装饰分开。
    动效只改 transform / opacity；六十四卦图层由 cosmos.js 逐帧补间。 */
+
+/* 展示字：站酷小薇，裁成只含本站用到的字，放在仓库里（tools/subset-font.py 生成）。
+   子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
+@font-face {
+  font-family: "ZCOOL XiaoWei";
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @property --g {
   syntax: '<percentage>';
