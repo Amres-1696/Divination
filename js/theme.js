@@ -316,7 +316,7 @@ function enhanceMethodSelect(select) {
     const root = document.createElement('div');
     root.className = 'seg';
     root.setAttribute('role', 'radiogroup');
-    root.setAttribute('aria-label', '起卦方式');
+    root.setAttribute('aria-label', select.getAttribute('aria-label') || '');
     const mark = document.createElement('span');
     mark.className = 'seg-mark';
     mark.setAttribute('aria-hidden', 'true');
@@ -436,18 +436,29 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast('请先填写并保存公历生辰');
         }
     });
-    // 首页生辰说明：点已存的生辰或「还没有保存」都去设置里填写
-    document.getElementById('methodHint').addEventListener('click', e => { if (e.target.closest('.mh-edit')) openBaziSettings(); });
+    // 首页起卦方式那一行：点已存的生辰或「还没有保存」去设置里填写；点行尾的「换成…」换一种起法
+    document.getElementById('methodHint').addEventListener('click', e => {
+        if (e.target.closest('.mh-edit')) { openBaziSettings(); return; }
+        const sw = e.target.closest('.mh-switch');
+        if (sw && method.value !== sw.dataset.to) {
+            method.value = sw.dataset.to;
+            method.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    });
     const daily = document.getElementById('dailyGua');
     daily.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); daily.click(); } });
-    enhanceMethodSelect(method);
+    // 首页的起卦方式只留 methodHint 那一行文字，分段切换控件放在设置里
     enhanceMethodSelect(document.getElementById('settingMethod'));
+    enhanceMethodSelect(document.getElementById('settingRitual'));
 
-    // 问题输入框右下角的字数刻度
+    // 问题输入框右下角的字数刻度：平时不显示，快写满了才出现
     const q = document.getElementById('question');
     const count = document.getElementById('questionCount');
     if (q && count) {
-        const upd = () => { count.textContent = `${q.value.length} / ${q.maxLength}`; };
+        const upd = () => {
+            count.textContent = `${q.value.length} / ${q.maxLength}`;
+            count.classList.toggle('show', q.value.length >= q.maxLength - 20);
+        };
         q.addEventListener('input', upd);
         upd();
     }

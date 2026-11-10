@@ -1,6 +1,7 @@
 // instruments —— 生辰与配置的输入器具
 // 年份是一列竖向的年轮，月日是一条可拖动的月相带，时辰是一面十二时辰钟（拖指针选）。
-// 原生 input / select 仍是数据源（settings.js 照常读写），这里只负责画和同步。
+// 原生 input / select 仍是数据源（settings.js 照常读写），也直接显示在器具上方，可以敲数字；
+// 这里只负责画和同步：敲了数字器具跟着转，拨了器具输入框跟着变。
 
 function hookValue(el, onSet) {
     const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
@@ -39,6 +40,8 @@ function makeYearWheel(input, onChange) {
     const rowEls = Array.from(list.children);
     const note = root.querySelector('.yw-note');
     const setRaw = hookValue(input, () => fromInput(true));
+    // 直接在输入框里敲年份时，年轮跟着转过去（input 事件只在用户输入时触发，不会和 commit 互相触发）
+    input.addEventListener('input', () => fromInput(true));
     let pos = DEFAULT - MIN, has = false, anim = 0, drag = null, drawn = [];
 
     // 这一年正月初一落在公历哪天
@@ -210,6 +213,8 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
     const tape = root.querySelector('.band-tape');
     const setMonthRaw = hookValue(monthSel, () => fromInputs(true));
     const setDayRaw = hookValue(dayInput, () => fromInputs(true));
+    monthSel.addEventListener('input', () => fromInputs(true));
+    dayInput.addEventListener('input', () => fromInputs(true));
     let year = 0, days = [], groups = [], pos = 0, has = false, anim = 0, onIdx = -1, drag = null;
 
     function readYear() { const y = parseInt(yearInput.value, 10); return y >= 1900 && y <= 2100 ? y : 1990; }
@@ -411,6 +416,7 @@ function makeHourDial(sel) {
     const selG = root.querySelector('.hd-sel');
     const read = root.querySelector('.dial-read');
     const setRaw = hookValue(sel, () => fromSel());
+    sel.addEventListener('input', () => fromSel());
     let angle = 0, has = false;   // angle 是累计角度，避免从亥转到子时绕一大圈
 
     function setHand(deg, smooth) {

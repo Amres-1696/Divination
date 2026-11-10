@@ -293,6 +293,15 @@ test('the bundled display-font subset covers every hexagram name, judgement, lin
     assert.ok(fs.statSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.woff2')).size > 50000);
 });
 
+test('ritual pace defaults to the full ceremony and remembers the chosen pace', () => {
+    const f = fixture();
+    assert.equal(f.run('loadSettings().ritual'), 'full');
+    assert.equal(f.run(`saveSetting('ritual', 'quick')`), true);
+    assert.equal(f.run('loadSettings().ritual'), 'quick');
+    assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin', 'quick').quick`), true);
+    assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin').quick`), false);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];

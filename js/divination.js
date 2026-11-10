@@ -49,12 +49,13 @@ async function divine() {
         const gua = lookupGua(fullBin);
         const change = calculateChangeGua(hexLines, fullBin);
 
-        // prefers-reduced-motion：跳过六幕仪式直接渲染（章节 4.5）
+        // 起卦过程：完整 / 快掷 / 直出（设置里选）。系统开了「减少动态效果」时一律直出
         const prefersReducedMotion = window.matchMedia &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const ritualMode = prefersReducedMotion ? 'none' : (settings.ritual || 'full');
         let chosenCard = null;
-        if (!prefersReducedMotion) {
-            const ritual = new HexRitual(stage, gua, hexLines, change, settings.method);
+        if (ritualMode !== 'none') {
+            const ritual = new HexRitual(stage, gua, hexLines, change, settings.method, ritualMode);
             // 仪式与「跳过」信号竞速：点跳过即直奔结果，不触碰内部动画时序
             let skipped = false;
             const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; ritual.abort(); res(); }; });
