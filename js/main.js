@@ -40,6 +40,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+    document.getElementById('settingRitual').addEventListener('change', function() {
+        if (!saveSetting('ritual', this.value)) this.value = loadSettings().ritual || 'full';
+    });
+    // 不清楚出生时辰：按子时算
+    document.getElementById('baziHourUnknown').addEventListener('click', () => {
+        const hour = document.getElementById('baziHour');
+        hour.value = '0';
+        hour.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     document.getElementById('settingDaily').addEventListener('change', function() {
         if (!saveSetting('showDaily', this.checked)) this.checked = loadSettings().showDaily;
     });

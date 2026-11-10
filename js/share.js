@@ -99,7 +99,7 @@ const SHARE_CARD_CSS = `
     .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
     .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
     .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
-    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #FF8A5C; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
+    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #FF8A5C; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
     .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
     .sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
     .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }

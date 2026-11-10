@@ -4,6 +4,7 @@
 
 const DEFAULT_SETTINGS = {
     method: 'coin',
+    ritual: 'full',   // 起卦过程：full 完整 / quick 快掷 / none 直出
     showDaily: true,
     bazi: null,
     ai: DEFAULT_AI
@@ -98,10 +99,12 @@ function renderMethodHint(settings) {
     const bazi = settings.method === 'bazi';
     const coins = '<svg class="mh-ico" viewBox="0 0 30 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><rect x="4.4" y="4.4" width="3.2" height="3.2"/><circle cx="15" cy="6" r="5"/><rect x="13.4" y="4.4" width="3.2" height="3.2"/><circle cx="24" cy="6" r="5"/><rect x="22.4" y="4.4" width="3.2" height="3.2"/></svg>';
     const moon = '<svg class="mh-ico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><path class="lit" d="M6 1A5 5 0 0 1 6 11A2.6 5 0 0 0 6 1Z"/></svg>';
+    // 行尾一个小字按钮换另一种起法（首页不再单独放切换控件）
+    const swap = `<button type="button" class="mh-switch" data-to="${bazi ? 'coin' : 'bazi'}">换成${bazi ? '铜钱' : '生辰'}</button>`;
     let html;
-    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱，自下而上掷六次</span>`;
-    else if (settings.bazi) html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>`;
-    else html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit need">还没有保存生辰，点这里填写</button>`;
+    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱，自下而上掷六次</span>${swap}`;
+    else if (settings.bazi) html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>${swap}`;
+    else html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit need">还没有保存生辰，点这里填写</button>${swap}`;
     if (el.innerHTML === html) return;
     el.innerHTML = html;
     if (!el.classList) return;
@@ -164,6 +167,8 @@ function applySettings(settings) {
     if (homeMethod) homeMethod.value = settings.method;
     const settingMethod = document.getElementById('settingMethod');
     if (settingMethod) settingMethod.value = settings.method;
+    const settingRitual = document.getElementById('settingRitual');
+    if (settingRitual) settingRitual.value = settings.ritual || 'full';
     if (typeof syncMethodPickers === 'function') syncMethodPickers();
     const birthGroup = document.getElementById('baziSettings');
     if (birthGroup) setBaziGroupShown(birthGroup, settings.method === 'bazi');

@@ -7,12 +7,14 @@
     <meta name="theme-color" content="#1A3D72">
     <title>天衍 · 周易起卦</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
+    <!-- 标题字体（站酷小薇子集）随仓库走，提前取，免得「天衍」两个字先以宋体闪一下 -->
+    <link rel="preload" href="fonts/ZCOOLXiaoWei-subset.woff2?v=20261110-3" as="font" type="font/woff2" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 字体样式表异步加载：Google 字体连不上时不挡首屏，先用系统宋体，字体到了再换上 -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
-    <link rel="stylesheet" href="style.css?v=20261103-2">
+    <!-- 正文字体（思源宋体）样式表异步加载：Google 字体连不上时不挡首屏，先用系统宋体，字体到了再换上 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
+    <link rel="stylesheet" href="style.css?v=20261110-3">
 </head>
 <body class="view-home intro">
 <div class="cosmos" id="cosmos" aria-hidden="true"></div>
@@ -37,11 +39,11 @@
         <h1 class="home-title" id="homeTitle" style="--k:0">天衍</h1>
         <form id="questionForm" class="question-area" style="--k:1">
           <div class="q-field">
-            <input id="question" type="text" autocomplete="off" aria-label="想问什么" maxlength="80">
+            <input id="question" type="text" autocomplete="off" aria-label="想问什么" maxlength="80" placeholder="写下所问，或默念于心">
             <span class="q-count" id="questionCount" aria-hidden="true"></span>
           </div>
           <div class="form-row">
-            <div class="method-label"><select id="homeMethod" aria-label="起卦方式"><option value="coin">铜钱起卦</option><option value="bazi">生辰起卦</option></select></div>
+            <select id="homeMethod" aria-label="起卦方式" hidden><option value="coin">铜钱起卦</option><option value="bazi">生辰起卦</option></select>
             <button type="button" id="divineBtn" class="btn-divine"><span class="btn-text">起卦</span></button>
           </div>
           <p class="method-hint" id="methodHint" aria-live="polite"></p>
@@ -71,6 +73,13 @@
     </div>
     <div class="settings-group" id="baziSettings" style="--k:1">
       <div class="settings-label">公历生辰</div>
+      <div class="birth-type">
+        <label><input type="number" id="baziYear" min="1900" max="2100" inputmode="numeric" placeholder="年份" aria-label="出生年份（公历）"><span>年</span></label>
+        <select id="baziMonth" aria-label="出生月份"><option value="">月</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+        <label><input type="number" id="baziDay" min="1" max="31" inputmode="numeric" placeholder="日" aria-label="出生日"><span>日</span></label>
+        <select id="baziHour" aria-label="出生时辰"><option value="">时辰</option><option value="0">子时 23–1点</option><option value="1">丑时 1–3点</option><option value="2">寅时 3–5点</option><option value="3">卯时 5–7点</option><option value="4">辰时 7–9点</option><option value="5">巳时 9–11点</option><option value="6">午时 11–13点</option><option value="7">未时 13–15点</option><option value="8">申时 15–17点</option><option value="9">酉时 17–19点</option><option value="10">戌时 19–21点</option><option value="11">亥时 21–23点</option></select>
+      </div>
+      <p class="birth-type-note">直接填，或者拨下面的年轮、月相带和时辰钟。<button type="button" id="baziHourUnknown">不清楚时辰，按子时算</button></p>
       <div class="bazi-seals birth">
         <div class="birth-year" id="yearSlot"></div>
         <div class="birth-row">
@@ -78,24 +87,29 @@
           <div class="birth-dial" id="dialSlot"></div>
         </div>
       </div>
-      <div class="sr-native" aria-hidden="true">
-        <input type="number" id="baziYear" min="1900" max="2100" tabindex="-1">
-        <select id="baziMonth" tabindex="-1"><option value="">—</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
-        <input type="number" id="baziDay" min="1" max="31" tabindex="-1">
-        <select id="baziHour" tabindex="-1"><option value="">—</option><option value="0">子时</option><option value="1">丑时</option><option value="2">寅时</option><option value="3">卯时</option><option value="4">辰时</option><option value="5">巳时</option><option value="6">午时</option><option value="7">未时</option><option value="8">申时</option><option value="9">酉时</option><option value="10">戌时</option><option value="11">亥时</option></select>
-      </div>
       <button class="btn btn-small btn-save-bazi" id="saveBaziBtn">保存生辰</button>
       <div class="bazi-status" id="baziStatus"></div>
     </div>
     <div class="settings-group" style="--k:2">
       <div class="settings-row">
+        <span class="settings-label">起卦过程</span>
+        <select class="settings-select" id="settingRitual" aria-label="起卦过程">
+          <option value="full">完整</option>
+          <option value="quick">快掷</option>
+          <option value="none">直出</option>
+        </select>
+      </div>
+      <div class="settings-hint">完整：一爻一爻掷。快掷：点一次，六爻连着掷完。直出：不看过程，直接出结果。</div>
+    </div>
+    <div class="settings-group" style="--k:3">
+      <div class="settings-row toggle-row">
         <span class="settings-label">每日启示</span>
         <label class="toggle-switch"><input type="checkbox" id="settingDaily" checked aria-label="每日启示"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
       </div>
       <div class="settings-hint">首页显示今日一卦与一句箴言。</div>
     </div>
-    <div class="settings-group" style="--k:3">
-      <div class="settings-row">
+    <div class="settings-group" style="--k:4">
+      <div class="settings-row toggle-row">
         <span class="settings-label">AI 解卦</span>
         <label class="toggle-switch"><input type="checkbox" id="settingAiEnabled" aria-label="AI 解卦"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
       </div>
@@ -115,7 +129,7 @@
         <label class="ai-field"><span class="ai-field-label">接口地址</span><input type="text" id="aiBaseUrl" class="settings-input" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false"></label>
         <label class="ai-field"><span class="ai-field-label">API Key</span><input type="password" id="aiApiKey" class="settings-input" placeholder="sk-..." autocomplete="off" spellcheck="false"></label>
         <label class="ai-field"><span class="ai-field-label">模型名称</span><input type="text" id="aiModel" class="settings-input" placeholder="如 deepseek-chat / gpt-4o-mini" autocomplete="off" spellcheck="false"></label>
-        <div class="settings-row ai-auto-row">
+        <div class="settings-row toggle-row ai-auto-row">
           <span class="settings-label">起卦后自动解卦</span>
           <label class="toggle-switch"><input type="checkbox" id="settingAiAuto" aria-label="起卦后自动解卦"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
         </div>
@@ -130,7 +144,7 @@
         <div class="settings-hint ai-warn">密钥只保存在本机浏览器中；请求 AI 时会发给你填写的接口。浏览器直连若被跨域（CORS）拦截，请改用支持跨域的服务或自建代理。</div>
       </div>
     </div>
-    <div class="settings-group settings-about" style="--k:4">
+    <div class="settings-group settings-about" style="--k:5">
       <div class="settings-label">关于天衍</div>
       <div class="settings-hint">天衍免费开源，按占卜游戏来做，不保证预测结果。</div>
       <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
@@ -183,21 +197,21 @@
         </div>
     </div>
 
-    <script src="data.js?v=20261103-1"></script>
+    <script src="data.js?v=20261110-1"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
     <script src="js/core.js?v=20261031"></script>
     <script src="js/lunar.js?v=20261031"></script>
     <script src="js/glyphs.js?v=20261031"></script>
     <script src="js/cosmos.js?v=20261031"></script>
-    <script src="js/ritual.js?v=20261031"></script>
+    <script src="js/ritual.js?v=20261110-3"></script>
     <script src="js/ai.js?v=20261103-1"></script>
-    <script src="js/settings.js?v=20261102-4"></script>
-    <script src="js/share.js?v=20261103-1"></script>
+    <script src="js/settings.js?v=20261110-3"></script>
+    <script src="js/share.js?v=20261110-1"></script>
     <script src="js/history.js?v=20261101-2"></script>
     <script src="js/daily.js?v=20261110-1"></script>
-    <script src="js/divination.js?v=20261102-3"></script>
-    <script src="js/instruments.js?v=20261102-5"></script>
-    <script src="js/theme.js?v=20261103-1"></script>
-    <script src="js/main.js?v=20261103-1"></script>
+    <script src="js/divination.js?v=20261110-3"></script>
+    <script src="js/instruments.js?v=20261110-3"></script>
+    <script src="js/theme.js?v=20261110-3"></script>
+    <script src="js/main.js?v=20261110-3"></script>
 </body>
 </html>

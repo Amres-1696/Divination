@@ -263,6 +263,45 @@ test('each cast keeps exactly the hexagrams that match every line so far', () =>
     assert.equal(f.run("TRIGRAM_BY_VALUE[shaoValue(TRIGRAM_TO_BINARY['☵']+TRIGRAM_TO_BINARY['☳'])>>3]"), '震');
 });
 
+test('main reading exposes its source lines for every one of the 4,096 casts', () => {
+    const f = fixture();
+    const bad = f.run(`(()=>{let bad=0;for(let n=0;n<4096;n++){const l=[];let x=n;for(let i=0;i<6;i++){l.push([6,7,8,9][x%4]);x=Math.floor(x/4)}
+        const b=l.map(v=>(v===7||v===9)?'1':'0').reverse().join('');const c=calculateChangeGua(l,b);const m=getMainReading(lookupGua(b),c);
+        const want=c.changingYaos.length===3?2:1;
+        if(!m.how||m.lines.length!==want||m.lines.some(x=>!x.text||!x.from||x.text.includes('：')||!m.text.includes(x.text)))bad++}return bad})()`);
+    assert.equal(bad, 0);
+    const two = f.run(`(()=>{const l=[7,7,9,7,7,9];const c=calculateChangeGua(l,'111111');return getMainReading(lookupGua('111111'),c).lines[0]})()`);
+    assert.equal(two.text, '亢龙有悔');
+    assert.equal(two.from, '本卦《乾为天》上九');
+});
+
+test('hexagram readings are plain prose, not the old fortune-teller template', () => {
+    const f = fixture();
+    assert.equal(f.run(`GUA.filter(g=>/^此卦为|之象。|运势/.test(g[4])||!g[4].endsWith('。')||g[4].length<40).length`), 0);
+});
+
+test('the bundled display-font subset covers every hexagram name, judgement, line text and page label', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const root = path.join(__dirname, '..');
+    const [included, absent = ''] = fs.readFileSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.chars.txt'), 'utf8').split('\n');
+    const known = new Set([...included, ...absent]);
+    const f = fixture();
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+    const text = f.run(`GUA.map(g=>g[0]+g[1]+g[3]).join('')`) + html;
+    const fresh = [...new Set([...text].filter(ch => ch.codePointAt(0) > 0x7f && !/\s/.test(ch) && !known.has(ch)))];
+    assert.deepEqual(fresh, [], '改了文案后请重新运行 tools/subset-font.py');
+    assert.ok(fs.statSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.woff2')).size > 50000);
+});
+
+test('ritual pace defaults to the full ceremony and remembers the chosen pace', () => {
+    const f = fixture();
+    assert.equal(f.run('loadSettings().ritual'), 'full');
+    assert.equal(f.run(`saveSetting('ritual', 'quick')`), true);
+    assert.equal(f.run('loadSettings().ritual'), 'quick');
+    assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin', 'quick').quick`), true);
+    assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin').quick`), false);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];
