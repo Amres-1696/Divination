@@ -60,7 +60,7 @@ async function divine() {
             let skipped = false;
             const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; ritual.abort(); res(); }; });
             await Promise.race([ritual.run(), skipPromise]);
-            // 跳过时也让方图里对应的那一卦飞到结果页
+            // 跳过时也让圆图上对应的那一卦飞到结果页
             chosenCard = skipped ? { cosmosValue: ritual.value } : ritual.chosenCard;
         }
 
@@ -379,7 +379,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         updateHistoryCount(readHistorySafe().length);
     }, 2600);
     if (sourceCard && typeof Cosmos !== 'undefined') {
-        // 方图（或牌册缩略图）里的那一卦飞到这里，落定后换成页面上的卦画
+        // 圆图上（或牌册缩略图里）的那一卦飞到这里，落定后换成页面上的卦画
         requestAnimationFrame(() => Cosmos.toResult(sourceCard.cosmosValue, glyphEl, {
             fromRect: sourceCard.fromRect || null,
             done: land
