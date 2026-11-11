@@ -302,6 +302,19 @@ test('ritual pace defaults to the full ceremony and remembers the chosen pace', 
     assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin').quick`), false);
 });
 
+test('on the circular chart every cast leaves one unbroken arc, halving down to a single hexagram', () => {
+    const f = fixture();
+    // 圆图上的位置：与 cosmos.js 的 angle() 同一套次序（乾在正上，两侧各三十二卦向下）
+    const bad = f.run(`(()=>{const pos=v=>v>=32?-((63-v)+.5):((31-v)+.5);let bad=0;
+        for(let target=0;target<64;target++){let alive=[...Array(64).keys()];
+            for(let i=0;i<6;i++){alive=alive.filter(v=>shaoBit(v,i)===shaoBit(target,i));
+                const p=alive.map(pos).sort((a,b)=>a-b);
+                if(alive.length!==(64>>(i+1))||p[p.length-1]-p[0]!==alive.length-1)bad++}
+            if(alive.length!==1||alive[0]!==target)bad++}
+        return bad})()`);
+    assert.equal(bad, 0);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];

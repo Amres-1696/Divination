@@ -1,4 +1,4 @@
-// ritual —— 起卦仪式(HexRitual)：圆图收成方图 → 六次掷钱、逐爻筛卦 → 剩下一卦
+// ritual —— 起卦仪式(HexRitual)：圆图当刻度盘 → 六次掷钱、每爻去掉半段弧 → 剩下一卦
 // 卦象在仪式前已经算好（铜钱随机或生辰取数），仪式负责把它一爻一爻揭出来。
 // 只用 style / classList / sleep 和可选的 Cosmos，测试环境里也能跑完。
 
@@ -41,29 +41,19 @@ class HexRitual {
         await this.actSettle();
     }
     buildStage() {
-        const rowLabels = TRIGRAM_BY_VALUE.map((n, t) => `<span data-t="${t}">${n}</span>`).join('');
+        // 圆心那一块：状态、铜钱、正在长出来的卦、掷钱按钮。圆图（Cosmos）以它的中心为圆心
         this.stage.innerHTML = `
 <div class="ritual-head">
-  <p class="ritual-status rs-head" id="ritualStatus" aria-live="polite"></p>
   <button type="button" class="ritual-skip" id="ritualSkip">跳过，直接看结果</button>
 </div>
-<div class="ritual-body">
-  <div class="grid-frame">
-    <div class="grid-cols" aria-hidden="true"><em>上卦</em>${rowLabels}</div>
-    <div class="grid-rows" aria-hidden="true"><em>下卦</em>${rowLabels}</div>
-    <div class="grid-slot" id="gridSlot"></div>
-    <p class="grid-count" id="gridCount" aria-live="polite">六十四卦</p>
-  </div>
-  <div class="cast-panel">
-    <p class="ritual-status rs-side" id="ritualStatusSide" aria-live="polite"></p>
-    <div class="coins" id="coins">${buildCoin()}${buildCoin()}${buildCoin()}</div>
-    <div class="cast-build" id="castBuild">${buildHexBars(null, [], 'hx-build')}</div>
-    <div class="cast-actions" id="castActions"></div>
-  </div>
-</div>`;
-        // 状态文字有两处：窄屏在页头，宽屏在铜钱上方（紧挨着掷钱按钮），CSS 只显示其中一处
+<div class="dial-core" id="dialCenter">
+  <p class="ritual-status" id="ritualStatus" aria-live="polite"></p>
+  <div class="coins" id="coins">${buildCoin()}${buildCoin()}${buildCoin()}</div>
+  <div class="cast-build" id="castBuild">${buildHexBars(null, [], 'hx-build')}</div>
+  <div class="cast-actions" id="castActions"></div>
+</div>
+<p class="sr-only" id="gridCount" aria-live="polite"></p>`;
         this.statusEl = this.stage.querySelector('#ritualStatus');
-        this.statusSideEl = this.stage.querySelector('#ritualStatusSide');
         this.countEl = this.stage.querySelector('#gridCount');
         this.coinsEl = this.stage.querySelector('#coins');
         this.buildEl = this.stage.querySelector('#castBuild');
@@ -79,15 +69,14 @@ class HexRitual {
         const html = `<span class="ritual-status-main">${main}</span>` +
             (sub ? `<span class="ritual-status-sub">${sub}</span>` : '');
         this.statusEl.innerHTML = html;
-        if (this.statusSideEl) this.statusSideEl.innerHTML = html;
     }
     async actUnfold() {
         if (this.dead) return;
-        this.setStatus('六十四卦', '圆图卷作方图：行是下卦，列是上卦');
-        if (typeof Cosmos !== 'undefined') Cosmos.toGrid();
-        await sleep(this.quick ? 450 : 700);
+        this.setStatus('六十四卦', '每定一爻，圆图去其半');
+        if (typeof Cosmos !== 'undefined') Cosmos.toDial();
+        await sleep(this.quick ? 250 : 450);
         if (this.stage.classList) this.stage.classList.remove('pre');
-        await sleep(this.quick ? 600 : 1150);
+        await sleep(this.quick ? 500 : 900);
     }
     async actCast() {
         if (this.method === 'bazi') {
@@ -176,23 +165,15 @@ class HexRitual {
         const bei = LINE_TO_BEI[line];
         this.setStatus(`${yaoLabel(line, i)}　${typeText}`,
             withCoins ? `${bei} 枚背面朝上` : `第${'一二三四五六'[i]}爻`);
-        if (typeof Cosmos !== 'undefined') Cosmos.eliminate(i, shaoBit(this.value, i));
-        // 坐标轴标签：前三爻筛下卦（行），后三爻筛上卦（列）
-        const axis = i < 3 ? '.grid-rows' : '.grid-cols';
-        const tri = i < 3 ? (this.value >> 3) : (this.value & 7);
-        const bitPos = i < 3 ? 2 - i : 5 - i;
-        const labels = this.stage.querySelectorAll ? this.stage.querySelectorAll(`${axis} span`) : [];
-        Array.from(labels).forEach(el => {
-            const t = Number(el.dataset.t);
-            if (((t >> bitPos) & 1) !== ((tri >> bitPos) & 1)) el.classList.add('out');
-        });
         const left = 64 >> (i + 1);
-        this.countEl.textContent = left === 1 ? '余此一卦' : `余 ${toChineseNum(left)} 卦`;
+        const leftText = left === 1 ? '余此一卦' : `余 ${toChineseNum(left)} 卦`;
+        this.countEl.textContent = leftText;
+        if (typeof Cosmos !== 'undefined') Cosmos.narrow(i, shaoBit(this.value, i), leftText, this.quick);
         await sleep(this.quick ? (withCoins ? 150 : 300) : (withCoins ? 420 : 620));
     }
     async actSettle() {
         if (this.dead) return;
-        if (typeof Cosmos !== 'undefined') Cosmos.mark(this.value);
+        if (typeof Cosmos !== 'undefined') Cosmos.settle(this.value, '余此一卦');
         this.setStatus(this.finalGua[0], this.change.hasChange && this.change.changeGua
             ? `动爻 ${this.change.changingYaos.length} 处，变为${this.change.changeGua[0]}` : '六爻皆静');
         this.chosenCard = { cosmosValue: this.value };

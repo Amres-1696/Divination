@@ -1,5 +1,7 @@
 // cosmos —— 伏羲六十四卦图层
-// 首页是先天圆图，起卦时卷成 8×8 方图，每掷一爻熄灭一半，剩下的一卦飞到结果页；
+// 首页是先天圆图。起卦时圆图留在原地当作一只刻度盘：先天圆图本来就按二进制排，
+// 每掷一爻，剩下的卦正好是圆上连续的一段弧（半圈、四分之一圈……直到一卦）。
+// 刻度盘把这段弧转到正上方，用两条半径线和一道弧标出来；最后剩下的一卦飞到结果页。
 // 返回首页时，这一卦从结果页飞回圆图上的原位，其余六十三卦沿圆周依次亮起。
 //
 // 所有位移都由一个 requestAnimationFrame 补间器写 transform / opacity，
@@ -19,7 +21,9 @@ const Cosmos = (() => {
     let items = [];
     let state = 'idle';
     let geo = null;          // 当前圆图几何
-    let grid = null;         // 当前方图几何
+    let dial = null;         // 起卦时的刻度盘状态
+    let marks = null;        // 刻度盘上的标线（不随圆图转）
+    let dialRaf = 0;
     let resizeTimer = null;
     const tweens = new Map();
     let raf = 0;
@@ -89,16 +93,82 @@ const Cosmos = (() => {
             order: v => v >= 32 ? 63 - v : 31 - v
         };
     }
-    function gridGeo() {
-        const slot = document.getElementById('gridSlot');
-        if (!slot) return null;
-        const r = slot.getBoundingClientRect();
-        const cell = r.width / 8;
+    // ---------- 刻度盘（起卦） ----------
+    const STEP = 180 / 32;
+    // 圆心取自仪式页中央那块内容的位置，半径和首页圆图一样
+    function dialAnchor() {
+        const el = document.getElementById('dialCenter');
+        if (!el || !el.getBoundingClientRect) return null;
+        const r = el.getBoundingClientRect();
+        const g = circleGeo();
         return {
-            cx: r.left + r.width / 2, cy: r.top + r.height / 2, sc: cell * 0.54 / B,
-            // 先天方图：坤在左上、乾在右下；行看下卦，列看上卦
-            spot: v => ({ x: r.left + ((v & 7) + 0.5) * cell, y: r.top + ((v >> 3) + 0.5) * cell, rot: 0 })
+            cx: r.left + r.width / 2, cy: r.top + r.height / 2, R: g.R, sc: g.sc,
+            angle: g.angle, order: g.order,
+            inside: window.innerWidth <= 768,   // 手机上圆比屏幕大，标线和读数画在圆环里侧
+            key: `${(r.left + r.width / 2).toFixed(1)},${(r.top + r.height / 2).toFixed(1)},${g.R.toFixed(1)}`
         };
+    }
+    function drawMarks(cx, cy, R) {
+        const c = dial.c, band = c.sc * B * 0.9, rIn = R - band, rOut = R + band, h = dial.half;
+        const P = (deg, r) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+        const seg = (deg, r0, r1, cls) => { const [x0, y0] = P(deg, r0), [x1, y1] = P(deg, r1); return `<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" class="${cls}"/>`; };
+        let out = '';
+        // 之前切掉的边界：虚线，跟着圆图一起转
+        if (dial.cuts.length) out += `<g transform="rotate(${dial.theta.toFixed(2)} ${cx.toFixed(1)} ${cy.toFixed(1)})">${dial.cuts.map(a => seg(a, rIn - 12, rOut + 12, 'm-cut')).join('')}</g>`;
+        if (h < 179.5) {
+            const rArc = c.inside ? rIn - 20 : rOut + 22;
+            const rA = c.inside ? rIn - 28 : rIn - 8, rB = c.inside ? rOut + 8 : rOut + 30;
+            [-h, h].forEach(d => { out += seg(d, R * (c.inside ? .74 : .58), rA, 'm-ray') + seg(d, rA, rB, 'm-edge'); });
+            const [x0, y0] = P(-h, rArc), [x1, y1] = P(h, rArc);
+            out += `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)}A${rArc.toFixed(1)} ${rArc.toFixed(1)} 0 ${h > 90 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" class="m-arc"/>`;
+            // 读数写在圆环里侧（外侧会顶到页头）
+            if (dial.label) { const [lx, ly] = P(0, c.inside ? rIn - 46 : rIn - 30); out += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" class="m-label">${dial.label}</text>`; }
+        }
+        marks.innerHTML = out ? `<svg width="100%" height="100%">${out}</svg>` : '';
+    }
+    // 刻度盘期间每帧核对一次：圆心挪了（窗口变了、页面排版变了）或正在转动，就重摆一遍
+    function dialFrame(now) {
+        dialRaf = 0;
+        if (state !== 'dial' || !dial) return;
+        const a = dialAnchor();
+        if (a) dial.c = a;
+        const c = dial.c;
+        let cx = c.cx, cy = c.cy;
+        if (dial.from) {   // 入场：圆心从首页圆图的位置滑过来
+            const e = ease.inOut(Math.min(1, (now - dial.t0) / 700));
+            cx = dial.from.cx + (c.cx - dial.from.cx) * e;
+            cy = dial.from.cy + (c.cy - dial.from.cy) * e;
+            if (e >= 1) dial.from = null;
+        }
+        if (dial.anim) {
+            const A = dial.anim, t = A.dur ? Math.min(1, (now - A.t0) / A.dur) : 1, e = ease.inOut(t);
+            dial.theta = A.th0 + (A.th1 - A.th0) * e;
+            dial.half = A.h0 + (A.h1 - A.h0) * e;
+            if (t >= 1) dial.anim = null;
+        }
+        const sig = `${cx.toFixed(1)},${cy.toFixed(1)},${c.R.toFixed(1)},${dial.theta.toFixed(2)},${dial.half.toFixed(2)},${dial.label},${dial.cuts.length}`;
+        if (sig !== dial.sig) {
+            dial.sig = sig;
+            items.forEach(it => {
+                const tw = tweens.get(it);
+                if (tw && tw.path) return;
+                const deg = c.angle(it.v) + dial.theta, rad = deg * Math.PI / 180;
+                it.s.x = cx + c.R * Math.sin(rad); it.s.y = cy - c.R * Math.cos(rad); it.s.rot = deg;
+                write(it);
+            });
+            if (dial.decoKey !== c.key) { dial.decoKey = c.key; drawDeco(c); }
+            deco.style.transformOrigin = `${c.cx}px ${c.cy}px`;
+            deco.style.transform = `translate3d(${(cx - c.cx).toFixed(1)}px, ${(cy - c.cy).toFixed(1)}px, 0) rotate(${dial.theta.toFixed(2)}deg)`;
+            drawMarks(cx, cy, c.R);
+        }
+        dialRaf = requestAnimationFrame(dialFrame);
+    }
+    function endDial() {
+        if (!dial) return;
+        dial = null;
+        if (root) root.classList.remove('is-dial');
+        const m = marks;
+        setTimeout(() => { if (!dial && m) m.innerHTML = ''; }, 420);
     }
 
     // ---------- 圆图装饰（刻度、八卦分区），与卦环同速旋转 ----------
@@ -185,7 +255,9 @@ const Cosmos = (() => {
             deco.className = 'cosmos-deco';
             ring = document.createElement('div');
             ring.className = 'cosmos-ring';
-            root.append(deco, ring);
+            marks = document.createElement('div');
+            marks.className = 'cosmos-marks';
+            root.append(deco, ring, marks);
             for (let v = 63; v >= 0; v--) {
                 const el = document.createElement('div');
                 el.className = 'cg';
@@ -207,7 +279,8 @@ const Cosmos = (() => {
             geo = circleGeo();
             drawDeco(geo);
             restartSpin();
-            root.classList.remove('away', 'is-grid');
+            endDial();
+            root.classList.remove('away');
             root.classList.add('show-deco');
             applyShift();
             items.forEach(it => {
@@ -225,72 +298,74 @@ const Cosmos = (() => {
                 restartSpin();
                 applyShift();
                 items.forEach(it => set(it, { ...geo.spot(it.v), sc: geo.sc, op: .46 }));
-            } else if (state === 'grid') {
-                grid = gridGeo();
-                if (grid) items.forEach(it => set(it, {
-                    ...grid.spot(it.v),
-                    sc: grid.sc * (it.out ? .7 : it.hit ? 1.3 : 1),
-                    op: it.out ? .1 : .95
-                }));
             }
         },
 
-        // 圆图卷入方图：每个卦绕方图中心同向旋进，同时转正、放大
-        toGrid() {
+        // 起卦：圆图停转，变成刻度盘，六十四卦一起亮起来
+        toDial() {
             if (!root) return;
-            grid = gridGeo();
-            if (!grid) return;
-            if (state === 'circle') foldSpin();
-            state = 'grid';
-            root.classList.remove('away', 'show-deco');
-            root.classList.add('is-grid');
-            const gx = grid.cx, gy = grid.cy;
+            const a = dialAnchor();
+            if (!a) return;
+            let spin = 0, from = null;
+            if (state === 'circle' && geo) {
+                spin = currentSpin();
+                foldSpin();
+                from = { cx: geo.cx, cy: geo.cy };
+            }
+            state = 'dial';
+            root.classList.remove('away');
+            root.classList.add('show-deco', 'is-dial');
+            ring.style.animation = 'none';
+            ring.style.transform = 'none';
+            deco.style.animation = 'none';
+            dial = { c: a, from, t0: performance.now(), theta: spin, half: 180, anim: null, cuts: [], arc: null, label: '', sig: '', decoKey: '' };
             items.forEach(it => {
                 it.out = false; it.hit = false;
                 it.el.classList.remove('hit');
-                const to = grid.spot(it.v);
-                const a0 = Math.atan2(it.s.y - gy, it.s.x - gx);
-                const r0 = Math.hypot(it.s.x - gx, it.s.y - gy);
-                const a1 = Math.atan2(to.y - gy, to.x - gx);
-                const r1 = Math.hypot(to.x - gx, to.y - gy);
-                let da = a1 - a0;
-                while (da > 0) da -= Math.PI * 2;   // 一律逆时针旋进，形成同一个漩涡
-                if (da < -Math.PI * 1.6) da += Math.PI * 2;
-                const rot0 = it.s.rot, drot = shortest(0 - rot0);
-                const row = it.v >> 3, col = it.v & 7;
-                tween(it, { sc: grid.sc, op: .95 }, {
-                    dur: 1500,
-                    delay: (row + col) * 34,
-                    path: (e, f, t) => {
-                        const a = a0 + da * e, r = r0 + (r1 - r0) * e;
-                        return {
-                            x: gx + r * Math.cos(a), y: gy + r * Math.sin(a),
-                            rot: rot0 + drot * e,
-                            sc: f.sc + (t.sc - f.sc) * e,
-                            op: f.op + (t.op - f.op) * e
-                        };
-                    }
-                });
+                tween(it, { sc: a.sc, op: .9 }, { dur: 700, delay: a.order(it.v) * 10, ease: 'out' });
             });
+            if (!dialRaf) dialRaf = requestAnimationFrame(dialFrame);
         },
 
-        // 第 i 爻落定：与之不符的一半熄灭，自近及远扫过去
-        eliminate(lineIndex, bit) {
-            if (!grid) return;
+        // 第 i 爻落定：与之不符的一半暗下去，剩下的那段弧转到正上方，标线跟着收窄
+        narrow(lineIndex, bit, label, fast) {
+            if (!dial) return;
+            const c = dial.c;
+            let lo = Infinity, hi = -Infinity;
             items.forEach(it => {
-                if (it.out || shaoBit(it.v, lineIndex) === bit) return;
-                it.out = true;
-                const sweep = lineIndex < 3 ? (it.v & 7) : (it.v >> 3);
-                tween(it, { sc: grid.sc * .7, op: .1 }, { dur: 520, delay: sweep * 28, ease: 'out' });
+                if (it.out) return;
+                if (shaoBit(it.v, lineIndex) !== bit) { it.out = true; return; }
+                const a = c.angle(it.v);
+                if (a < lo) lo = a;
+                if (a > hi) hi = a;
             });
+            if (lo === Infinity) return;
+            const arc = [lo - STEP / 2, hi + STEP / 2], mid = (arc[0] + arc[1]) / 2;
+            // 剩下的卦随着弧段收窄一点点放大，越到后面越看得清
+            const grow = Math.min(1.7, 1 + (lineIndex + 1) * .12);
+            items.forEach(it => {
+                if (!it.out) { tween(it, { sc: c.sc * grow, op: 1 }, { dur: fast ? 320 : 600, ease: 'out' }); return; }
+                if (it.s.op < .2) return;
+                tween(it, { sc: c.sc * .82, op: .12 }, { dur: fast ? 320 : 520, delay: Math.min(260, Math.abs(shortest(c.angle(it.v) - mid)) * 1.4), ease: 'out' });
+            });
+            // 上一段弧的两条边里，不再是新边界的那条留作虚线
+            if (dial.arc) dial.arc.forEach(e => { if (Math.abs(e - arc[0]) > .01 && Math.abs(e - arc[1]) > .01) dial.cuts.push(e); });
+            dial.arc = arc;
+            dial.label = label || '';
+            dial.anim = {
+                t0: performance.now(), dur: reduce() ? 0 : (fast ? 420 : 900),
+                th0: dial.theta, th1: dial.theta + shortest(-mid - dial.theta),
+                h0: dial.half, h1: (arc[1] - arc[0]) / 2
+            };
         },
 
-        mark(v) {
+        // 六爻掷完：剩下的那一卦放大
+        settle(v, label) {
             const it = items.find(x => x.v === v);
-            if (!it || !grid) return;
+            if (!it || !dial) return;
             it.hit = true;
-            it.el.classList.add('hit');
-            tween(it, { sc: grid.sc * 1.3, op: 1 }, { dur: 600, ease: 'outBack' });
+            dial.label = label || dial.label;
+            tween(it, { sc: dial.c.sc * 2.3, op: 1 }, { dur: 600, ease: 'outBack' });
         },
 
         // 剩下的一卦飞到结果页卦画的位置；from 可以是牌册里缩略图的位置
@@ -298,7 +373,8 @@ const Cosmos = (() => {
             const it = items.find(x => x.v === v);
             if (!root || !it || !target) { this.hide(); if (opts.done) opts.done(); return; }
             if (state === 'circle') foldSpin();
-            root.classList.remove('away', 'is-grid', 'show-deco');
+            endDial();
+            root.classList.remove('away', 'show-deco');
             state = 'result';
             it.el.classList.remove('hit');
             if (opts.fromRect) {
@@ -344,8 +420,9 @@ const Cosmos = (() => {
             items.forEach(x => { if (x !== it) set(x, { op: 0 }); });
             set(it, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rot: 0, sc: rect.width / B, op: 1 });
             it.el.classList.remove('hit');
+            endDial();
             root.classList.add('instant-show');
-            root.classList.remove('away', 'is-grid', 'show-deco');
+            root.classList.remove('away', 'show-deco');
             root.offsetHeight;
             root.classList.remove('instant-show');
             state = 'lifted';
@@ -359,12 +436,13 @@ const Cosmos = (() => {
             const prev = state;
             const home = this._lifted;
             this._lifted = null;
+            endDial();
             geo = circleGeo();
             drawDeco(geo);
             restartSpin();
             state = 'circle';
             applyShift();
-            root.classList.remove('away', 'is-grid');
+            root.classList.remove('away');
             root.classList.add('show-deco');
             items.forEach(it => { it.out = false; it.hit = false; it.el.classList.remove('hit'); });
             if (prev === 'lifted' && home != null) {
@@ -390,8 +468,8 @@ const Cosmos = (() => {
                 });
                 return;
             }
-            if (prev === 'grid') {
-                // 方图（跳过之后）直接散回圆周
+            if (prev === 'dial') {
+                // 起卦中途退回首页：各卦回到自己在圆周上的位置
                 items.forEach(it => {
                     const p = geo.spot(it.v);
                     tween(it, { ...p, sc: geo.sc, op: .46 }, { dur: 1100, delay: geo.order(it.v) * 12 });
@@ -403,6 +481,7 @@ const Cosmos = (() => {
 
         hide() {
             if (!root) return;
+            endDial();
             state = 'hidden';
             root.classList.add('away');
         }

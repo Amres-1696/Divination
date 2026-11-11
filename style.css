@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=20261110-4") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=20261111-2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -243,6 +243,14 @@ body.dialog-open .cosmos-ring, body.dialog-open .cosmos-deco { animation-play-st
 .cosmos-deco .d-tick { stroke: rgba(238, 242, 247, .22); }
 .cosmos-deco .d-major { stroke: rgba(238, 242, 247, .4); }
 .cosmos-deco .d-label { fill: var(--ink-3); font-family: var(--text); font-size: 13px; text-anchor: middle; dominant-baseline: central; }
+/* 起卦时的标线：两条半径线夹着一道弧，标出还剩下的那段；虚线是之前切掉的边界 */
+.cosmos-marks { position: absolute; inset: 0; opacity: 0; transition: opacity .4s ease; }
+.cosmos.is-dial .cosmos-marks { opacity: 1; }
+.cosmos-marks svg { position: absolute; inset: 0; overflow: visible; }
+.cosmos-marks .m-edge, .cosmos-marks .m-arc { fill: none; stroke: var(--ink); stroke-width: 1.2; }
+.cosmos-marks .m-ray { stroke: rgba(238, 242, 247, .2); }
+.cosmos-marks .m-cut { stroke: rgba(238, 242, 247, .36); stroke-dasharray: 3 4; }
+.cosmos-marks .m-label { paint-order: stroke; stroke: var(--blue); stroke-width: 7px; stroke-linejoin: round; fill: var(--ink); font-family: var(--text); font-size: 15px; letter-spacing: .16em; text-anchor: middle; dominant-baseline: central; }
 .cg {
   position: absolute;
   left: 0;
@@ -253,7 +261,6 @@ body.dialog-open .cosmos-ring, body.dialog-open .cosmos-deco { animation-play-st
   transform-origin: 50% 50%;
   contain: layout style;
 }
-.cg.hit { filter: drop-shadow(0 0 5px rgba(238, 242, 247, .75)); }   /* 筛剩的那一卦：亮，但不用朱色（朱色只给动爻） */
 
 /* ---------- 顶栏 ---------- */
 /* 顶栏固定在图框顶部，没有底色和遮罩，内容从它下面滚过去 */
@@ -522,74 +529,31 @@ body.casting .home-main > * {
 
 /* ---------- 仪式 ---------- */
 /* 宽度跟着方图和掷钱栏走，整组在页面上居中，标题行也和它左右对齐 */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* 起卦：圆图当刻度盘。圆心是这一块（状态、铜钱、正在长出来的卦、掷钱按钮），
+   六十四卦和标线在 cosmos 图层里，以这一块的中心为圆心 */
+html:has(> body.view-ritual), body.view-ritual { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body.view-ritual .site { min-height: 0; height: 100svh; }
 .ritual-stage {
-  width: fit-content;
-  max-width: 100%;
-  min-height: calc(100svh - var(--head-h) - var(--frame) * 2);
-  margin: 0 auto;
-  padding: 0 var(--gutter) 28px;
-  display: flex;
-  flex-direction: column;
-}
-.ritual-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 80px; }
-.ritual-status { display: grid; line-height: 1.45; }
-.ritual-status-main { font-family: var(--display); font-size: 30px; font-weight: 400; letter-spacing: .08em; }
-.ritual-status-sub { font-size: 15.5px; color: var(--ink-2); }
-.ritual-skip { flex: none; font-size: 14.5px; color: var(--ink-3); padding: 6px 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease; }
-.ritual-skip:hover { color: var(--ink); }
-/* 状态文字：宽屏放在铜钱上方，紧挨着掷钱按钮，页头只留「跳过」；窄屏照旧在页头 */
-.ritual-status.rs-head { display: none; }
-.ritual-head { justify-content: flex-end; }
-.ritual-status.rs-side { min-height: 84px; align-content: end; justify-items: center; text-align: center; }
-
-.ritual-body {
+  position: relative;
   flex: 1;
+  min-height: 0;
+  height: calc(100svh - var(--head-h) - var(--frame) * 2);
   display: grid;
-  grid-template-columns: auto auto;
-  gap: clamp(40px, 6vw, 88px);
-  align-items: center;
-  justify-content: center;
+  place-items: center;
+  padding: 0 var(--gutter);
 }
-.grid-frame {
-  --gs: min(calc(100svh - var(--head-h) - 220px), 500px);
-  display: grid;
-  grid-template-columns: 30px var(--gs);
-  grid-template-rows: 30px var(--gs) auto;
-}
-.grid-cols, .grid-rows { position: relative; display: grid; font-size: 13.5px; color: var(--ink-3); line-height: 1; }
-.grid-cols { grid-column: 2; grid-row: 1; grid-template-columns: repeat(8, 1fr); align-items: center; text-align: center; }
-.grid-rows { grid-column: 1; grid-row: 2; grid-template-rows: repeat(8, 1fr); align-items: center; text-align: left; }
-.grid-cols span, .grid-rows span { transition: opacity .5s ease, color .5s ease; }
-.grid-cols span.out, .grid-rows span.out { opacity: .2; }
-.grid-cols em, .grid-rows em { position: absolute; font-style: normal; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
-.grid-cols em { left: calc(100% + 10px); top: 50%; transform: translateY(-50%); }
-.grid-rows em { top: calc(100% + 10px); left: 0; }
-.grid-slot {
-  grid-column: 2;
-  grid-row: 2;
-  width: var(--gs);
-  height: var(--gs);
-  border: 1px solid var(--rule);
-  background-image: linear-gradient(var(--rule-soft) 1px, transparent 1px), linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
-  background-size: calc(var(--gs) / 8) calc(var(--gs) / 8);
-  background-position: -1px -1px;
-}
-.grid-count { grid-column: 2; grid-row: 3; margin-top: 10px; text-align: right; font-size: 14.5px; color: var(--ink-2); }
-
-.cast-panel { display: grid; gap: 30px; justify-items: center; }
-.coins { display: flex; gap: 14px; }
-.coin { position: relative; width: 60px; height: 60px; perspective: 420px; }
-.coin::after {
-  content: "";
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  bottom: -12px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(4, 12, 28, .45);
-  filter: blur(2px);
-}
+.ritual-head { position: absolute; top: 6px; right: var(--gutter); z-index: 2; }
+.ritual-skip { font-size: 14.5px; color: var(--ink-3); padding: 6px 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease; }
+.ritual-skip:hover { color: var(--ink); }
+/* 高度固定：按钮出现、消失时圆心不挪 */
+.dial-core { display: grid; justify-items: center; align-content: center; gap: 16px; width: min(280px, 78vw); height: 340px; }
+.ritual-status { display: grid; align-content: end; justify-items: center; text-align: center; min-height: 72px; line-height: 1.45; }
+.ritual-status-main { font-family: var(--display); font-size: 30px; font-weight: 400; letter-spacing: .08em; }
+.ritual-status-sub { font-size: 15px; color: var(--ink-2); }
+.coins { display: flex; gap: 12px; }
+.coin { position: relative; width: 48px; height: 48px; perspective: 420px; }
 .coin-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
 .coin-face { position: absolute; inset: 0; border-radius: 50%; background: var(--blue-deep); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .coin-face.bei { transform: rotateX(180deg); }
@@ -597,45 +561,37 @@ body.casting .home-main > * {
 .coin-chars text { fill: var(--ink); stroke: none; font-family: var(--text); font-size: 17px; text-anchor: middle; }
 .coin.toss-zi .coin-inner { animation: toss-zi var(--dur, 700ms) cubic-bezier(.3, .55, .35, 1) both; }
 .coin.toss-bei .coin-inner { animation: toss-bei var(--dur, 700ms) cubic-bezier(.3, .55, .35, 1) both; }
-.coin.toss-zi::after, .coin.toss-bei::after { animation: toss-shadow var(--dur, 700ms) cubic-bezier(.3, .55, .35, 1) both; }
 @keyframes toss-zi {
   0% { transform: translateY(0) rotateX(0); }
-  45% { transform: translateY(-58px) rotateX(calc(var(--turns, 3) * 170deg)); }
+  45% { transform: translateY(-34px) rotateX(calc(var(--turns, 3) * 170deg)); }
   100% { transform: translateY(0) rotateX(calc(var(--turns, 3) * 360deg)); }
 }
 @keyframes toss-bei {
   0% { transform: translateY(0) rotateX(0); }
-  45% { transform: translateY(-58px) rotateX(calc(var(--turns, 3) * 170deg)); }
+  45% { transform: translateY(-34px) rotateX(calc(var(--turns, 3) * 170deg)); }
   100% { transform: translateY(0) rotateX(calc(var(--turns, 3) * 360deg + 180deg)); }
 }
-@keyframes toss-shadow { 45% { transform: scale(.45); opacity: .35; } }
-.cast-build { width: 120px; height: 120px; }
+.cast-build { width: 112px; height: 100px; }
+.cast-actions { min-height: 54px; display: grid; align-items: center; }
 .ritual-stage.by-birth .coins { display: none; }
-
-/* 仪式外围（文字、坐标、硬币）在方图成形时依次出现，结束时先退场 */
-.ritual-head, .grid-cols, .grid-rows, .grid-slot, .grid-count, .cast-panel > * {
-  transition: opacity .55s ease, transform .7s var(--ease-out);
+@media (max-height: 640px) {
+  .dial-core { height: 290px; gap: 11px; }
+  .ritual-status { min-height: 62px; }
+  .ritual-status-main { font-size: 25px; }
+  .coin { width: 40px; height: 40px; }
+  .cast-build { width: 96px; height: 84px; }
 }
-.ritual-stage.pre .ritual-head,
-.ritual-stage.pre .grid-cols,
-.ritual-stage.pre .grid-rows,
-.ritual-stage.pre .grid-slot,
-.ritual-stage.pre .grid-count,
-.ritual-stage.pre .cast-panel > * { opacity: 0; transform: translateY(10px); }
-.ritual-stage.pre .ritual-head { opacity: 1; transform: none; }
-.grid-slot { transition-delay: 0ms; }
-.grid-cols, .grid-rows { transition-delay: 120ms; }
-.cast-panel > :nth-child(1) { transition-delay: 220ms; }
-.cast-panel > :nth-child(2) { transition-delay: 300ms; }
-.cast-panel > :nth-child(3) { transition-delay: 380ms; }
-.cast-panel > :nth-child(4) { transition-delay: 440ms; }
-.grid-count { transition-delay: 420ms; }
+
+/* 圆心的内容在圆图亮起时依次出现，结束时先退场 */
+.dial-core > * { transition: opacity .55s ease, transform .7s var(--ease-out); }
+.ritual-stage.pre .dial-core > * { opacity: 0; transform: translateY(10px); }
+.dial-core > :nth-child(1) { transition-delay: 80ms; }
+.dial-core > :nth-child(2) { transition-delay: 180ms; }
+.dial-core > :nth-child(3) { transition-delay: 260ms; }
+.dial-core > :nth-child(4) { transition-delay: 340ms; }
+.ritual-head { transition: opacity .3s ease; }
 .ritual-stage.settling .ritual-head,
-.ritual-stage.settling .grid-cols,
-.ritual-stage.settling .grid-rows,
-.ritual-stage.settling .grid-slot,
-.ritual-stage.settling .grid-count,
-.ritual-stage.settling .cast-panel > * { opacity: 0; transform: none; transition-duration: .3s; transition-delay: 0ms; }
+.ritual-stage.settling .dial-core > * { opacity: 0; transform: none; transition-duration: .3s; transition-delay: 0ms; }
 
 .invocation { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; cursor: pointer; transition: opacity .38s ease; }
 .invocation p { font-size: clamp(24px, 3.2vw, 30px); letter-spacing: .55em; writing-mode: vertical-rl; line-height: 1; }
@@ -1698,24 +1654,9 @@ body.casting .home-main > * {
   .btn-divine { padding: 11px 26px; }
   .daily-gua { margin-top: 40px; }
 
-  .ritual-stage { width: auto; }
-  .ritual-head { min-height: 68px; justify-content: space-between; }
-  .ritual-status.rs-head { display: grid; }
-  .ritual-status.rs-side { display: none; }
-  .ritual-status-main { font-size: 24px; }
-  .ritual-status-sub { font-size: 14px; }
-  .ritual-body { grid-template-columns: minmax(0, 1fr); gap: 22px; align-content: start; justify-content: stretch; }
-  .grid-frame { --gs: calc(100vw - 2 * var(--gutter) - 2 * var(--frame) - 24px); grid-template-columns: 22px var(--gs); grid-template-rows: 22px var(--gs) auto; }
-  .grid-cols, .grid-rows { font-size: 12px; }
-  .grid-cols em, .grid-rows em { display: none; }
-  .grid-count { font-size: 13.5px; margin-top: 6px; }
-  .cast-panel { grid-template-columns: auto 1fr; align-items: center; gap: 16px 20px; }
-  .coins { gap: 8px; }
-  .coin { width: 46px; height: 46px; }
-  .cast-build { width: 72px; height: 72px; justify-self: end; }
-  .cast-actions { grid-column: 1 / -1; justify-self: stretch; }
-  .cast-btn { width: 100%; padding: 12px; }
-  .ritual-stage.by-birth .cast-build { grid-column: 1 / -1; justify-self: center; }
+  .ritual-head { top: 0; }
+  .ritual-status-main { font-size: 26px; }
+  .cast-btn { padding: 12px 36px; }
 
   .result-question { margin-top: 16px; }
   /* 手机上把两栏拆开重排：卦画 → 卦名 → 本/之切换 → 正文 → 图签 → 按钮 */
