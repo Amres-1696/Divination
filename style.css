@@ -576,7 +576,8 @@ body.casting .home-main > * {
 }
 .grid-count { grid-column: 2; grid-row: 3; margin-top: 10px; text-align: right; font-size: 14.5px; color: var(--ink-2); }
 
-.cast-panel { display: grid; gap: 30px; justify-items: center; }
+/* 宽度固定：状态文字长短变化时，旁边的方图不跟着左右挪 */
+.cast-panel { display: grid; gap: 30px; justify-items: center; width: 280px; }
 .coins { display: flex; gap: 14px; }
 .coin { position: relative; width: 60px; height: 60px; perspective: 420px; }
 .coin::after {
@@ -623,6 +624,8 @@ body.casting .home-main > * {
 .ritual-stage.pre .grid-count,
 .ritual-stage.pre .cast-panel > * { opacity: 0; transform: translateY(10px); }
 .ritual-stage.pre .ritual-head { opacity: 1; transform: none; }
+/* 方格不做入场位移：卦画是量着它的位置摆的，它一挪卦画就对不上格子 */
+.ritual-stage.pre .grid-slot { transform: none; }
 .grid-slot { transition-delay: 0ms; }
 .grid-cols, .grid-rows { transition-delay: 120ms; }
 .cast-panel > :nth-child(1) { transition-delay: 220ms; }
@@ -1709,7 +1712,7 @@ body.casting .home-main > * {
   .grid-cols, .grid-rows { font-size: 12px; }
   .grid-cols em, .grid-rows em { display: none; }
   .grid-count { font-size: 13.5px; margin-top: 6px; }
-  .cast-panel { grid-template-columns: auto 1fr; align-items: center; gap: 16px 20px; }
+  .cast-panel { width: auto; grid-template-columns: auto 1fr; align-items: center; gap: 16px 20px; }
   .coins { gap: 8px; }
   .coin { width: 46px; height: 46px; }
   .cast-build { width: 72px; height: 72px; justify-self: end; }

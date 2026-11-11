@@ -95,10 +95,33 @@ const Cosmos = (() => {
         const r = slot.getBoundingClientRect();
         const cell = r.width / 8;
         return {
+            key: `${r.left.toFixed(1)},${r.top.toFixed(1)},${r.width.toFixed(1)}`,
             cx: r.left + r.width / 2, cy: r.top + r.height / 2, sc: cell * 0.54 / B,
             // 先天方图：坤在左上、乾在右下；行看下卦，列看上卦
             spot: v => ({ x: r.left + ((v & 7) + 0.5) * cell, y: r.top + ((v >> 3) + 0.5) * cell, rot: 0 })
         };
+    }
+
+    // 方图状态下，卦画在一个固定图层里，格线却是页面里的普通元素。
+    // 页面一滚动、旁边的文字一变宽，格线就挪了位置而卦画还留在原地。
+    // 所以方图期间每帧看一眼格线在哪，挪了就把卦画跟过去。
+    let followRaf = 0;
+    function followGrid() {
+        followRaf = 0;
+        if (state !== 'grid') return;
+        const g = gridGeo();
+        if (g && grid && g.key !== grid.key) {
+            grid = g;
+            items.forEach(it => {
+                const tw = tweens.get(it);
+                if (tw && tw.path) return;                 // 旋进途中的卦自己会对准最新位置
+                const p = g.spot(it.v);
+                it.s.x = p.x; it.s.y = p.y;                 // 只挪位置，不打断正在进行的明暗、缩放
+                if (!tw) it.s.sc = g.sc * (it.out ? .7 : it.hit ? 1.3 : 1);
+                write(it);
+            });
+        }
+        followRaf = requestAnimationFrame(followGrid);
     }
 
     // ---------- 圆图装饰（刻度、八卦分区），与卦环同速旋转 ----------
@@ -245,6 +268,7 @@ const Cosmos = (() => {
             root.classList.remove('away', 'show-deco');
             root.classList.add('is-grid');
             const gx = grid.cx, gy = grid.cy;
+            if (!followRaf) followRaf = requestAnimationFrame(followGrid);
             items.forEach(it => {
                 it.out = false; it.hit = false;
                 it.el.classList.remove('hit');
@@ -263,8 +287,10 @@ const Cosmos = (() => {
                     delay: (row + col) * 34,
                     path: (e, f, t) => {
                         const a = a0 + da * e, r = r0 + (r1 - r0) * e;
+                        // 旋进的一秒多里格线可能还在挪（入场过渡、文字换行），终点按最新位置修正
+                        const now = grid ? grid.spot(it.v) : to;
                         return {
-                            x: gx + r * Math.cos(a), y: gy + r * Math.sin(a),
+                            x: gx + r * Math.cos(a) + (now.x - to.x) * e, y: gy + r * Math.sin(a) + (now.y - to.y) * e,
                             rot: rot0 + drot * e,
                             sc: f.sc + (t.sc - f.sc) * e,
                             op: f.op + (t.op - f.op) * e
