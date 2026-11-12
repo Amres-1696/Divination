@@ -256,6 +256,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     resultArea.dataset.question = question || '';
     resultArea.dataset.createdAt = readingContext.createdAt || '';
     resultArea.dataset.date = readingContext.date || '';
+    // 六爻的数（6 老阴 / 7 少阳 / 8 少阴 / 9 老阳，自初爻起）：分享图照这个画卦，不从页面元素的样子去反推
+    resultArea.dataset.lines = hexLines.join('');
     if (typeof setPageView === 'function') setPageView('result');
 
     resultArea.innerHTML = `
