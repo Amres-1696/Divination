@@ -168,8 +168,12 @@ class HexRitual {
         const left = 64 >> (i + 1);
         const leftText = left === 1 ? '余此一卦' : `余 ${toChineseNum(left)} 卦`;
         this.countEl.textContent = leftText;
-        if (typeof Cosmos !== 'undefined') Cosmos.narrow(i, shaoBit(this.value, i), leftText, this.quick);
-        await sleep(this.quick ? (withCoins ? 150 : 300) : (withCoins ? 420 : 620));
+        // 圆图转到位要花的时间。掷钱时下一爻等人来点；生辰起卦是自己往下走的，
+        // 得等这一下转完再出下一爻，不然圆图转到一半又被拽去别处，来回晃
+        const turn = withCoins ? (this.quick ? 420 : 900) : (this.quick ? 320 : 600);
+        if (typeof Cosmos !== 'undefined') Cosmos.narrow(i, shaoBit(this.value, i), leftText, turn);
+        if (!withCoins) { await sleep(turn + (this.quick ? 60 : 200)); return; }
+        await sleep(this.quick ? 150 : 420);
     }
     async actSettle() {
         if (this.dead) return;

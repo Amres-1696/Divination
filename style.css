@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=20261111-2") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=20261112-1") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;

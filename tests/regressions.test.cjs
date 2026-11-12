@@ -298,6 +298,10 @@ test('ritual pace defaults to the full ceremony and remembers the chosen pace', 
     assert.equal(f.run('loadSettings().ritual'), 'full');
     assert.equal(f.run(`saveSetting('ritual', 'quick')`), true);
     assert.equal(f.run('loadSettings().ritual'), 'quick');
+    // 生辰起卦的过程单独存，不跟着掷钱那一项变
+    assert.equal(f.run('loadSettings().ritualBazi'), 'full');
+    assert.equal(f.run(`saveSetting('ritualBazi', 'none')`), true);
+    assert.equal(f.run('loadSettings().ritual + "/" + loadSettings().ritualBazi'), 'quick/none');
     assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin', 'quick').quick`), true);
     assert.equal(f.run(`new HexRitual({}, GUA[0], [7,7,7,7,7,7], { changingYaos: [] }, 'coin').quick`), false);
 });

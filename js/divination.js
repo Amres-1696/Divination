@@ -52,7 +52,9 @@ async function divine() {
         // 起卦过程：完整 / 快掷 / 直出（设置里选）。系统开了「减少动态效果」时一律直出
         const prefersReducedMotion = window.matchMedia &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const ritualMode = prefersReducedMotion ? 'none' : (settings.ritual || 'full');
+        // 铜钱和生辰各有各的过程设置，互不影响
+        const paceSetting = settings.method === 'bazi' ? settings.ritualBazi : settings.ritual;
+        const ritualMode = prefersReducedMotion ? 'none' : (paceSetting || 'full');
         let chosenCard = null;
         if (ritualMode !== 'none') {
             const ritual = new HexRitual(stage, gua, hexLines, change, settings.method, ritualMode);

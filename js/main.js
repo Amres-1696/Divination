@@ -43,6 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingRitual').addEventListener('change', function() {
         if (!saveSetting('ritual', this.value)) this.value = loadSettings().ritual || 'full';
     });
+    document.getElementById('settingRitualBazi').addEventListener('change', function() {
+        if (!saveSetting('ritualBazi', this.value)) this.value = loadSettings().ritualBazi || 'full';
+    });
     // 不清楚出生时辰：按子时算
     document.getElementById('baziHourUnknown').addEventListener('click', () => {
         const hour = document.getElementById('baziHour');
