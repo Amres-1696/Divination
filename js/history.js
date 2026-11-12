@@ -51,7 +51,7 @@ function saveToHistory(question, gua, fullBin, hexLines, change, readingContext 
 function toggleHistory(force) {
     const panel = document.getElementById('historyPanel');
     const shouldOpen = typeof force === 'boolean' ? force : !panel.classList.contains('show');
-    if (shouldOpen) { _archiveFilter = null; loadHistory(); }
+    if (shouldOpen) { _archiveFilter = null; loadHistory({ reuse: true }); }
     setFloatingPanelState('historyPanel', 'historyOverlay', shouldOpen);
 }
 
@@ -241,6 +241,9 @@ function renderArchiveList(history) {
     });
 }
 
+// 上一次画牌册时的记录、筛选和日期；打开牌册时都没变就不重画（重画要把方图和时间线整个重排一遍，
+// 卦往方图里飞的动画得等它排完才能起步）
+let _archiveSig = '';
 function loadHistory(opts) {
     opts = opts || {};
     const history = readHistorySafe();
@@ -248,6 +251,11 @@ function loadHistory(opts) {
     updateHistoryCount(history.length);
     const panel = document.getElementById('historyPanel');
     if (panel && panel.classList) panel.classList.toggle('quiet', !!opts.quiet);
+    let raw = '';
+    try { raw = localStorage.getItem('divinationHistory') || ''; } catch (e) {}
+    const sig = `${_archiveFilter}|${new Date().toDateString()}|${raw}`;
+    if (opts.reuse && sig === _archiveSig && document.getElementById('historyMap')?.childElementCount) return;
+    _archiveSig = sig;
     renderArchiveMap(history);
     renderArchiveList(history);
 }

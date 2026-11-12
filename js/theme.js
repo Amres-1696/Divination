@@ -121,15 +121,18 @@ function landQuestion(box) {
 
 // ---------- 挂签 → 页面：签条先往下拉长成一根竖条，再向两边铺开成整页；关闭时原路收回签条 ----------
 const PANEL_TAG = { historyPanel: 'historyBtn', settingsPanel: 'settingsGear' };
+// 只撤掉脚本自己放的动画；.show 带起来的 CSS 入场动画 / 过渡不动
+const cancelScripted = el => el.getAnimations().forEach(a => { if (a.constructor === Animation) a.cancel(); });
 function morphPanelFromTag(panel, open) {
     const tag = document.getElementById(PANEL_TAG[panel.id]);
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!tag || !panel.animate || reduce) return;
     if (panel.id === 'historyPanel') return archiveFlight(panel, tag, open);
-    // 打断上一次还没放完的开合
-    [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
-    // morphing 期间面板固定在展开位置、可见、不走 CSS 过渡，形状全由 clip-path 决定
+    // morphing 期间面板固定在展开位置、可见、不走 CSS 过渡，形状全由 clip-path 决定。
+    // 先挂上再去取动画列表（取的时候会重算样式），省得多算一遍
     panel.classList.add('morphing');
+    // 打断上一次还没放完的开合
+    [panel, ...panel.children].forEach(cancelScripted);
     const p = panel.getBoundingClientRect(), t = tag.getBoundingClientRect();
     const top = t.top - p.top, left = t.left - p.left, right = p.right - t.right, bottom = p.bottom - t.bottom;
     const atTag = `inset(${top}px ${right}px ${bottom}px ${left}px)`;
@@ -169,10 +172,23 @@ function morphPanelFromTag(panel, open) {
 // 留出空位，牌册开着时一直空着，关上后卦飞回原位才重新出现
 const RING_SPIN_DEG_PER_MS = 360 / 520000;   // 与 CSS cosmos-spin 的 520s 一圈一致
 // 挂签被往下一拽再弹回
+// 拉长的是签条的两层底（::before 描边、::after 签面，从顶边往下 scaleY），签角的朱印跟着往下走；
+// 签上的字不动。不改 height，免得每一帧都重新排版
 function tugTag(tag, px) {
-    const h = getComputedStyle(tag).height;
-    tag.animate([{ height: h }, { height: `calc(${h} + ${px}px)`, offset: .4 }, { height: h }],
-        { duration: 520, easing: 'cubic-bezier(.3, 1.4, .5, 1)' });
+    const opt = { duration: 520, easing: 'cubic-bezier(.3, 1.4, .5, 1)' };
+    const h = tag.offsetHeight;
+    try {
+        if (!h) throw 0;
+        const k = ((h + px) / h).toFixed(4);
+        const stretch = [{ transform: 'none' }, { transform: `scaleY(${k})`, offset: .4 }, { transform: 'none' }];
+        tag.animate(stretch, { ...opt, pseudoElement: '::before' });
+        tag.animate(stretch, { ...opt, pseudoElement: '::after' });
+        const seal = tag.querySelector('sup');
+        if (seal) seal.animate([{ translate: '0 0' }, { translate: `0 ${px}px`, offset: .4 }, { translate: '0 0' }], opt);
+    } catch (e) {
+        const hh = getComputedStyle(tag).height;
+        tag.animate([{ height: hh }, { height: `calc(${hh} + ${px}px)`, offset: .4 }, { height: hh }], opt);
+    }
 }
 function archiveFlight(panel, tag, open) {
     if (panel._flyers) panel._flyers.remove();
@@ -182,12 +198,12 @@ function archiveFlight(panel, tag, open) {
     if (open) showSlots();
     const toItem = !open && panel._toItem;
     panel._toItem = false;
-    [panel, ...panel.children].forEach(el => el.getAnimations().forEach(a => a.cancel()));
-    // 从牌册打开某一卦：要去结果页了，卦不飞回原处，空位立刻还原，亮着的卦收回牌册挂签里
-    if (toItem) showSlots();
     panel.classList.add('morphing', 'flying');
     // 卦是飞进格子亮起来的，落定后不再让亮格子另放一遍逐个点亮的动画
     panel.classList.toggle('flown', open);
+    [panel, ...panel.children].forEach(cancelScripted);
+    // 从牌册打开某一卦：要去结果页了，卦不飞回原处，空位立刻还原，亮着的卦收回牌册挂签里
+    if (toItem) showSlots();
     tugTag(tag, 20);
 
     // 目标：方图里亮着的格子；还没有记录时没有卦要飞，只剩面板本身的浮现
@@ -210,16 +226,19 @@ function archiveFlight(panel, tag, open) {
     const layer = document.createElement('div');
     layer.className = 'archive-flyers';
     const flights = [];
-    targets.forEach(({ v, el }) => {
-        if (!el) return;
+    // 先把要量的全量完（位置、亮度），再统一改样式：边量边改会让每一卦都触发一次重新排版
+    const plan = targets.map(({ v, el }) => {
+        if (!el) return null;
         const t = el.getBoundingClientRect();
-        if (!t.width) return;
-        let sx, sy, scale, rot, op;
+        if (!t.width) return null;
         const cg = ring && ring[63 - v];
+        return { v, el, t, cg, cr: cg ? cg.getBoundingClientRect() : null, endOp: Number(getComputedStyle(el).opacity) || 1 };
+    }).filter(Boolean);
+    plan.forEach(({ v, t, cg, cr, endOp }) => {
+        let sx, sy, scale, rot, op;
         if (cg) {
-            const r = cg.getBoundingClientRect();
-            sx = r.left + r.width / 2; sy = r.top + r.height / 2;
-            scale = (r.width * .72 / t.width).toFixed(3);
+            sx = cr.left + cr.width / 2; sy = cr.top + cr.height / 2;
+            scale = (cr.width * .72 / t.width).toFixed(3);
             rot = Math.atan2(sx - hcx, hcy - sy) * 180 / Math.PI;
             op = .46;
             if (open) {
@@ -248,7 +267,6 @@ function archiveFlight(panel, tag, open) {
         f.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
         layer.appendChild(f);
         // 落地时正好是这一格的亮度（抽到次数越多越亮）
-        const endOp = Number(getComputedStyle(el).opacity) || 1;
         const order = (v >> 3) + (v & 7);
         flights.push({ f, t, sx, sy, scale, rot, op, endOp, order, onRing: !!cg, hero: v === glyphV });
     });
@@ -285,8 +303,9 @@ function archiveFlight(panel, tag, open) {
         const back = frames.slice().reverse().map((k, i, a) => ({ ...k, offset: k.offset != null ? 1 - k.offset : i / (a.length - 1) }));
         f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
     });
-    // 面板本身：打开时稍晚一点从模糊里浮出，关闭时先淡去
-    if (open) panel.animate([{ opacity: 0, filter: 'blur(8px)' }, { opacity: 1, filter: 'blur(0px)' }],
+    // 面板本身：打开时稍晚一点浮上来，关闭时先淡去。
+    // （整页模糊再变清晰在手机上太吃显卡，只用透明度和一点位移）
+    if (open) panel.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
         { duration: 520, delay: 80, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
     else panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-in', fill: 'forwards' });
 
