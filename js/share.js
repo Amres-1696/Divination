@@ -25,13 +25,9 @@ function getCurrentGuaData() {
             if (n && t) changingYaoTexts.push(n.textContent + '：' + t.textContent);
         }
     });
-    // 从六爻列表的阴阳类反推 hexagramLines（7=少阳, 8=少阴, 9=老阳, 6=老阴）
-    const hexagramLines = [];
-    yaoItems.forEach((el, i) => {
-        const isYang = !!el.querySelector('.yao-line.yang');
-        const isChanging = changingYaos.includes(i);
-        hexagramLines.push(isYang ? (isChanging ? 9 : 7) : (isChanging ? 6 : 8));
-    });
+    // 六爻的数直接取结果页记下的那一份。以前是从六爻列表里每行的小爻条反推阴阳，
+    // 列表改成标注图后小爻条没了，分享图上的卦就全画成了阴爻
+    const hexagramLines = /^[6-9]{6}$/.test(r.dataset.lines || '') ? Array.from(r.dataset.lines, Number) : [];
     const hasChange = !!r.querySelector('.change-section');
     let cgName='', cgSymbol='', cgExplain='', changePos='';
     if (hasChange) {
@@ -151,7 +147,9 @@ function createShareCard(d) {
     const guaEntry = GUA.find(g => g[0] === d.name);
     const verdict = guaEntry ? getVerdict(guaEntry) : 'ping';
     const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
-    const hexLines = (d.hexagramLines && d.hexagramLines.length === 6) ? d.hexagramLines : [8, 8, 8, 8, 8, 8];
+    // 取不到六爻的数时按卦名还原（不带动爻），不默默画成坤卦
+    const hexLines = (d.hexagramLines && d.hexagramLines.length === 6) ? d.hexagramLines
+        : guaEntry ? binToHexLines(guaBinary(guaEntry)) : [8, 8, 8, 8, 8, 8];
     const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
     const v = shaoValue(bits.slice().reverse().join(''));
     const ordinal = guaEntry ? guaOrdinal(guaEntry) : '';

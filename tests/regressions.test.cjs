@@ -315,6 +315,16 @@ test('on the circular chart every cast leaves one unbroken arc, halving down to 
     assert.equal(bad, 0);
 });
 
+test('the result page records the six line values the share card draws from', () => {
+    const f = fixture();
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../js/share.js'), 'utf8');
+    // 分享图不再从页面元素的样子反推阴阳（那样页面一改版，卦就画错）
+    assert.equal(/yao-line/.test(src), false);
+    f.run(`(()=>{const l=[7,7,9,7,6,7];const b=l.map(v=>(v===7||v===9)?'1':'0').reverse().join('');
+        renderResult(lookupGua(b),l,calculateChangeGua(l,b),'测',b,null,null,{method:'coin'})})()`);
+    assert.equal(f.run(`document.getElementById('resultArea').dataset.lines`), '779767');
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];
