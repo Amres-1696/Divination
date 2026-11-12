@@ -450,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 首页的起卦方式只留 methodHint 那一行文字，分段切换控件放在设置里
     enhanceMethodSelect(document.getElementById('settingMethod'));
     enhanceMethodSelect(document.getElementById('settingRitual'));
+    enhanceMethodSelect(document.getElementById('settingRitualBazi'));
 
     // 问题输入框右下角的字数刻度：平时不显示，快写满了才出现
     const q = document.getElementById('question');

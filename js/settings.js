@@ -4,7 +4,8 @@
 
 const DEFAULT_SETTINGS = {
     method: 'coin',
-    ritual: 'full',   // 起卦过程：full 完整 / quick 快掷 / none 直出
+    ritual: 'full',       // 铜钱起卦的过程：full 完整 / quick 快掷 / none 直出
+    ritualBazi: 'full',   // 生辰起卦的过程：full 完整 / quick 加快 / none 直出（和上一项各管各的）
     showDaily: true,
     bazi: null,
     ai: DEFAULT_AI
@@ -169,7 +170,10 @@ function applySettings(settings) {
     if (settingMethod) settingMethod.value = settings.method;
     const settingRitual = document.getElementById('settingRitual');
     if (settingRitual) settingRitual.value = settings.ritual || 'full';
+    const settingRitualBazi = document.getElementById('settingRitualBazi');
+    if (settingRitualBazi) settingRitualBazi.value = settings.ritualBazi || 'full';
     if (typeof syncMethodPickers === 'function') syncMethodPickers();
+    syncRitualGroups(settings.method);
     const birthGroup = document.getElementById('baziSettings');
     if (birthGroup) setBaziGroupShown(birthGroup, settings.method === 'bazi');
     // 每日启示
@@ -178,8 +182,16 @@ function applySettings(settings) {
     renderMethodHint(settings);
 }
 
+// 「过程」那一项跟着起卦方式换：铜钱显示掷钱过程，生辰显示推演过程
+function syncRitualGroups(method) {
+    const coin = document.getElementById('coinRitualGroup'), bazi = document.getElementById('baziRitualGroup');
+    if (coin) coin.hidden = method === 'bazi';
+    if (bazi) bazi.hidden = method !== 'bazi';
+}
+
 // 设置里切换起卦方式：生辰这一组顺着展开、收起，展开后年轮顺势滚到所选的年份；面板关着时直接切
 function setBaziGroupShown(group, show) {
+    syncRitualGroups(show ? 'bazi' : 'coin');
     // 上一次展开 / 收起还没放完：记下它此刻的样子，落到它的终态（onfinish 是异步的，不能等它），
     // 新的一次从这个样子接着走，不先跳到头再折回来
     let midway = null;

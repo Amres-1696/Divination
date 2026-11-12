@@ -328,7 +328,10 @@ const Cosmos = (() => {
         },
 
         // 第 i 爻落定：与之不符的一半暗下去，剩下的那段弧转到正上方，标线跟着收窄
-        narrow(lineIndex, bit, label, fast) {
+        // dur：圆图转到位用多少毫秒
+        narrow(lineIndex, bit, label, dur) {
+            dur = dur || 900;
+            const fast = dur < 500;
             if (!dial) return;
             const c = dial.c;
             let lo = Infinity, hi = -Infinity;
@@ -353,7 +356,7 @@ const Cosmos = (() => {
             dial.arc = arc;
             dial.label = label || '';
             dial.anim = {
-                t0: performance.now(), dur: reduce() ? 0 : (fast ? 420 : 900),
+                t0: performance.now(), dur: reduce() ? 0 : dur,
                 th0: dial.theta, th1: dial.theta + shortest(-mid - dial.theta),
                 h0: dial.half, h1: (arc[1] - arc[0]) / 2
             };
