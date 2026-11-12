@@ -63,15 +63,15 @@ const SHARE_CARD_CSS = `
     .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
     .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
     .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
-    .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #EEF2F7; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
+    .sc-ask { position: relative; flex: none; margin-top: 26px; padding-left: 16px; border-left: 3px solid #EEF2F7; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
     .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
-    .sc-main { position: relative; margin-top: 22px; padding-left: 16px; border-left: 2px solid #EEF2F7; max-height: 190px; overflow: hidden; }
+    .sc-main { position: relative; flex: none; margin-top: 20px; padding-left: 16px; border-left: 2px solid #EEF2F7; }
     .sc-label { display: block; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
     .sc-quote { margin-top: 6px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 30px; line-height: 1.35; letter-spacing: .04em; color: #EEF2F7; }
     .sc-quote.long { font-size: 23px; }
-    .sc-quote.xl { font-size: 18px; line-height: 1.6; font-family: 'Noto Serif SC', 'Songti SC', serif; }
+    .sc-quote.xl { font-size: 17px; line-height: 1.65; font-family: 'Noto Serif SC', 'Songti SC', serif; }
     .sc-from { margin-top: 4px; font-size: 13px; letter-spacing: .06em; color: #A7B8D3; }
-    .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
+    .sc-reading { position: relative; flex: 0 1 auto; min-height: 0; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3;  overflow: hidden; }
     .sc-foot { position: relative; margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; border-top: 1px dashed rgba(238, 242, 247, .3); font-size: 12px; letter-spacing: .1em; color: #A7B8D3; }
 `;
 
@@ -136,7 +136,7 @@ function createShareCard(d) {
     const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
     // 主断和结果页一样：辞放大，下面一行小字写出处。辞长时字号跟着收
     const quoteLen = main.lines.reduce((n, l) => n + l.text.length, 0);
-    const quoteCls = quoteLen > 44 ? ' xl' : quoteLen > 22 ? ' long' : '';
+    const quoteCls = quoteLen > 28 ? ' xl' : quoteLen > 14 ? ' long' : '';
     const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${escHtml(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('');
 
     // 9:16 竖版，宽 500
@@ -163,6 +163,19 @@ function createShareCard(d) {
   <div class="sc-reading">${escHtml(gua[4])}</div>
   <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>六十四卦 · 取其一</span></div>
 </div>`;
+}
+
+// 卡片高度固定，底下那段白话只能用剩下的空间：按整行截断，不留半行字
+function fitShareReading(card) {
+    const rd = card && card.querySelector('.sc-reading');
+    if (!rd) return;
+    const cs = getComputedStyle(rd);
+    const lh = parseFloat(cs.lineHeight), pad = parseFloat(cs.paddingTop) || 0;
+    if (!(lh > 0)) return;
+    const lines = Math.floor((rd.clientHeight - pad) / lh);
+    if (lines < 1) { rd.style.display = 'none'; return; }
+    rd.style.flex = 'none';
+    rd.style.height = `${pad + lines * lh}px`;
 }
 
 let _lastBlobUrl = null;
@@ -282,6 +295,7 @@ async function shareAsImage() {
         if (flight) await Promise.race([flight.anim.finished.catch(() => {}), sleep(900)]);
         else await sleep(80);
         const card = tmp.querySelector('#shareCard');
+        fitShareReading(card);
         scrubShareCardExternalUrls(card, window);
 
         // 根据设备选择 scale，避免双次渲染

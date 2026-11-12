@@ -117,6 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 scrollTicking = true;
                 requestAnimationFrame(() => {
                     bttBtn.classList.toggle('visible', window.scrollY > window.innerHeight);
+                    // 页面滚动之后页头垫上底色，内容不会和页头叠在一起
+                    document.body.classList.toggle('scrolled', window.scrollY > 8);
                     scrollTicking = false;
                 });
             }

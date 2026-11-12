@@ -213,7 +213,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字。
     // 辞的长短差很多（「亢龙有悔。」到坤卦卦辞三十多字），长的字号跟着收
     const mainLen = mainReading.lines.reduce((n, l) => n + l.text.length, 0);
-    const quoteCls = mainLen > 40 ? ' xl' : mainLen > 18 ? ' long' : '';
+    const quoteCls = mainLen > 28 ? ' xl' : mainLen > 14 ? ' long' : '';
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
         <h3 class="mr-label">主断</h3>
         ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
