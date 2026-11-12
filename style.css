@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=59e13233") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=c54af65c") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -774,6 +774,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .mr-line { margin-top: 10px; }
 .mr-line + .mr-line { margin-top: 18px; }
 .mr-quote { display: block; quotes: none; font-family: var(--display); font-size: clamp(30px, 3.5vw, 42px); line-height: 1.35; letter-spacing: .04em; overflow-wrap: anywhere; }
+.mr-quote.long { font-size: clamp(24px, 2.5vw, 30px); line-height: 1.45; }
+.mr-quote.xl { font-family: var(--text); font-size: 20px; line-height: 1.75; letter-spacing: .02em; }
 .mr-from { display: block; margin-top: 6px; font-style: normal; font-size: 15px; color: var(--ink-2); }
 .mr-how { margin-top: 12px; font-size: 13.5px; color: var(--ink-3); }
 
@@ -1666,6 +1668,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .result-actions { order: 7; }
   .result-warning { order: 8; }
   .mr-quote { font-size: 28px; }
+  .mr-quote.long { font-size: 23px; }
+  .mr-quote.xl { font-size: 18px; }
   .glyph-figure, .result-glyph { width: 116px; height: 116px; }
   .callouts { width: 110px; }
   .co::before { width: 14px; }

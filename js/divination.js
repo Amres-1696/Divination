@@ -133,10 +133,10 @@ function getMainReading(gua, change) {
     }
     if (benName === '乾为天')
         return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」',
-            lines: [{ from: '乾卦用九', text: '见群龙无首，吉' }], how: '乾卦六爻全动，看「用九」' };
+            lines: [{ from: '乾卦用九', text: '见群龙无首，吉。' }], how: '乾卦六爻全动，看「用九」' };
     if (benName === '坤为地')
         return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」',
-            lines: [{ from: '坤卦用六', text: '利永贞' }], how: '坤卦六爻全动，看「用六」' };
+            lines: [{ from: '坤卦用六', text: '利永贞。' }], how: '坤卦六爻全动，看「用六」' };
     return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」`,
         lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
 }
@@ -210,10 +210,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">本卦的底色${sealMoving ? '<br>不计动爻' : ''}</span></span>`;
     // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示
     const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
-    // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字
+    // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字。
+    // 辞的长短差很多（「亢龙有悔。」到坤卦卦辞三十多字），长的字号跟着收
+    const mainLen = mainReading.lines.reduce((n, l) => n + l.text.length, 0);
+    const quoteCls = mainLen > 40 ? ' xl' : mainLen > 18 ? ' long' : '';
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
         <h3 class="mr-label">主断</h3>
-        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
+        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
         <p class="mr-how">${mainReading.how}</p>
       </section>`;
 

@@ -271,7 +271,7 @@ test('main reading exposes its source lines for every one of the 4,096 casts', (
         if(!m.how||m.lines.length!==want||m.lines.some(x=>!x.text||!x.from||x.text.includes('：')||!m.text.includes(x.text)))bad++}return bad})()`);
     assert.equal(bad, 0);
     const two = f.run(`(()=>{const l=[7,7,9,7,7,9];const c=calculateChangeGua(l,'111111');return getMainReading(lookupGua('111111'),c).lines[0]})()`);
-    assert.equal(two.text, '亢龙有悔');
+    assert.equal(two.text, '亢龙有悔。');
     assert.equal(two.from, '本卦《乾为天》上九');
 });
 
@@ -341,6 +341,17 @@ test('every ?v= cache key matches the file it points to (run tools/stamp-version
         }
     }
     assert.deepEqual(stale, []);
+});
+
+test('judgements and line texts are the full received text, punctuated', () => {
+    const f = fixture();
+    // 卦辞、爻辞都以句号或问号收尾（不再是截短的几个字）；每卦六条，每条带爻题
+    assert.equal(f.run(`GUA.filter(g => !/[。？]$/.test(g[1])).length`), 0);
+    assert.equal(f.run(`GUA.filter(g => g[3].split('|').length !== 6 || g[3].split('|').some(y => !/^[初上]?[九六][二三四五]?：.+[。？]$/.test(y))).length`), 0);
+    // 抽几条对原文：旧数据里装反、写错的几处
+    assert.equal(f.run(`GUA.find(g => g[0] === '火天大有')[3].split('|')[0]`), '初九：无交害，匪咎，艰则无咎。');
+    assert.equal(f.run(`GUA.find(g => g[0] === '雷水解')[3].split('|')[0]`), '初六：无咎。');
+    assert.equal(f.run(`GUA.find(g => g[0] === '艮为山')[1]`), '艮其背，不获其身；行其庭，不见其人，无咎。');
 });
 
 test('daily detail always opens the visible snapshot', () => {
