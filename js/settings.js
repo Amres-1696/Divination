@@ -77,20 +77,14 @@ function saveBazi() {
         return;
     }
     renderDailyGua();
-
-    const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
-    status.textContent = `已保存：${year}年${month}月${day}日 ${shiChen[hour]}时` + (lunar ? ` · ${formatLunar(lunar)}` : '');
-    status.className = 'bazi-status success';
     renderMethodHint(settings);
-    updateBaziSaveState();
+    updateBaziSaveState();   // 按钮变成「生辰已保存」，状态行写出存下的生辰
 }
 
-const SHI_CHEN = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 // 生辰的一句话说法：农历年月日 + 时辰；早于农历历表时用公历
 function baziSummary(b) {
     const lu = solarToLunar(b.year, b.month, b.day);
-    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${SHI_CHEN[b.hour]}时`;
+    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour]}时`;
 }
 
 // 首页起卦方式下面的一行：铜钱和生辰各说各的起法；生辰模式直接亮出已存的生辰，没存就引导去填
@@ -121,6 +115,12 @@ function playMethodHintSwap(el) {
     el.classList.remove('swap');
     el.offsetWidth;
     el.classList.add('swap');
+}
+
+// 选了生辰起卦却还没存生辰：三处（首页换起法、设置里换起法、点起卦）都走这里，说法和去处一致
+function promptForBirth() {
+    openBaziSettings();
+    showToast('生辰起卦要先填写并保存公历生辰');
 }
 
 // 从首页那一行生辰点进来：设置照常从挂签展开，但直接停在生辰这一组，三件器具依次亮起
@@ -259,14 +259,7 @@ function restoreSettingsUI() {
         document.getElementById('baziMonth').value = b.month || '';
         document.getElementById('baziDay').value = b.day || '';
         document.getElementById('baziHour').value = b.hour !== undefined ? b.hour : '';
-        const shiChen = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
-        const status = document.getElementById('baziStatus');
-        if (status) {
-            const lunar = solarToLunar(b.year, b.month, b.day);
-            status.textContent = `当前：${b.year}年${b.month}月${b.day}日 ${shiChen[b.hour]}时` + (lunar ? ` · ${formatLunar(lunar)}` : '');
-            status.className = 'bazi-status success';
-        }
-    }
+    }   // 状态行由下面的 updateBaziSaveState 写
 
     applySettings(settings);
     updateBaziSaveState();

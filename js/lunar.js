@@ -86,9 +86,29 @@ function ganZhiYear(lunarYear) {
     return TIAN_GAN[g] + DI_ZHI[z];
 }
 
+// 此刻在图框上的坐标：[日干序号 0–9, 时辰序号 0–11]。1900-01-01 是甲戌日（六十甲子第 10）
+function frameNow(now) {
+    const days = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(1900, 0, 1)) / 864e5);
+    const gz = ((days + 10) % 60 + 60) % 60;
+    return [gz % 10, Math.floor((now.getHours() + 1) / 2) % 12];
+}
+
 // 地支序数（梅花易数年数）：子1 … 亥12
 function lunarYearBranch(lunarYear) {
     return ((lunarYear - 4) % 12 + 12) % 12 + 1;
+}
+
+// 梅花易数的生辰取数：年取地支数（子1…亥12），月、日取农历月日（闰月按其月数计）。
+// 上卦数＝年＋月＋日，下卦数＝上卦数＋时辰数（子1…亥12）。早于农历历表时退回公历数值，结果仍然确定。
+function birthNumbers(bazi) {
+    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
+    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
+    const upper = yearNum + (lunar ? lunar.month : bazi.month) + (lunar ? lunar.day : bazi.day);
+    return { upper, lower: upper + (bazi.hour + 1) };
+}
+// 先天八卦数取卦（乾1 兑2 离3 震4 巽5 坎6 艮7 坤8，满八循环），返回自上而下的三位二进制
+function trigramOfNumber(sum) {
+    return TRIGRAM_TO_BINARY['☰☱☲☳☴☵☶☷'[((sum - 1) % 8 + 8) % 8]];
 }
 
 // 农历月名：正月、二月…冬月、腊月；闰月前缀「闰」

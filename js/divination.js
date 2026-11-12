@@ -19,9 +19,9 @@ async function divine() {
         date: startedAt.toLocaleString('zh-CN')
     };
 
-    // 八字起卦需要检查八字数据
+    // 生辰起卦需要先存生辰
     if (settings.method === 'bazi' && !settings.bazi) {
-        showToast('请先在设置中填写并保存公历生辰', 'error');
+        if (typeof promptForBirth === 'function') promptForBirth();
         _divineRunning = false;
         return;
     }
@@ -74,6 +74,9 @@ async function divine() {
         if (typeof dropQuestionCarry === 'function') dropQuestionCarry();
         if (typeof setPageView === 'function') setPageView('home');
         resultArea.innerHTML = '';
+        // 圆图可能还停在刻度盘上（标线、转到一半），收回首页的样子
+        if (typeof Cosmos !== 'undefined') Cosmos.toCircle();
+        if (typeof playHomeEnter === 'function') playHomeEnter(150);
         showToast('起卦未完成，请重试', 'error');
         console.error(error);
     } finally {
@@ -94,7 +97,6 @@ function getMainReading(gua, change) {
     const n = changing.length;
     const benName = gua[0];
     const zhi = change.changeGua;
-    const posCN = ['初', '二', '三', '四', '五', '上'];
     const all = [0, 1, 2, 3, 4, 5];
     // 「上九：亢龙有悔」→ 出处「本卦《乾为天》上九」+ 辞「亢龙有悔」
     const yaoLine = (label, name, raw) => {
@@ -108,7 +110,7 @@ function getMainReading(gua, change) {
         return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」`,
             lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '六爻皆静，看本卦卦辞' };
     if (n === 1)
-        return { rule: '一爻动', text: `以本卦《${benName}》${posCN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
+        return { rule: '一爻动', text: `以本卦《${benName}》${YAO_POS_CN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
             lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: '一爻动，看动的这一爻' };
     if (n === 2)
         return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}`,
@@ -131,10 +133,10 @@ function getMainReading(gua, change) {
     }
     if (benName === '乾为天')
         return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」',
-            lines: [{ from: '乾卦用九', text: '见群龙无首，吉' }], how: '乾卦六爻全动，看「用九」' };
+            lines: [{ from: '乾卦用九', text: '见群龙无首，吉。' }], how: '乾卦六爻全动，看「用九」' };
     if (benName === '坤为地')
         return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」',
-            lines: [{ from: '坤卦用六', text: '利永贞' }], how: '坤卦六爻全动，看「用六」' };
+            lines: [{ from: '坤卦用六', text: '利永贞。' }], how: '坤卦六爻全动，看「用六」' };
     return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」`,
         lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
 }
@@ -185,10 +187,13 @@ function buildCallouts(hexLines, changingYaos) {
     return `<ol class="callouts" aria-hidden="true">${rows.join('')}</ol>`;
 }
 
-function buildMiniMap(v) {
-    let cells = '';
-    for (let k = 0; k < 64; k++) cells += `<i${k === v ? ' class="on"' : ''}></i>`;
-    return `<span class="minimap" aria-hidden="true">${cells}</span>`;
+// 这一卦在先天圆图上的位置：一圈六十四道刻度，它那一道加长加粗
+function buildMiniRing(v) {
+    const c = 20, pt = (r, deg) => { const a = deg * Math.PI / 180; return `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`; };
+    let ticks = '';
+    for (let k = 0; k < 64; k++) { const d = circleAngle(k); if (k !== v) ticks += `M${pt(15, d)}L${pt(18, d)}`; }
+    const d = circleAngle(v);
+    return `<svg class="mini-ring" viewBox="0 0 40 40" aria-hidden="true"><path d="${ticks}" class="mr-tick"/><path d="M${pt(6, d)}L${pt(19.5, d)}" class="mr-on"/></svg>`;
 }
 
 function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi, readingContext = {}) {
@@ -203,14 +208,16 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     // 所以它不再当结论盖在卦名旁：缩成一枚淡色小印，注明说的是本卦的底色，结论交给主断
     const sealMoving = change.changingYaos.length > 0;
     const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">本卦的底色${sealMoving ? '<br>不计动爻' : ''}</span></span>`;
-    // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示（节点留给分享图读）
+    // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示
     const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
-    // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字
+    // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字。
+    // 辞的长短差很多（「亢龙有悔。」到坤卦卦辞三十多字），长的字号跟着收
+    const mainLen = mainReading.lines.reduce((n, l) => n + l.text.length, 0);
+    const quoteCls = mainLen > 28 ? ' xl' : mainLen > 14 ? ' long' : '';
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
         <h3 class="mr-label">主断</h3>
-        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
+        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
         <p class="mr-how">${mainReading.how}</p>
-        <span class="analysis-item" hidden>${mainReading.text}</span>
       </section>`;
 
     const yaoArr = gua[3].split('|');
@@ -234,16 +241,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     let changeHtml = '';
     if (zhi) {
-        const pos = change.changingYaos.map(p => YAO_POS_CN[p]);
-        // 并排的两个小卦画和左栏的「本卦/之卦」切换是同一件事，这里不再显示；
-        // 节点保留（hidden），分享图从这里读之卦名和变爻位置
         changeHtml = `<section class="block change-section"><h3>之卦 <span class="rule-tag">${zhi[0]}</span></h3>
-<div class="change-comparison" hidden>
-  <div class="gua-box"><div class="gua-mini">${buildYaoArtSvg(hexLines, change.changingYaos)}</div><div class="gua-label">本卦</div><div class="gua-name">${gua[0]}</div><span class="gua-symbol" hidden>${gua[2]}</span></div>
-  <div class="change-arrow" aria-hidden="true"><svg viewBox="0 0 48 12"><path d="M0 6h44M39 1l6 5-6 5"/></svg></div>
-  <div class="gua-box changed"><div class="gua-mini">${buildYaoArtSvg(binToHexLines(change.changeBinary), change.changingYaos)}</div><div class="gua-label">之卦</div><div class="gua-name">${zhi[0]}</div><span class="gua-symbol" hidden>${zhi[2]}</span></div>
-</div>
-<div class="change-details"><p hidden>变爻位置：第 ${pos.join('、')} 爻</p><p>${zhi[4]}</p></div></section>`;
+<div class="change-details"><p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};
@@ -256,6 +255,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     resultArea.dataset.question = question || '';
     resultArea.dataset.createdAt = readingContext.createdAt || '';
     resultArea.dataset.date = readingContext.date || '';
+    // 六爻的数（6 老阴 / 7 少阳 / 8 少阴 / 9 老阳，自初爻起）：分享图照这个画卦，不从页面元素的样子去反推
+    resultArea.dataset.lines = hexLines.join('');
     if (typeof setPageView === 'function') setPageView('result');
 
     resultArea.innerHTML = `
@@ -277,7 +278,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
         <div><dt>上下</dt><dd>上${upperName} 下${lowerName}</dd></div>
         <div><dt>起卦</dt><dd>${methodText}</dd></div>
-        <div><dt>方图</dt><dd>${buildMiniMap(v)}</dd></div>
+        <div><dt>圆图</dt><dd>${buildMiniRing(v)}</dd></div>
         <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
       </dl>
     </aside>
@@ -285,7 +286,6 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <header class="reading-head" style="--d:2">
         <div class="reading-name-row"><h2 class="hex-name">${gua[0]}</h2>${sealHtml}</div>
         <p class="hex-title"${titleInMain ? ' hidden' : ''}>${gua[1]}</p>
-        <span class="hex-symbol" hidden>${gua[2]}</span>
       </header>
       ${mainHtml}
       <div class="reading-sheet">
@@ -312,7 +312,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     watchYaoLeaders(resultArea);
 
-    resultArea.querySelector('#shareBtn').addEventListener('click', shareAsImage);
+    const shareBtn = resultArea.querySelector('#shareBtn');
+    shareBtn.addEventListener('click', shareAsImage);
+    // 出图要用的 html2canvas（约 200 KB）不给每个访客预取：指到、按到分享按钮时才开始取
+    const warm = () => { if (typeof loadHtml2canvas === 'function') loadHtml2canvas(); };
+    shareBtn.addEventListener('pointerenter', warm, { once: true });
+    shareBtn.addEventListener('focus', warm, { once: true });
+    shareBtn.addEventListener('touchstart', warm, { once: true, passive: true });
     const newBtn = resultArea.querySelector('#newDivineBtn');
     if (newBtn) newBtn.addEventListener('click', () => {
         if (typeof returnToInquiry === 'function') returnToInquiry({ clear: true });
@@ -411,31 +417,15 @@ function generateHexagramBazi(bazi, question) {
     const qn = normalizeQuestion(question);
     const qNum = qn ? simpleHash(qn) : 0;        // 稳定非负整数，同问题恒定
 
-    // 梅花易数以农历起卦：年取地支数（子1…亥12）、月日取农历月日（闰月按其月数计）
-    // 公历生辰先换算；早于1900年正月初一换算失败时退回公历数值，确定性不变
-    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
-    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
-    const monthNum = lunar ? lunar.month : bazi.month;
-    const dayNum = lunar ? lunar.day : bazi.day;
-
-    // 梅花易数：以「年月日」起上卦，「年月日时」起下卦——八字即先天之命
-    const baseUpper = yearNum + monthNum + dayNum;
-    const baseLower = baseUpper + (bazi.hour + 1);
-
+    const base = birthNumbers(bazi);
     // 融入所问之事（确定性：同一问题恒定，不同问题分散；取质数模以打散分布）
-    const sumUpper = baseUpper + (qNum % 97);
-    const sumLower = baseLower + (Math.floor(qNum / 97) % 89);
+    const sumUpper = base.upper + (qNum % 97);
+    const sumLower = base.lower + (Math.floor(qNum / 97) % 89);
     // 动爻＝年月日时总数 mod 6（梅花传统，同下卦总数；问题项随下卦总数自然融入，
     // 观梅占原例：34 起兑为上、43 起离为下，动爻 43%6=1 取初爻——总数只计一次）
-    const sumYao   = sumLower;
-
-    const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
-    const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
-    const changingYao = ((sumYao - 1) % 6 + 6) % 6;
-
-    const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
-    const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
-    const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
+    const changingYao = ((sumLower - 1) % 6 + 6) % 6;
+    const upperBin = trigramOfNumber(sumUpper);
+    const lowerBin = trigramOfNumber(sumLower);
 
     const lines = [];
     for (let i = 0; i < 3; i++) lines.push(lowerBin[2 - i] === '1' ? 7 : 8);

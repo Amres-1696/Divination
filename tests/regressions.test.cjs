@@ -271,7 +271,7 @@ test('main reading exposes its source lines for every one of the 4,096 casts', (
         if(!m.how||m.lines.length!==want||m.lines.some(x=>!x.text||!x.from||x.text.includes('：')||!m.text.includes(x.text)))bad++}return bad})()`);
     assert.equal(bad, 0);
     const two = f.run(`(()=>{const l=[7,7,9,7,7,9];const c=calculateChangeGua(l,'111111');return getMainReading(lookupGua('111111'),c).lines[0]})()`);
-    assert.equal(two.text, '亢龙有悔');
+    assert.equal(two.text, '亢龙有悔。');
     assert.equal(two.from, '本卦《乾为天》上九');
 });
 
@@ -317,6 +317,41 @@ test('on the circular chart every cast leaves one unbroken arc, halving down to 
             if(alive.length!==1||alive[0]!==target)bad++}
         return bad})()`);
     assert.equal(bad, 0);
+});
+
+test('the result page records the six line values the share card draws from', () => {
+    const f = fixture();
+    const src = require('node:fs').readFileSync(require('node:path').join(__dirname, '../js/share.js'), 'utf8');
+    // 分享图不再从页面元素的样子反推阴阳（那样页面一改版，卦就画错）
+    assert.equal(/yao-line/.test(src), false);
+    f.run(`(()=>{const l=[7,7,9,7,6,7];const b=l.map(v=>(v===7||v===9)?'1':'0').reverse().join('');
+        renderResult(lookupGua(b),l,calculateChangeGua(l,b),'测',b,null,null,{method:'coin'})})()`);
+    assert.equal(f.run(`document.getElementById('resultArea').dataset.lines`), '779767');
+});
+
+test('every ?v= cache key matches the file it points to (run tools/stamp-versions.py after editing)', () => {
+    const crypto = require('node:crypto');
+    const stale = [];
+    for (const rel of ['style.css', 'index.html']) {
+        const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+        for (const m of text.matchAll(/(?:src|href)="([\w./-]+)\?v=([\w-]*)"|url\("([\w./-]+)\?v=([\w-]*)"/g)) {
+            const file = m[1] || m[3], v = m[2] || m[4];
+            const want = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, path.dirname(rel), file))).digest('hex').slice(0, 8);
+            if (v !== want) stale.push(`${rel}: ${file}`);
+        }
+    }
+    assert.deepEqual(stale, []);
+});
+
+test('judgements and line texts are the full received text, punctuated', () => {
+    const f = fixture();
+    // 卦辞、爻辞都以句号或问号收尾（不再是截短的几个字）；每卦六条，每条带爻题
+    assert.equal(f.run(`GUA.filter(g => !/[。？]$/.test(g[1])).length`), 0);
+    assert.equal(f.run(`GUA.filter(g => g[3].split('|').length !== 6 || g[3].split('|').some(y => !/^[初上]?[九六][二三四五]?：.+[。？]$/.test(y))).length`), 0);
+    // 抽几条对原文：旧数据里装反、写错的几处
+    assert.equal(f.run(`GUA.find(g => g[0] === '火天大有')[3].split('|')[0]`), '初九：无交害，匪咎，艰则无咎。');
+    assert.equal(f.run(`GUA.find(g => g[0] === '雷水解')[3].split('|')[0]`), '初六：无咎。');
+    assert.equal(f.run(`GUA.find(g => g[0] === '艮为山')[1]`), '艮其背，不获其身；行其庭，不见其人，无咎。');
 });
 
 test('daily detail always opens the visible snapshot', () => {
@@ -430,10 +465,21 @@ test('escHtml tolerates fields missing from old or hand-edited records', () => {
     assert.equal(f.run(`escHtml(undefined) + '|' + escHtml(null) + '|' + escHtml('<a>')`), '||&lt;a&gt;');
 });
 
-test('daily motto uses the full date, so the same day number in different months can differ', () => {
+test('the daily motto is the Great Image line of that day\'s hexagram', () => {
     const f = fixture();
-    const distinct = f.run(`new Set(Array.from({length: 12}, (_, m) => getDailyMotto(new Date(2026, m, 7)))).size`);
-    assert.ok(distinct > 1);
+    assert.equal(f.run('Object.keys(DA_XIANG).length'), 64);
+    assert.equal(f.run('GUA.every(g => DA_XIANG[g[0]])'), true);
+    for (let m = 0; m < 12; m++) {
+        assert.equal(f.run(`getDailyMotto(new Date(2026, ${m}, 7)) === DA_XIANG[getDailyGua(new Date(2026, ${m}, 7))[0]]`), true);
+    }
+});
+
+test('the frame marks today\'s day stem and the current two-hour period', () => {
+    const f = fixture();
+    // 2000-01-01 是戊午日；13:30 是未时
+    assert.deepEqual(Array.from(f.run('frameNow(new Date(2000, 0, 1, 13, 30))')), [4, 7]);
+    // 23:00 起算子时
+    assert.equal(f.run('frameNow(new Date(2026, 10, 12, 23, 10))[1]'), 0);
 });
 
 test('without storage the daily seed stays the same for the whole page session', () => {
@@ -462,10 +508,47 @@ test('AI stream keeps the final event even when it has no trailing newline', asy
     assert.equal(text, '甲乙');
 });
 
+test('an error reported in the middle of an AI stream is shown instead of being swallowed', async () => {
+    const f = fixture();
+    configureAi(f);
+    const enc = new TextEncoder();
+    const chunks = [enc.encode('data: {"error":{"message":"quota exceeded"}}\n')];
+    f.context.fetch = async () => {
+        let i = 0;
+        return { ok: true, headers: { get: () => 'text/event-stream' },
+            body: { getReader: () => ({ read: async () => i < chunks.length ? { done: false, value: chunks[i++] } : { done: true } }) } };
+    };
+    const body = f.byId('aiBody');
+    const text = await f.run(`requestAiReading(gua, change, '问', document.getElementById('aiBody'), {})`);
+    assert.equal(text, undefined);
+    assert.match(body.innerHTML, /quota exceeded/);
+    assert.match(body.innerHTML, /class="btn" id="aiRetryBtn"/);
+});
+
+test('a failed divination sends the chart back to the home circle', async () => {
+    const f = fixture();
+    const calls = [];
+    f.context.Cosmos = { toCircle: () => calls.push('toCircle'), hide() {}, toDial() {} };
+    await f.run(`showInvocation=async()=>{throw new Error('boom')};console.error=()=>{};divine();`);
+    await new Promise(r => setImmediate(r));
+    assert.deepEqual(calls, ['toCircle']);
+});
+
+test('profiles still holding the old default prompt move to the new one; edited prompts are kept', () => {
+    const f = fixture();
+    const legacy = f.run('LEGACY_AI_PROMPTS[0]');
+    const ai = f.run(`ensureAiProfiles({ profiles: [{ name: 'a', prompt: LEGACY_AI_PROMPTS[0] }, { name: 'b', prompt: '我自己的提示词 {question}' }], activeProfile: 0 })`);
+    assert.equal(ai.profiles[0].prompt, f.run('DEFAULT_AI_PROMPT'));
+    assert.equal(ai.profiles[1].prompt, '我自己的提示词 {question}');
+    assert.match(legacy, /变爻玄机/);
+    assert.doesNotMatch(f.run('DEFAULT_AI_PROMPT'), /玄机|叩问/);
+});
+
 test('share card shows when the reading was cast, not when the image is made', () => {
     const f = fixture();
     const date = f.run(`var r = document.getElementById('resultArea');
         r.dataset.createdAt = new Date(2020, 0, 2, 3, 4).toISOString();
+        r.dataset.lines = '777777';
         getCurrentGuaData().date`);
     assert.match(date, /2020/);
     assert.doesNotMatch(date, /2026/);

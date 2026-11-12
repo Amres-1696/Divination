@@ -377,7 +377,7 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
 
 // ---------- 时辰：十二时辰钟，拖指针选 ----------
 function makeHourDial(sel) {
-    const NAMES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const NAMES = DI_ZHI;
     const RANGE = ['23–1', '1–3', '3–5', '5–7', '7–9', '9–11', '11–13', '13–15', '15–17', '17–19', '19–21', '21–23'];
     const pt = (r, deg) => { const a = deg * Math.PI / 180; return [(r * Math.sin(a)).toFixed(2), (-r * Math.cos(a)).toFixed(2)]; };
     const arc = (r1, r2, a1, a2) => {

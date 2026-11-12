@@ -42,7 +42,8 @@ function saveToHistory(question, gua, fullBin, hexLines, change, readingContext 
         localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
         return id;
     } catch (e) {
-        showToast('牌册已满，无法记录本次占卜', 'error');
+        // 牌册满 50 条会自动挤掉最旧的，走到这里是浏览器不让写存储（空间满了、隐私模式等）
+        showToast('浏览器不让保存记录，这一卦没能记进牌册', 'error');
         return null;
     }
 }
@@ -121,22 +122,22 @@ function renderArchiveMap(history) {
     const max = Math.max(1, ...counts);
     const lit = counts.filter(c => c > 0).length;
     const top = counts.indexOf(max);
-    const topGua = history.length ? lookupGua(linesFromShao(top).map(x => x % 2 ? '1' : '0').reverse().join('')) : null;
+    const topGua = history.length ? guaOfShao(top) : null;
     const labels = TRIGRAM_BY_VALUE.map(n => `<span>${n}</span>`).join('');
     let cells = '';
     for (let v = 0; v < 64; v++) {
         const c = counts[v];
-        const g = lookupGua(linesFromShao(v).map(x => x % 2 ? '1' : '0').reverse().join(''));
+        const g = guaOfShao(v);
         cells += `<button type="button" class="am-cell${c ? ' lit' : ''}${_archiveFilter === v ? ' sel' : ''}" data-v="${v}" style="--w:${(c / max).toFixed(3)};--o:${(v >> 3) + (v & 7)}" ${c ? '' : 'tabindex="-1" disabled'} aria-label="${g ? g[0] : ''}${c ? `，${c} 次` : '，未抽到'}">${buildHexBars(linesFromShao(v))}${c > 1 ? `<em>${c}</em>` : ''}</button>`;
     }
     const filtered = _archiveFilter != null
-        ? lookupGua(linesFromShao(_archiveFilter).map(x => x % 2 ? '1' : '0').reverse().join(''))
+        ? guaOfShao(_archiveFilter)
         : null;
     map.innerHTML = history.length ? `
 <div class="am-stats">
   <p class="am-big"><b>${history.length}</b> 卦，落在 <b>${lit}</b> 格</p>
   <div class="am-bar" aria-hidden="true"><i class="ji" style="flex:${tally.ji}"></i><i class="ping" style="flex:${tally.ping}"></i><i class="xiong" style="flex:${tally.xiong}"></i></div>
-  <p class="am-legend"><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">最常见 ${topGua[0]} ×${max}</span>` : ''}</p>
+  <p class="am-legend"><span class="am-legend-k">本卦底色</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">最常见 ${topGua[0]} ×${max}</span>` : ''}</p>
 </div>
 <div class="am-frame">
   <div class="am-cols" aria-hidden="true">${labels}</div>
@@ -154,7 +155,7 @@ function renderArchiveMap(history) {
             loadHistory({ quiet: true });
         });
         cell.addEventListener('mouseenter', () => {
-            const g = lookupGua(linesFromShao(Number(cell.dataset.v)).map(x => x % 2 ? '1' : '0').reverse().join(''));
+            const g = guaOfShao(Number(cell.dataset.v));
             const cap = document.getElementById('amCaption');
             if (cap && _archiveFilter == null && g) cap.innerHTML = `<b>${g[0]}</b> · ${counts[Number(cell.dataset.v)]} 次 · ${guaOrdinal(g)}`;
         });
@@ -252,9 +253,9 @@ function loadHistory(opts) {
 }
 
 function loadHistoryItem(id, fromRect) {
-    // 结果渲染会移除选牌节点；仪式未结束时不能切走，否则选牌 Promise 永远无法完成。
+    // 起卦途中不能切去别的结果：仪式那一页会被换掉，起卦流程就停在半路了
     if (_divineRunning) {
-        showToast('正在起卦，请先完成选牌或跳过仪式，再回看牌册');
+        showToast('正在起卦，掷完六爻或点跳过之后再回看');
         return;
     }
     const history = readHistorySafe();

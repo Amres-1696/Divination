@@ -30,12 +30,6 @@ function getDailyGua(d = new Date()) {
     const settings = loadSettings();
 
     if (settings.bazi) {
-        const b = settings.bazi;
-        // 与八字起卦同规：生辰与今日皆换算农历（年取地支数），换算失败退回公历数值
-        const lunarBazi = solarToLunar(b.year, b.month, b.day);
-        const yearNum = lunarBazi ? lunarYearBranch(lunarBazi.year) : (b.year % 100 || 100);
-        const bMonth = lunarBazi ? lunarBazi.month : b.month;
-        const bDay = lunarBazi ? lunarBazi.day : b.day;
         const nowLunar = solarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
         // 今日之数：把农历年月日（含闰月）打散成一个整数，再拆成两份分别融入上下卦。
         // 以前是把「日」直接加进上卦、「日+月」加进下卦，日子每过一天上下卦同进一位，
@@ -45,15 +39,9 @@ function getDailyGua(d = new Date()) {
             ? nowLunar.year * 10000 + nowLunar.month * 100 + nowLunar.day + (nowLunar.isLeap ? 5000000 : 0)
             : d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
         const dNum = mixInt(dayKey);
-        const baseUpper = yearNum + bMonth + bDay;
-        const baseLower = baseUpper + (b.hour + 1);
-        const sumUpper = baseUpper + (dNum % 97);
-        const sumLower = baseLower + (Math.floor(dNum / 97) % 89);
-        const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
-        const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
-        const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
-        const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
-        const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
+        const base = birthNumbers(settings.bazi);
+        const upperBin = trigramOfNumber(base.upper + (dNum % 97));
+        const lowerBin = trigramOfNumber(base.lower + (Math.floor(dNum / 97) % 89));
         return lookupGua(upperBin + lowerBin);
     }
 
@@ -64,13 +52,9 @@ function getDailyGua(d = new Date()) {
     return GUA[Math.abs(seed) % 64];
 }
 
+// 每日箴言就是当天那一卦的大象（「象曰」），和卦对得上，不再另外随机挑一句
 function getDailyMotto(d = new Date()) {
-    const uid = getUserSeed();
-    // 用完整日期：只用「几号」的话，每个月同一天的箴言都一样
-    const str = dailyDateKey(d) + uid;
-    let seed = 0;
-    for (let i = 0; i < str.length; i++) seed = ((seed << 5) - seed + str.charCodeAt(i)) | 0;
-    return DAILY_MOTTOS[Math.abs(seed) % DAILY_MOTTOS.length];
+    return DA_XIANG[getDailyGua(d)[0]] || '';
 }
 
 let _dailyDateKey = '';
@@ -132,8 +116,9 @@ function showGuaDetail(gua, when) {
     <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
     <header class="gs-head">
         <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
-        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="verdict-seal ${verdict}" aria-label="${verdictText}"><span>${verdictText}</span></span></div>
+        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="这一卦的底色：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">这一卦的底色</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
+        ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>象曰</span>${DA_XIANG[gua[0]]}</p>` : ''}
     </header>
     <figure class="gs-figure">
         <div class="gs-glyph">${buildHexBars(lines)}</div>
@@ -143,7 +128,7 @@ function showGuaDetail(gua, when) {
     <dl class="title-block gs-tb">
         <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
         <div><dt>上下</dt><dd>上${TRIGRAM_BY_VALUE[v & 7]} 下${TRIGRAM_BY_VALUE[v >> 3]}</dd></div>
-        <div><dt>方图</dt><dd>${typeof buildMiniMap === 'function' ? buildMiniMap(v) : ''}</dd></div>
+        <div><dt>圆图</dt><dd>${typeof buildMiniRing === 'function' ? buildMiniRing(v) : ''}</dd></div>
     </dl>
 </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) closeGuaDetail(overlay); });
