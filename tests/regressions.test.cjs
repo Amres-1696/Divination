@@ -454,10 +454,21 @@ test('escHtml tolerates fields missing from old or hand-edited records', () => {
     assert.equal(f.run(`escHtml(undefined) + '|' + escHtml(null) + '|' + escHtml('<a>')`), '||&lt;a&gt;');
 });
 
-test('daily motto uses the full date, so the same day number in different months can differ', () => {
+test('the daily motto is the Great Image line of that day\'s hexagram', () => {
     const f = fixture();
-    const distinct = f.run(`new Set(Array.from({length: 12}, (_, m) => getDailyMotto(new Date(2026, m, 7)))).size`);
-    assert.ok(distinct > 1);
+    assert.equal(f.run('Object.keys(DA_XIANG).length'), 64);
+    assert.equal(f.run('GUA.every(g => DA_XIANG[g[0]])'), true);
+    for (let m = 0; m < 12; m++) {
+        assert.equal(f.run(`getDailyMotto(new Date(2026, ${m}, 7)) === DA_XIANG[getDailyGua(new Date(2026, ${m}, 7))[0]]`), true);
+    }
+});
+
+test('the frame marks today\'s day stem and the current two-hour period', () => {
+    const f = fixture();
+    // 2000-01-01 是戊午日；13:30 是未时
+    assert.deepEqual(Array.from(f.run('frameNow(new Date(2000, 0, 1, 13, 30))')), [4, 7]);
+    // 23:00 起算子时
+    assert.equal(f.run('frameNow(new Date(2026, 10, 12, 23, 10))[1]'), 0);
 });
 
 test('without storage the daily seed stays the same for the whole page session', () => {

@@ -364,6 +364,14 @@ function enhanceMethodSelect(select) {
     sync();
 }
 
+// ---------- 图框上的天干地支：上边亮出今天的日干，左边亮出此刻的时辰 ----------
+function markFrameNow(now) {
+    const [stem, hour] = frameNow(now || new Date());
+    const mark = (sel, k) => document.querySelectorAll(sel).forEach((el, i) => el.classList.toggle('now', i === k));
+    mark('.frame-top span', stem);
+    mark('.frame-left span', hour);
+}
+
 // ---------- 图框右边线兼做页面滚动条 ----------
 function initFrameScroll() {
     const track = document.getElementById('frameScroll');
@@ -418,6 +426,8 @@ function initFrameScroll() {
 document.addEventListener('DOMContentLoaded', () => {
     setPageView('home');
     initFrameScroll();
+    markFrameNow();
+    setInterval(() => markFrameNow(), 60 * 1000);
     if (typeof Cosmos !== 'undefined') { Cosmos.init(); Cosmos.intro(); }
     playHomeEnter(500);
     // 顶栏挂签的入场动画播完就撤掉 intro，之后记录数变化不再重播

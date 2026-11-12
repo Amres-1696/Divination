@@ -52,13 +52,9 @@ function getDailyGua(d = new Date()) {
     return GUA[Math.abs(seed) % 64];
 }
 
+// 每日箴言就是当天那一卦的大象（「象曰」），和卦对得上，不再另外随机挑一句
 function getDailyMotto(d = new Date()) {
-    const uid = getUserSeed();
-    // 用完整日期：只用「几号」的话，每个月同一天的箴言都一样
-    const str = dailyDateKey(d) + uid;
-    let seed = 0;
-    for (let i = 0; i < str.length; i++) seed = ((seed << 5) - seed + str.charCodeAt(i)) | 0;
-    return DAILY_MOTTOS[Math.abs(seed) % DAILY_MOTTOS.length];
+    return DA_XIANG[getDailyGua(d)[0]] || '';
 }
 
 let _dailyDateKey = '';
@@ -122,6 +118,7 @@ function showGuaDetail(gua, when) {
         <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
         <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="这一卦的底色：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">这一卦的底色</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
+        ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>象曰</span>${DA_XIANG[gua[0]]}</p>` : ''}
     </header>
     <figure class="gs-figure">
         <div class="gs-glyph">${buildHexBars(lines)}</div>

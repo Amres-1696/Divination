@@ -86,6 +86,13 @@ function ganZhiYear(lunarYear) {
     return TIAN_GAN[g] + DI_ZHI[z];
 }
 
+// 此刻在图框上的坐标：[日干序号 0–9, 时辰序号 0–11]。1900-01-01 是甲戌日（六十甲子第 10）
+function frameNow(now) {
+    const days = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(1900, 0, 1)) / 864e5);
+    const gz = ((days + 10) % 60 + 60) % 60;
+    return [gz % 10, Math.floor((now.getHours() + 1) / 2) % 12];
+}
+
 // 地支序数（梅花易数年数）：子1 … 亥12
 function lunarYearBranch(lunarYear) {
     return ((lunarYear - 4) % 12 + 12) % 12 + 1;
