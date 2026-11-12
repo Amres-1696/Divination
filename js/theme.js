@@ -193,8 +193,16 @@ function tugTag(tag, px) {
 function archiveFlight(panel, tag, open) {
     if (panel._flyers) panel._flyers.remove();
     clearTimeout(panel._flightTimer);
-    const showSlots = () => { (panel._slots || []).forEach(back => back()); panel._slots = []; };
-    const leaveSlot = back => (panel._slots = panel._slots || []).push(back);
+    // 空位按卦记着：关闭时每一卦落回原位的那一刻就各自还原，不等最后一卦。
+    // 卦多时前面的卦落得早，要是一起等到最后，它们会定在原地看着圆图转走，换回时再跳一下
+    const showSlots = v => {
+        panel._slots = (panel._slots || []).filter(s => {
+            if (v != null && s.v !== v) return true;
+            s.back();
+            return false;
+        });
+    };
+    const leaveSlot = (v, back) => (panel._slots = panel._slots || []).push({ v, back });
     if (open) showSlots();
     const toItem = !open && panel._toItem;
     panel._toItem = false;
@@ -212,6 +220,15 @@ function archiveFlight(panel, tag, open) {
     // 起点：首页圆图上同一卦的位置（带着它在圆周上的朝向）；结果页上正看着的那一卦；否则是挂签
     const ringOn = !toItem && document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
     const ring = ringOn ? document.querySelectorAll('.cosmos-ring .cg') : null;
+    // 圆图此刻整体转过的角度：每一卦的朝向 = 自己的旋转 + 圆图的旋转
+    let ringSpin = 0;
+    if (ringOn) {
+        const m = getComputedStyle(document.querySelector('.cosmos-ring')).transform;
+        if (m && m !== 'none') {
+            const [a, b] = m.slice(m.indexOf('(') + 1, -1).split(',').map(Number);
+            ringSpin = Math.atan2(b, a) * 180 / Math.PI;
+        }
+    }
     let glyph = !toItem && document.body.classList.contains('view-result') ? document.getElementById('resultGlyph') : null;
     let gr = null;
     if (glyph) {
@@ -232,22 +249,25 @@ function archiveFlight(panel, tag, open) {
         const t = el.getBoundingClientRect();
         if (!t.width) return null;
         const cg = ring && ring[63 - v];
-        return { v, el, t, cg, cr: cg ? cg.getBoundingClientRect() : null, endOp: Number(getComputedStyle(el).opacity) || 1 };
+        return { v, el, t, cg, cr: cg ? cg.getBoundingClientRect() : null, cw: cg ? cg.offsetWidth : 0, endOp: Number(getComputedStyle(el).opacity) || 1 };
     }).filter(Boolean);
-    plan.forEach(({ v, t, cg, cr, endOp }) => {
+    plan.forEach(({ v, t, cg, cr, cw, endOp }) => {
         let sx, sy, scale, rot, op;
         if (cg) {
             sx = cr.left + cr.width / 2; sy = cr.top + cr.height / 2;
-            scale = (cr.width * .72 / t.width).toFixed(3);
-            rot = Math.atan2(sx - hcx, hcy - sy) * 180 / Math.PI;
+            // 大小和朝向照圆图上这一卦实际的缩放、旋转来：外接框会随朝向变大变小，拿它估大小，起飞时卦会先缩一下、拧一下
+            // 圆图写在独立的 rotate / scale 上；不支持的浏览器写在 transform 里
+            const tf = /rotate\((-?[\d.]+)deg\).*scale\(([\d.]+)\)/.exec(cg.style.transform);
+            const ownRot = parseFloat(cg.style.rotate || (tf && tf[1])), ownScale = parseFloat(cg.style.scale || (tf && tf[2]));
+            const own = !isNaN(ownRot) && !isNaN(ownScale);
+            scale = own ? (cw * ownScale / t.width).toFixed(4) : (cr.width * .72 / t.width).toFixed(3);
+            rot = own ? ownRot + ringSpin : Math.atan2(sx - hcx, hcy - sy) * 180 / Math.PI;
             op = .46;
             if (open) {
                 cg.style.visibility = 'hidden';
-                leaveSlot(() => { cg.style.visibility = ''; });
+                leaveSlot(v, () => { cg.style.visibility = ''; });
             }
         } else if (v === glyphV) {
-            sx = gr.left + gr.width / 2; sy = gr.top + gr.height / 2;
-            scale = `${(gr.width / t.width).toFixed(3)}, ${(gr.height / t.height).toFixed(3)}`;
             rot = 0; op = 1;
             if (open) {
                 // 之卦视图先切回本卦：归档的是本卦。卦画飞走时动爻的朱色和引线一起收起，飞回落定后再引出
@@ -255,7 +275,7 @@ function archiveFlight(panel, tag, open) {
                 if (header && header.classList.contains('as-zhi')) { const ben = document.getElementById('benBtn'); if (ben) ben.click(); }
                 glyph.style.visibility = 'hidden';
                 if (header) header.classList.remove('landed');
-                leaveSlot(() => { glyph.style.visibility = ''; if (header) header.classList.add('landed'); });
+                leaveSlot(v, () => { glyph.style.visibility = ''; if (header) header.classList.add('landed'); });
             }
         } else {
             sx = tr.left + tr.width / 2; sy = tr.top + tr.height * .6;
@@ -264,11 +284,14 @@ function archiveFlight(panel, tag, open) {
         const f = document.createElement('div');
         f.className = 'archive-flyer';
         f.innerHTML = buildHexBars(linesFromShao(v));
-        f.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
+        // 结果页那一卦的替身按大卦画的尺寸画，缩小着飞进格子：要是拿格子里的小卦画放大着飞，
+        // 爻线的像素取整被放大好几倍，粗细间距都走样，落定换回真卦画时会跳一下
+        const box = v === glyphV ? gr : t;
+        f.style.cssText = `left:${box.left}px;top:${box.top}px;width:${box.width}px;height:${box.height}px;`;
         layer.appendChild(f);
         // 落地时正好是这一格的亮度（抽到次数越多越亮）
         const order = (v >> 3) + (v & 7);
-        flights.push({ f, t, sx, sy, scale, rot, op, endOp, order, onRing: !!cg, hero: v === glyphV });
+        flights.push({ f, v, t, sx, sy, scale, rot, op, endOp, order, onRing: !!cg, hero: v === glyphV });
     });
     document.body.appendChild(layer);
     panel._flyers = layer;
@@ -281,7 +304,7 @@ function archiveFlight(panel, tag, open) {
     const step = queue.length > 1 ? Math.min(90, 700 / (queue.length - 1)) : 0;
     const lead = queue.length < flights.length ? 1 : 0;
     flights.forEach(fl => {
-        let { f, t, sx, sy, scale, rot, op, endOp, onRing, hero } = fl;
+        let { f, v, t, sx, sy, scale, rot, op, endOp, onRing, hero } = fl;
         const rank = queue.indexOf(fl);
         const delay = hero ? 0 : open ? (rank + lead) * step : (queue.length - 1 - rank) * step * .6;
         const dur = hero ? (open ? 820 : 600) : open ? 760 : 520;
@@ -294,14 +317,23 @@ function archiveFlight(panel, tag, open) {
             sy = hcy + ox * Math.sin(a) + oy * Math.cos(a);
             rot += d;
         }
-        const from = `translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${scale})`;
+        // 起点和终点：一般的替身摆在格子上，从起点飞回原处；结果页那一卦的替身摆在卦画上，从原处飞到格子
+        const [from, to] = hero
+            ? ['none', `translate(${t.left + t.width / 2 - (gr.left + gr.width / 2)}px, ${t.top + t.height / 2 - (gr.top + gr.height / 2)}px) scale(${(t.width / gr.width).toFixed(4)}, ${(t.height / gr.height).toFixed(4)})`]
+            : [`translate(${sx - (t.left + t.width / 2)}px, ${sy - (t.top + t.height / 2)}px) rotate(${rot.toFixed(1)}deg) scale(${scale})`, 'none'];
         // 从挂签散出来的卦起点太小，先隐着，飞出一小段再显出来；
         // 飞行中途亮起来看得清，落地时正好是这一格的亮度
         const frames = op
-            ? [{ transform: from, opacity: op }, { opacity: .95, offset: .45 }, { transform: 'none', opacity: endOp }]
-            : [{ transform: from, opacity: 0 }, { opacity: .95, offset: .25 }, { transform: 'none', opacity: endOp }];
+            ? [{ transform: from, opacity: op }, { opacity: .95, offset: .45 }, { transform: to, opacity: endOp }]
+            : [{ transform: from, opacity: 0 }, { opacity: .95, offset: .25 }, { transform: to, opacity: endOp }];
         const back = frames.slice().reverse().map((k, i, a) => ({ ...k, offset: k.offset != null ? 1 - k.offset : i / (a.length - 1) }));
-        f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
+        const anim = f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
+        // 落回原位：替身撤下，真卦当场接上（期间又打开了牌册就不管了，那边会重新安排空位）
+        if (!open) anim.onfinish = () => {
+            if (panel._flyers !== layer) return;
+            showSlots(v);
+            f.remove();
+        };
     });
     // 面板本身：打开时稍晚一点浮上来，关闭时先淡去。
     // （整页模糊再变清晰在手机上太吃显卡，只用透明度和一点位移）
