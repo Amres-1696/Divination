@@ -502,6 +502,7 @@ test('share card shows when the reading was cast, not when the image is made', (
     const f = fixture();
     const date = f.run(`var r = document.getElementById('resultArea');
         r.dataset.createdAt = new Date(2020, 0, 2, 3, 4).toISOString();
+        r.dataset.lines = '777777';
         getCurrentGuaData().date`);
     assert.match(date, /2020/);
     assert.doesNotMatch(date, /2026/);

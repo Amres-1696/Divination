@@ -84,7 +84,7 @@ const Cosmos = (() => {
         return {
             cx, cy, R, sc: glyph / B,
             // 先天圆图：乾在正上，乾→复沿左半圈向下，姤→坤沿右半圈向下；初爻朝圆心
-            angle: v => v >= 32 ? -((63 - v) + 0.5) * step : ((31 - v) + 0.5) * step,
+            angle: circleAngle,
             spot(v) {
                 const deg = this.angle(v), rad = deg * Math.PI / 180;
                 return { x: cx + R * Math.sin(rad), y: cy - R * Math.cos(rad), rot: deg };

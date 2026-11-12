@@ -219,6 +219,9 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .minimap i { background: rgba(238, 242, 247, .16); }
 .minimap i.on { background: var(--ink); }
 .minimap.big { width: 120px; gap: 3px; }
+.mini-ring { display: inline-block; width: 36px; height: 36px; vertical-align: middle; }
+.mini-ring .mr-tick { stroke: rgba(238, 242, 247, .32); stroke-width: 1; }
+.mini-ring .mr-on { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
 
 /* ---------- 六十四卦图层 ---------- */
 .cosmos {
@@ -787,16 +790,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .rule-tag { font-family: var(--text); font-size: 13.5px; font-weight: 400; letter-spacing: 0; color: var(--ink-3); }
 .analysis-list { font-size: 18px; line-height: 1.95; }
 .analysis-list.lead { font-size: 20px; line-height: 1.8; }
-
-.change-comparison { display: flex; align-items: center; gap: 26px; }
-.gua-box { display: grid; grid-template-columns: 46px auto; column-gap: 14px; align-items: center; }
-.gua-mini { grid-row: span 2; width: 46px; color: var(--ink); }
-.gua-label { font-size: 13px; color: var(--ink-3); line-height: 1.4; align-self: end; }
-.gua-name { font-family: var(--text); font-size: 18px; font-weight: 600; line-height: 1.4; align-self: start; }
-.change-arrow svg { width: 48px; height: 12px; fill: none; stroke: var(--ink-3); stroke-width: 1.4; display: block; }
 .change-details { margin-top: 16px; }
 .change-details p { font-size: 17px; }
-.change-details p:first-child { font-size: 14px; color: var(--ink-3); }
 
 /* 六爻：一张标注图。左边卦画，每一爻引一条线到右边的爻辞（线由 drawYaoLeaders 量着位置画） */
 .yao-plate { position: relative; display: grid; grid-template-columns: 92px 64px minmax(0, 1fr); align-items: center; margin-top: 4px; }
@@ -946,6 +941,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .am-bar .ping { background: var(--ink-3); }
 .am-bar .xiong { background: repeating-linear-gradient(90deg, var(--ink) 0 2px, transparent 2px 4px); }
 .am-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-3); }
+.am-legend .am-legend-k { color: var(--ink-3); letter-spacing: .1em; }
 .am-legend .ji { color: var(--ink); }
 .am-legend .xiong { color: var(--ink-2); }
 /* 图例前画一小段和比例条同色的色块，说明哪段颜色是吉、平、凶 */
@@ -1522,8 +1518,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .gs-eyebrow { font-size: 13px; letter-spacing: .2em; color: var(--ink-3); }
 .gs-name-row { display: flex; align-items: center; gap: 22px; margin-top: 6px; padding-right: 44px; }
 .gs-name-row h2 { font-family: var(--display); font-size: 44px; font-weight: 400; line-height: 1.15; letter-spacing: .05em; }
-.gs-name-row .verdict-seal { width: 46px; height: 46px; }
-.gs-name-row .verdict-seal span { font-size: 21px; }
 .gs-sub { margin-top: 4px; font-size: 18px; color: var(--ink-2); }
 .gs-figure { position: relative; margin-top: 28px; padding: 22px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 132px minmax(0, 1fr); }
 .gs-glyph { width: 132px; height: 132px; }
@@ -1570,7 +1564,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .gua-sheet .gs-tb > div { border-right: 1px solid var(--rule-soft); border-bottom: 0; }
 .gua-sheet .gs-tb > div:last-child { border-right: 0; }
 .gua-sheet .gs-tb dd { justify-content: flex-start; }
-.gua-sheet .gs-tb .minimap { width: 30px; }
+.gua-sheet .gs-tb .mini-ring { width: 32px; height: 32px; }
 
 .toast-container {
   position: fixed;
@@ -1685,10 +1679,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .yp-glyph { width: 50px; height: 64px; }
   .yao-item { grid-template-columns: 2.8em minmax(0, 1fr); gap: 2px 12px; font-size: 16px; }
   .yao-type { grid-column: 2; }
-  .change-comparison { gap: 14px; }
-  .gua-box { grid-template-columns: 38px auto; column-gap: 10px; }
-  .gua-mini { width: 38px; }
-  .change-arrow svg { width: 30px; }
 
   .history-panel {
     top: auto;

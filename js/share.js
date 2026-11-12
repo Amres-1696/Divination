@@ -1,62 +1,27 @@
 // share —— 抓取当前卦数据、生成 9:16 分享卡、html2canvas 导图、下载/复制
 // 分享卡只用纯色、文字和内联 SVG，file:// 下也不会污染画布。
 
-// 分享卡
+// 分享卡的数据：只用结果页记下的六爻、所问和起卦时间，卦、之卦、主断现算。
+// 不从页面上的元素去读：结果页一改版，分享图就跟着出错（#22 就因此把卦全画成了阴爻）
 function getCurrentGuaData() {
     const r = document.getElementById('resultArea');
     if (!r) return null;
-    const nameEl = r.querySelector('.hex-name');
-    const titleEl = r.querySelector('.hex-title');
-    const symbolEl = r.querySelector('.hex-symbol');
-    if (!nameEl) return null;
-    const items = r.querySelectorAll('.analysis-item');
-    const list = [];
-    items.forEach(el => { if (el.textContent.trim()) list.push(el.textContent.trim()); });
-    const changingYaoTexts = [];
-    const changingYaos = [];
-    // 页面上六爻自上而下排列，按 data-i（0=初爻）还原顺序
-    const yaoItems = Array.from(r.querySelectorAll('.yao-item'))
-        .sort((a, b) => Number(a.dataset.i) - Number(b.dataset.i));
-    yaoItems.forEach((el, i) => {
-        if (el.classList.contains('changing')) {
-            changingYaos.push(i);
-            const n = el.querySelector('.yao-name');
-            const t = el.querySelector('.yao-text');
-            if (n && t) changingYaoTexts.push(n.textContent + '：' + t.textContent);
-        }
-    });
-    // 六爻的数直接取结果页记下的那一份。以前是从六爻列表里每行的小爻条反推阴阳，
-    // 列表改成标注图后小爻条没了，分享图上的卦就全画成了阴爻
-    const hexagramLines = /^[6-9]{6}$/.test(r.dataset.lines || '') ? Array.from(r.dataset.lines, Number) : [];
-    const hasChange = !!r.querySelector('.change-section');
-    let cgName='', cgSymbol='', cgExplain='', changePos='';
-    if (hasChange) {
-        const cg = r.querySelector('.gua-box.changed');
-        if (cg) {
-            cgName = (cg.querySelector('.gua-name')||{}).textContent || '';
-            cgSymbol = (cg.querySelector('.gua-symbol')||{}).textContent || '';
-        }
-        const details = r.querySelector('.change-details');
-        if (details) {
-            details.querySelectorAll('p').forEach(p => {
-                const txt = p.textContent.trim();
-                if (txt.startsWith('变爻位置')) changePos = txt;
-                else if (txt.length > 10) cgExplain = txt;
-            });
-        }
+    const lines = /^[6-9]{6}$/.test(r.dataset.lines || '') ? Array.from(r.dataset.lines, Number) : null;
+    let gua = null, change = null, main = null;
+    if (lines) {
+        const fullBin = lines.map(n => (n === 7 || n === 9) ? '1' : '0').reverse().join('');
+        gua = lookupGua(fullBin);
+        change = calculateChangeGua(lines, fullBin);
+        main = getMainReading(gua, change);
     }
     // 分享卡上写起卦那一刻，而不是生成图片的时间；旧记录只有本地化日期字符串时原样用
     const when = r.dataset.createdAt ? new Date(r.dataset.createdAt) : null;
-    const date = when && !isNaN(when)
-        ? when.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })
-        : (r.dataset.date || new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }));
+    const fmt = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const date = when && !isNaN(when) ? when.toLocaleDateString('zh-CN', fmt) : (r.dataset.date || new Date().toLocaleDateString('zh-CN', fmt));
     return {
-        name: nameEl.textContent, title: titleEl ? titleEl.textContent : '',
-        symbol: symbolEl ? symbolEl.textContent : '',
+        gua, change, main, hexagramLines: lines || [],
         question: (r.dataset.question || '').trim(),
-        analysisList: list, changingYaoTexts, changingYaos, hexagramLines,
-        hasChange, cgName, cgSymbol, cgExplain, changePos, date,
-        createdAt: when && !isNaN(when) ? when.toISOString() : ''
+        date, createdAt: when && !isNaN(when) ? when.toISOString() : ''
     };
 }
 
@@ -68,7 +33,7 @@ const SHARE_CARD_CSS = `
     .sc-bg { position: absolute; left: 0; top: 0; }
     .sc-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
     .sc-brand { font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 26px; line-height: 1; letter-spacing: .16em; }
-    .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
     .sc-when { text-align: right; line-height: 1.5; }
     .sc-when b { display: block; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
     .sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
@@ -86,19 +51,26 @@ const SHARE_CARD_CSS = `
     .sc-name span { display: block; }
     .sc-info { position: relative; display: flex; align-items: flex-start; gap: 18px; margin-top: 18px; }
     .sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
-    .sc-seal { position: relative; flex: none; width: 82px; height: 82px; margin: -34px 31px 0 0; padding: 5px; border: 3px solid; background: #11305C; transform: rotate(-9deg); }
-    .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1.5px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 38px; line-height: 1; }
-    .sc-ji { color: #EEF2F7; border-color: #EEF2F7; }
-    .sc-xiong { color: #EEF2F7; border-color: #EEF2F7; }
-    .sc-xiong span { background: #EEF2F7; color: #11305C; border-color: #EEF2F7; }
-    .sc-ping { color: #C5D1E2; border-color: #C5D1E2; }
+    .sc-seal-wrap { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-right: 30px; }
+    .sc-seal { position: relative; width: 50px; height: 50px; padding: 3px; border: 2px solid; background: #11305C; transform: rotate(-6deg); }
+    .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 22px; line-height: 1; }
+    .sc-ji { color: #C5D1E2; border-color: #C5D1E2; }
+    .sc-xiong { color: #C5D1E2; border-color: #C5D1E2; }
+    .sc-xiong span { background: #C5D1E2; color: #11305C; border-color: #C5D1E2; }
+    .sc-ping { color: #8EA2C2; border-color: #8EA2C2; }
+    .sc-seal-note { font-size: 12px; letter-spacing: .2em; color: #8EA2C2; }
     .sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
     .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
     .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
     .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
     .sc-ask { position: relative; margin-top: 26px; padding-left: 16px; border-left: 3px solid #EEF2F7; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
-    .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 11.5px; letter-spacing: .5em; color: #A7B8D3; }
-    .sc-main { position: relative; margin-top: 22px; font-size: 17px; line-height: 1.85; color: #DCE4EF; max-height: 126px; overflow: hidden; }
+    .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-main { position: relative; margin-top: 22px; padding-left: 16px; border-left: 2px solid #EEF2F7; max-height: 190px; overflow: hidden; }
+    .sc-label { display: block; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
+    .sc-quote { margin-top: 6px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 30px; line-height: 1.35; letter-spacing: .04em; color: #EEF2F7; }
+    .sc-quote.long { font-size: 23px; }
+    .sc-quote.xl { font-size: 18px; line-height: 1.6; font-family: 'Noto Serif SC', 'Songti SC', serif; }
+    .sc-from { margin-top: 4px; font-size: 13px; letter-spacing: .06em; color: #A7B8D3; }
     .sc-reading { position: relative; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3; max-height: 172px; overflow: hidden; }
     .sc-foot { position: relative; margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; border-top: 1px dashed rgba(238, 242, 247, .3); font-size: 12px; letter-spacing: .1em; color: #A7B8D3; }
 `;
@@ -143,22 +115,15 @@ function shareCardRing() {
 }
 
 function createShareCard(d) {
-    if (!d) return '';
-    const guaEntry = GUA.find(g => g[0] === d.name);
-    const verdict = guaEntry ? getVerdict(guaEntry) : 'ping';
+    if (!d || !d.gua) return '';
+    const gua = d.gua, change = d.change, main = d.main;
+    const verdict = getVerdict(gua);
     const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
-    // 取不到六爻的数时按卦名还原（不带动爻），不默默画成坤卦
-    const hexLines = (d.hexagramLines && d.hexagramLines.length === 6) ? d.hexagramLines
-        : guaEntry ? binToHexLines(guaBinary(guaEntry)) : [8, 8, 8, 8, 8, 8];
-    const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
-    const v = shaoValue(bits.slice().reverse().join(''));
-    const ordinal = guaEntry ? guaOrdinal(guaEntry) : '';
-    const main = (d.analysisList || [])[0] || '';
-    const reading = (d.analysisList || []).slice(1).join('');
+    const hexLines = d.hexagramLines;
+    const v = shaoValue(hexLines.map(n => (n === 7 || n === 9) ? '1' : '0').reverse().join(''));
     const when = shareCardWhen(d);
-    // 「变爻位置：第 二、三 爻」→「二、三爻动」
-    const movingPos = String(d.changePos || '').replace(/^变爻位置：/, '').replace(/^第\s*/, '').replace(/\s*爻$/, '').trim();
-    const movingText = movingPos ? movingPos + '爻动' : '';
+    const zhi = change.hasChange ? change.changeGua : null;
+    const movingText = change.changingYaos.length ? change.changingYaos.map(p => YAO_POS_CN[p]).join('、') + '爻动' : '';
     // 大卦画：六根爻条从卡片左缘伸进来，动爻橙色，并按古法在末端标 ○（老阳）/ ×（老阴）
     const bars = hexLines.map((line, i) => {
         const yang = line === 7 || line === 9, moving = line === 9 || line === 6;
@@ -167,8 +132,12 @@ function createShareCard(d) {
         return `<div class="${cls}" style="top:${top}px">${yang ? '' : '<i></i><i></i>'}</div>` +
             (moving ? `<span class="sc-mark" style="top:${top - 4}px">${line === 9 ? '○' : '×'}</span>` : '');
     }).join('');
-    const chars = Array.from(d.name || '');
+    const chars = Array.from(gua[0]);
     const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
+    // 主断和结果页一样：辞放大，下面一行小字写出处。辞长时字号跟着收
+    const quoteLen = main.lines.reduce((n, l) => n + l.text.length, 0);
+    const quoteCls = quoteLen > 44 ? ' xl' : quoteLen > 22 ? ' long' : '';
+    const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${escHtml(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('');
 
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
@@ -184,15 +153,14 @@ function createShareCard(d) {
   </div>
   <div class="sc-info">
     <div class="sc-info-text">
-      <div class="sc-meta">${ordinal}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}</div>
-      ${d.title ? `<div class="sc-meta">${escHtml(d.title)}</div>` : ''}
-      ${d.hasChange && d.cgName ? `<div class="sc-change">之卦　${escHtml(d.cgName)}${movingText ? `　<span>${escHtml(movingText)}</span>` : ''}</div>` : ''}
+      <div class="sc-meta">${guaOrdinal(gua)}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}</div>
+      ${zhi ? `<div class="sc-change">之卦　${escHtml(zhi[0])}　<span>${escHtml(movingText)}</span></div>` : '<div class="sc-meta">六爻皆静</div>'}
     </div>
-    <div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div>
+    <div class="sc-seal-wrap"><div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div><div class="sc-seal-note">本卦底色</div></div>
   </div>
   ${d.question ? `<div class="sc-ask"><span>所问</span>${escHtml(d.question)}</div>` : ''}
-  ${main ? `<div class="sc-main">${escHtml(main)}</div>` : ''}
-  ${reading ? `<div class="sc-reading">${escHtml(reading)}</div>` : ''}
+  <div class="sc-main"><span class="sc-label">主断</span>${mainHtml}</div>
+  <div class="sc-reading">${escHtml(gua[4])}</div>
   <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>六十四卦 · 取其一</span></div>
 </div>`;
 }

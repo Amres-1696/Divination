@@ -188,10 +188,13 @@ function buildCallouts(hexLines, changingYaos) {
     return `<ol class="callouts" aria-hidden="true">${rows.join('')}</ol>`;
 }
 
-function buildMiniMap(v) {
-    let cells = '';
-    for (let k = 0; k < 64; k++) cells += `<i${k === v ? ' class="on"' : ''}></i>`;
-    return `<span class="minimap" aria-hidden="true">${cells}</span>`;
+// 这一卦在先天圆图上的位置：一圈六十四道刻度，它那一道加长加粗
+function buildMiniRing(v) {
+    const c = 20, pt = (r, deg) => { const a = deg * Math.PI / 180; return `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`; };
+    let ticks = '';
+    for (let k = 0; k < 64; k++) { const d = circleAngle(k); if (k !== v) ticks += `M${pt(15, d)}L${pt(18, d)}`; }
+    const d = circleAngle(v);
+    return `<svg class="mini-ring" viewBox="0 0 40 40" aria-hidden="true"><path d="${ticks}" class="mr-tick"/><path d="M${pt(6, d)}L${pt(19.5, d)}" class="mr-on"/></svg>`;
 }
 
 function renderResult(gua, hexLines, change, question, fullBin, sourceCard, savedAi, readingContext = {}) {
@@ -206,14 +209,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     // 所以它不再当结论盖在卦名旁：缩成一枚淡色小印，注明说的是本卦的底色，结论交给主断
     const sealMoving = change.changingYaos.length > 0;
     const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">本卦的底色${sealMoving ? '<br>不计动爻' : ''}</span></span>`;
-    // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示（节点留给分享图读）
+    // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示
     const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
     // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
         <h3 class="mr-label">主断</h3>
         ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
         <p class="mr-how">${mainReading.how}</p>
-        <span class="analysis-item" hidden>${mainReading.text}</span>
       </section>`;
 
     const yaoArr = gua[3].split('|');
@@ -237,16 +239,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     let changeHtml = '';
     if (zhi) {
-        const pos = change.changingYaos.map(p => YAO_POS_CN[p]);
-        // 并排的两个小卦画和左栏的「本卦/之卦」切换是同一件事，这里不再显示；
-        // 节点保留（hidden），分享图从这里读之卦名和变爻位置
         changeHtml = `<section class="block change-section"><h3>之卦 <span class="rule-tag">${zhi[0]}</span></h3>
-<div class="change-comparison" hidden>
-  <div class="gua-box"><div class="gua-mini">${buildYaoArtSvg(hexLines, change.changingYaos)}</div><div class="gua-label">本卦</div><div class="gua-name">${gua[0]}</div><span class="gua-symbol" hidden>${gua[2]}</span></div>
-  <div class="change-arrow" aria-hidden="true"><svg viewBox="0 0 48 12"><path d="M0 6h44M39 1l6 5-6 5"/></svg></div>
-  <div class="gua-box changed"><div class="gua-mini">${buildYaoArtSvg(binToHexLines(change.changeBinary), change.changingYaos)}</div><div class="gua-label">之卦</div><div class="gua-name">${zhi[0]}</div><span class="gua-symbol" hidden>${zhi[2]}</span></div>
-</div>
-<div class="change-details"><p hidden>变爻位置：第 ${pos.join('、')} 爻</p><p>${zhi[4]}</p></div></section>`;
+<div class="change-details"><p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};
@@ -282,7 +276,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
         <div><dt>上下</dt><dd>上${upperName} 下${lowerName}</dd></div>
         <div><dt>起卦</dt><dd>${methodText}</dd></div>
-        <div><dt>方图</dt><dd>${buildMiniMap(v)}</dd></div>
+        <div><dt>圆图</dt><dd>${buildMiniRing(v)}</dd></div>
         <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
       </dl>
     </aside>
@@ -290,7 +284,6 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <header class="reading-head" style="--d:2">
         <div class="reading-name-row"><h2 class="hex-name">${gua[0]}</h2>${sealHtml}</div>
         <p class="hex-title"${titleInMain ? ' hidden' : ''}>${gua[1]}</p>
-        <span class="hex-symbol" hidden>${gua[2]}</span>
       </header>
       ${mainHtml}
       <div class="reading-sheet">
