@@ -262,76 +262,86 @@ function loadHtml2canvas() {
     return _html2canvasLoad;
 }
 
+// 分享图的出场是「拼版」：先画出一张空版（外框、裁切线、网格），后台同时出图；
+// 图出好以后，结果页上的卦画、卦名、所问、主断各自飞到版上的位置，最后换成生成好的图片。
+// 顺序是「先出图，再飞」：html2canvas 会占住主线程，飞行和它错开才不卡。
+// 版框的线条只动 transform / opacity，出图占着主线程时也照样画得动。
+let _shareRun = 0;
 async function shareAsImage() {
-    if (!(await loadHtml2canvas())) {
-        showToast('分享功能加载失败，请检查网络后重试', 'error');
-        return;
-    }
+    const data = getCurrentGuaData();
+    if (!data || !data.gua) { showToast('请先起一卦', 'error'); return; }
+    const run = ++_shareRun;
     const container = document.getElementById('shareImageContainer');
     const preview = document.getElementById('shareImagePreview');
-    const data = getCurrentGuaData();
-    if (!data) { showToast('请先占卜', 'error'); return; }
-    preview.classList.remove('developing');
-    preview.innerHTML = '<div class="share-paper"><span>显影中</span></div>';
-    // 上次关闭时卡片停在按钮处，先复位
+    const reduce = _reduceShareMotion();
+    document.querySelectorAll('.share-flyer').forEach(el => el.remove());
     const box = container.querySelector('.share-box');
-    if (box && box.getAnimations) box.getAnimations().forEach(a => a.cancel());
-    container.classList.add('show');
-
+    if (box && box.getAnimations) box.getAnimations().forEach(a => a.cancel());   // 上次关闭时卡片停在按钮处，先复位
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
 
+    // 出图用的卡片放在屏幕外：版框的底色、网格比例都从它取，飞行的落点也按它量
     const tmp = document.createElement('div');
     tmp.style.cssText = 'position:fixed;left:-9999px;top:0;width:560px;pointer-events:none;opacity:0;';
     tmp.innerHTML = createShareCard(data);
     document.body.appendChild(tmp);
-    const flight = shareGlyphFlight(container, tmp.querySelector('#shareCard'));
+    const card = tmp.querySelector('#shareCard');
+
+    preview.innerHTML = `<div class="share-plate">${sharePlateFrame()}</div>`;
+    const plate = preview.querySelector('.share-plate');
+    plate.querySelector('.sp-base').style.backgroundImage = getComputedStyle(card).backgroundImage;
+    container.classList.add('show');
+    pressShareButton();
+    const framed = reduce ? Promise.resolve() : drawSharePlate(plate);
+    const alive = () => run === _shareRun && container.classList.contains('show');
+
     try {
-        if (document.fonts && document.fonts.ready) {
-            try { await document.fonts.ready; } catch(e) {}
-        }
-        // 等卦画落到相纸上再出图：html2canvas 会占住主线程，和飞行动画抢就会卡顿。
-        // 最多等 0.9 秒——标签页切到后台时动画不走，不能让出图一直等下去
-        if (flight) await Promise.race([flight.anim.finished.catch(() => {}), sleep(900)]);
-        else await sleep(80);
-        const card = tmp.querySelector('#shareCard');
+        // 让版框的第一帧先画出来，再开始占主线程的活
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        if (!(await loadHtml2canvas())) throw new Error('分享功能没有加载出来，请检查网络后重试');
+        if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+        if (!alive()) return;
         fitShareReading(card);
         scrubShareCardExternalUrls(card, window);
-
-        // 根据设备选择 scale，避免双次渲染
-        const scale = isMobile() ? 1.5 : 2;
-        let canvas = await renderShareCanvas(card, scale);
+        const canvas = await renderShareCanvas(card, isMobile() ? 1.5 : 2);
         assertCanvasExportable(canvas);
-        if (!canvas || !canvas.width || !canvas.height) {
-            throw new Error('分享画布生成失败');
-        }
-
+        if (!canvas || !canvas.width || !canvas.height) throw new Error('分享画布生成失败');
         const blob = await canvasToBlob(canvas, 'image/png');
         if (!blob) throw new Error('toBlob returned null');
-
+        if (!alive()) return;
         const objectUrl = URL.createObjectURL(blob);
         _lastBlobUrl = objectUrl;
         _lastBlob = blob;
 
-        // 直接使用 blob URL，跳过昂贵的 toDataURL base64 编码
-        const hint = isMobile() ? '<p class="share-hint">长按图片可保存到相册</p>' : '';
-        preview.innerHTML = '<img id="sharePreviewImg" alt="分享图预览">' + hint;
-        const imgEl = preview.querySelector('#sharePreviewImg');
-        imgEl.onerror = function() {
+        // 图片先在后台解码好，换上去的那一下不卡
+        const img = new Image();
+        img.id = 'sharePreviewImg';
+        img.className = 'share-plate-img';
+        img.alt = '分享图预览';
+        img.src = objectUrl;
+        try { if (img.decode) await img.decode(); } catch (e) {}
+        await framed;
+        if (!alive()) return;
+        plate.appendChild(img);
+        if (!reduce) await assembleShareCard(plate, card);
+        if (!alive()) return;
+        img.classList.add('in');
+        document.querySelectorAll('.share-flyer').forEach(f => {
+            const a = f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-out', fill: 'forwards' });
+            a.onfinish = () => f.remove();
+        });
+        if (isMobile()) preview.insertAdjacentHTML('beforeend', '<p class="share-hint">长按图片可保存到相册</p>');
+        img.onerror = function() {
             this.onerror = null;
-            preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「下载图片」。</p>';
+            preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「保存图片」。</p>';
         };
-        imgEl.src = objectUrl;
-        // 图片像蓝晒照片一样显影：先过曝发白，再慢慢显出蓝色，一道光从上往下扫过；
-        // 飞来的卦画留在原处，随显影慢慢淡去，像是印进了纸里
-        preview.classList.add('developing');
-        if (flight) fadeShareFlyer(flight.flyer);
 
+        const fileName = '天衍_' + data.gua[0] + '_' + Date.now() + '.png';
         document.getElementById('shareDownloadBtn').onclick = () => {
             try {
                 const a = document.createElement('a');
                 a.href = objectUrl;
-                a.download = '天衍_' + (data.name || '卦') + '_' + Date.now() + '.png';
+                a.download = fileName;
                 document.body.appendChild(a); // Firefox 要求节点在文档中才能触发 click
                 a.click();
                 a.remove();
@@ -343,7 +353,6 @@ async function shareAsImage() {
                 showToast('下载失败，请长按上方预览图保存到相册', 'error');
             }
         };
-
         document.getElementById('shareCopyBtn').onclick = async () => {
             if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
                 showToast('此浏览器不支持复制图片，请长按预览图保存到相册', 'error');
@@ -354,20 +363,15 @@ async function shareAsImage() {
                 return;
             }
             try {
-
-                const item = new ClipboardItem({
-                    'image/png': Promise.resolve(_lastBlob)
-                });
-                await navigator.clipboard.write([item]);
+                await navigator.clipboard.write([new ClipboardItem({ 'image/png': Promise.resolve(_lastBlob) })]);
                 showToast('已复制到剪贴板', 'success');
             } catch (e) {
-                showToast(isMobile()
-                    ? '复制失败，请长按预览图保存到相册'
-                    : '复制失败，请点击下载图片', 'error');
+                showToast(isMobile() ? '复制失败，请长按预览图保存到相册' : '复制失败，请点击下载图片', 'error');
             }
         };
-    } catch(e) {
-        if (flight) flight.flyer.remove();
+    } catch (e) {
+        if (!alive()) return;
+        document.querySelectorAll('.share-flyer').forEach(el => el.remove());
         const msg = (e && e.message) ? e.message : String(e);
         preview.innerHTML = '<p class="share-error">分享图没有生成出来。<small>' + escHtml(msg) + '</small></p>';
     } finally {
@@ -377,50 +381,126 @@ async function shareAsImage() {
 
 const _reduceShareMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-// 打开分享图：「生成分享图」按钮先被按下去；结果页上的大卦画飞起，沿弧线落到相纸上卦画的位置，
-// 相纸随之铺开。图片生成后在原处显影，飞来的卦画随显影淡去（fadeShareFlyer）。
-// card 是离屏排好版的分享卡，用来量出卦画在卡上的位置
-function shareGlyphFlight(container, card) {
-    const btn = document.getElementById('shareBtn');
-    const src = document.querySelector('#resultGlyph');
-    const paper = container.querySelector('.share-paper');
-    if (_reduceShareMotion() || !src || !paper || !card || typeof paper.animate !== 'function') return null;
-    if (btn && btn.animate) btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.93)', offset: .35 }, { transform: 'scale(1)' }],
-        { duration: 420, easing: 'ease-out' });
-    container.querySelectorAll('.share-flyer').forEach(el => el.remove());
-    document.querySelectorAll('.share-flyer').forEach(el => el.remove());
-    const s = src.getBoundingClientRect(), p = paper.getBoundingClientRect(), c = card.getBoundingClientRect();
-    const bars = Array.from(card.querySelectorAll('.sc-bar')).map(el => el.getBoundingClientRect());
-    if (!s.width || !p.width || !c.width || !bars.length) return null;
-    // 卡上卦画所占的区域（左边出血的部分不算），按比例换到相纸上
-    const k = p.width / c.width;
-    const left = Math.max(c.left, Math.min(...bars.map(r => r.left)));
-    const top = Math.min(...bars.map(r => r.top)), bottom = Math.max(...bars.map(r => r.bottom));
-    const right = Math.max(...bars.map(r => r.right));
-    const t = { left: p.left + (left - c.left) * k, top: p.top + (top - c.top) * k, width: (right - left) * k, height: (bottom - top) * k };
-    const flyer = document.createElement('div');
-    flyer.className = 'share-flyer';
-    flyer.innerHTML = src.innerHTML;
-    flyer.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;`;
-    document.body.appendChild(flyer);
-    const dx = s.left - t.left, dy = s.top - t.top, sx = s.width / t.width, sy = s.height / t.height;
-    const anim = flyer.animate([
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})` },
-        { transform: `translate(${dx * .4}px, ${dy * .4 - 70}px) scale(${((sx + 1) / 2 * 1.08).toFixed(3)}, ${((sy + 1) / 2 * 1.08).toFixed(3)})`, offset: .5 },
-        { transform: 'none' }
-    ], { duration: 820, easing: 'cubic-bezier(.45, 0, .2, 1)' });
-    paper.animate([
-        { opacity: 0, transform: 'scaleY(.04)', transformOrigin: '50% 30%' },
-        { opacity: 1, transform: 'scaleY(1)', transformOrigin: '50% 30%' }
-    ], { duration: 560, delay: 260, easing: 'cubic-bezier(.2, .8, .3, 1)', fill: 'backwards' });
-    return { anim, flyer };
+// 空版：底色、网格、四角裁切线、外框。网格和裁切线的位置与卡片上的一致，换成图片时对得上
+function sharePlateFrame() {
+    return '<i class="sp-base"></i><i class="sp-grid"></i>' +
+        '<i class="sp-line t"></i><i class="sp-line r"></i><i class="sp-line b"></i><i class="sp-line l"></i>' +
+        '<i class="sp-crop tl"></i><i class="sp-crop tr"></i><i class="sp-crop bl"></i><i class="sp-crop br"></i>';
 }
 
-function fadeShareFlyer(flyer) {
-    if (!flyer || !flyer.isConnected) return;
-    const a = flyer.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(3px)' }],
-        { duration: 900, delay: 150, easing: 'ease-in', fill: 'forwards' });
-    a.onfinish = () => flyer.remove();
+function pressShareButton() {
+    const btn = document.getElementById('shareBtn');
+    if (btn && btn.animate && !_reduceShareMotion()) btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.93)', offset: .35 }, { transform: 'scale(1)' }],
+        { duration: 420, easing: 'ease-out' });
+}
+
+// 版框画出来：底色和网格淡入，外框四条边顺着一圈画出，四角裁切线最后落下。只动 transform / opacity
+function drawSharePlate(plate) {
+    if (!plate.animate) return Promise.resolve();
+    const k = plate.clientWidth / 500;
+    plate.style.setProperty('--k', k.toFixed(4));
+    const ease = 'cubic-bezier(.65, 0, .25, 1)';
+    const run = (sel, frames, o) => Array.from(plate.querySelectorAll(sel)).map((el, i) => el.animate(frames, { fill: 'backwards', easing: ease, ...o(i) }));
+    const all = [
+        ...run('.sp-base', [{ opacity: 0 }, { opacity: 1 }], () => ({ duration: 420 })),
+        ...run('.sp-grid', [{ opacity: 0 }, { opacity: 1 }], () => ({ duration: 520, delay: 120 })),
+        ...run('.sp-line.t, .sp-line.b', [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], i => ({ duration: 340, delay: 60 + i * 170 })),
+        ...run('.sp-line.r, .sp-line.l', [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], i => ({ duration: 340, delay: 145 + i * 170 })),
+        ...run('.sp-crop', [{ opacity: 0, transform: 'scale(1.6)' }, { opacity: 1, transform: 'none' }], i => ({ duration: 300, delay: 380 + i * 40 }))
+    ];
+    return Promise.all(all.map(a => a.finished.catch(() => {})));
+}
+
+// 拼版：结果页上看得见的卦画、卦名、所问、主断，各自飞到版上对应的位置。看不见的不飞，换图时直接出现
+function assembleShareCard(plate, card) {
+    const p = plate.getBoundingClientRect(), c = card.getBoundingClientRect();
+    if (!p.width || !c.width) return Promise.resolve();
+    const k = p.width / c.width;
+    const onPlate = r => ({ left: p.left + (r.left - c.left) * k, top: p.top + (r.top - c.top) * k, width: r.width * k, height: r.height * k });
+    const visible = r => r && r.width > 0 && r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+    const textRect = el => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+    const result = document.getElementById('resultArea');
+    const flights = [];   // 先把要量的都量完，再一次性建飞行层，避免边读边写反复排版
+
+    // 卦画：落到卡上六根爻条占的那块（左边出血的部分不算）。正看着之卦时不飞，卡上画的是本卦
+    const glyph = result.querySelector('#resultGlyph');
+    const asZhi = result.querySelector('.result-header.as-zhi');
+    const bars = Array.from(card.querySelectorAll('.sc-bar')).map(el => el.getBoundingClientRect());
+    if (glyph && !asZhi && bars.length) {
+        const s = glyph.getBoundingClientRect();
+        if (visible(s)) {
+            const left = Math.max(c.left, Math.min(...bars.map(r => r.left)));
+            const to = onPlate({ left, top: Math.min(...bars.map(r => r.top)), width: Math.max(...bars.map(r => r.right)) - left, height: Math.max(...bars.map(r => r.bottom)) - Math.min(...bars.map(r => r.top)) });
+            flights.push({ kind: 'glyph', html: glyph.innerHTML, from: s, to, delay: 0 });
+        }
+    }
+    // 卦名：横排的字一个个落成卡上竖排的字
+    const name = result.querySelector('.hex-name');
+    const slots = Array.from(card.querySelectorAll('.sc-name span'));
+    const node = name && name.firstChild;
+    if (node && node.nodeType === 3 && slots.length === node.textContent.length) {
+        const cs = getComputedStyle(name), ts = getComputedStyle(slots[0]);
+        slots.forEach((slot, i) => {
+            const r = document.createRange();
+            r.setStart(node, i); r.setEnd(node, i + 1);
+            const from = r.getBoundingClientRect();
+            if (!visible(from)) return;
+            flights.push({ kind: 'text', text: node.textContent[i], from, to: onPlate(textRect(slot)), src: cs, dst: ts, k, delay: 70 + i * 55 });
+        });
+    }
+    // 所问、主断：按卡上的宽度折行，落地时和卡上一行对一行
+    const pairs = [[result.querySelector('.result-question h1'), card.querySelector('.sc-ask'), 160]];
+    const quotes = result.querySelectorAll('.mr-quote'), cardQuotes = card.querySelectorAll('.sc-quote');
+    quotes.forEach((q, i) => { if (cardQuotes[i]) pairs.push([q, cardQuotes[i], 230 + i * 70]); });
+    pairs.forEach(([src, dst, delay]) => {
+        if (!src || !dst) return;
+        // 卡上的「所问」块前面还有一个小标签，只取后面那段文字
+        const textNode = Array.from(dst.childNodes).reverse().find(n => n.nodeType === 3 && n.textContent.trim());
+        let to;
+        if (textNode) { const r = document.createRange(); r.selectNodeContents(textNode); to = r.getBoundingClientRect(); }
+        else to = textRect(dst);
+        const from = textRect(src);
+        if (!visible(from) || !to.width) return;
+        flights.push({ kind: 'text', text: (textNode || dst).textContent.trim(), from, to: onPlate(to), src: getComputedStyle(src), dst: getComputedStyle(dst), k, delay, wrap: onPlate(to).width });
+    });
+
+    if (!flights.length) return Promise.resolve();
+    const ease = 'cubic-bezier(.45, 0, .2, 1)';
+    const layer = document.createDocumentFragment();
+    const plans = flights.map(f => {
+        const el = document.createElement('div');
+        el.className = 'share-flyer';
+        let sx, sy;
+        if (f.kind === 'glyph') {
+            el.innerHTML = f.html;
+            el.style.cssText = `left:${f.to.left}px;top:${f.to.top}px;width:${f.to.width}px;height:${f.to.height}px;`;
+            sx = f.from.width / f.to.width; sy = f.from.height / f.to.height;
+            const dx = f.from.left - f.to.left, dy = f.from.top - f.to.top;
+            return { el, f, frames: [
+                { transform: `translate(${dx}px, ${dy}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})` },
+                { transform: `translate(${dx * .4}px, ${dy * .4 - 60}px) scale(${((sx + 1) / 2 * 1.06).toFixed(4)}, ${((sy + 1) / 2 * 1.06).toFixed(4)})`, offset: .5 },
+                { transform: 'none' }] };
+        }
+        // 文字：用落点的字体、字距、行高，起飞时按出发处的字号排，飞行中缩放到落点的字号
+        const srcSize = parseFloat(f.src.fontSize), dstSize = parseFloat(f.dst.fontSize) * f.k;
+        const s = dstSize / srcSize;
+        const em = v => (parseFloat(v) || 0) / parseFloat(f.dst.fontSize);
+        const lh = f.dst.lineHeight === 'normal' ? 1.4 : em(f.dst.lineHeight);
+        el.classList.add('share-flyer-text');
+        el.textContent = f.text;
+        el.style.cssText = `left:${f.from.left}px;top:${f.from.top}px;font-family:${f.dst.fontFamily};font-weight:${f.dst.fontWeight};` +
+            `font-size:${srcSize}px;line-height:${lh};letter-spacing:${em(f.dst.letterSpacing)}em;color:${f.src.color};` +
+            (f.wrap ? `width:${f.wrap / s + 2}px;` : 'white-space:nowrap;');
+        const dx = f.to.left - f.from.left, dy = f.to.top - f.from.top;
+        return { el, f, frames: [
+            { transform: 'none' },
+            { transform: `translate(${dx * .5}px, ${dy * .5 - 40}px) scale(${((1 + s) / 2).toFixed(4)})`, offset: .5 },
+            { transform: `translate(${dx}px, ${dy}px) scale(${s.toFixed(4)})` }] };
+    });
+    plans.forEach(pl => layer.appendChild(pl.el));
+    document.body.appendChild(layer);
+    const anims = plans.map(pl => pl.el.animate(pl.frames, { duration: pl.f.kind === 'glyph' ? 780 : 720, delay: pl.f.delay, easing: ease, fill: 'both' }));
+    return Promise.all(anims.map(a => a.finished.catch(() => {})));
 }
 
 // 关闭：卡片缩小飘回「生成分享图」按钮
@@ -442,6 +522,7 @@ function shareCloseMotion(container) {
 }
 
 function closeShare() {
+    _shareRun++;   // 还在出图、拼版的这一轮作废，后面的步骤都不再执行
     const container = document.getElementById('shareImageContainer');
     if (container.classList.contains('show')) shareCloseMotion(container);
     container.classList.remove('show');
