@@ -237,6 +237,8 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
   transition: opacity .4s ease, visibility 0s linear 0s;
 }
 .cosmos.away { opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; }
+/* 首页圆图：图层跟着文档走，滚动交给浏览器（圆心是文档坐标） */
+.cosmos.scrolling { position: absolute; bottom: auto; height: 100vh; height: 100lvh; }
 .cosmos.instant-show { transition: none; }
 .cosmos-ring, .cosmos-deco { position: absolute; inset: 0; animation: cosmos-spin 520s linear infinite; }
 @keyframes cosmos-spin { to { transform: rotate(360deg); } }
@@ -250,13 +252,22 @@ body.dialog-open .cosmos-ring, body.dialog-open .cosmos-deco { animation-play-st
 .cosmos-deco .d-tick { stroke: rgba(238, 242, 247, .22); }
 .cosmos-deco .d-major { stroke: rgba(238, 242, 247, .4); }
 .cosmos-deco .d-label { fill: var(--ink-3); font-family: var(--text); font-size: 13px; text-anchor: middle; dominant-baseline: central; }
-/* 起卦时的标线：两条半径线夹着一道弧，标出还剩下的那段；虚线是之前切掉的边界 */
+/* 刻度盘转动时卦环和装饰一直留在合成层上，每掷一爻不用重新栅格化 */
+.cosmos.is-dial .cosmos-ring, .cosmos.is-dial .cosmos-deco { will-change: transform, rotate, translate; }
+.cosmos-deco .m-cut { stroke: rgba(238, 242, 247, .36); stroke-dasharray: 3 4; }
+/* 起卦时的标线：两条半径线夹着一道弧，标出还剩下的那段；虚线是之前切掉的边界（画在装饰层里随卦环转）。
+   半径线是绕圆心转的细条；弧拆成左右两半，每半是一个只露出半边的圆环，转多少度露出多长 */
 .cosmos-marks { position: absolute; inset: 0; opacity: 0; transition: opacity .4s ease; }
 .cosmos.is-dial .cosmos-marks { opacity: 1; }
+.cosmos-marks:not(.armed) > * { visibility: hidden; }
 .cosmos-marks svg { position: absolute; inset: 0; overflow: visible; }
-.cosmos-marks .m-edge, .cosmos-marks .m-arc { fill: none; stroke: var(--ink); stroke-width: 1.2; }
-.cosmos-marks .m-ray { stroke: rgba(238, 242, 247, .2); }
-.cosmos-marks .m-cut { stroke: rgba(238, 242, 247, .36); stroke-dasharray: 3 4; }
+.cosmos-marks .m-half, .cosmos-marks .m-sweep { position: absolute; overflow: hidden; }
+.cosmos-marks .m-sweep { top: 0; }
+.cosmos-marks .m-circle { position: absolute; box-sizing: border-box; border: 1.2px solid var(--ink); border-radius: 50%; }
+.cosmos-marks .m-spoke { position: absolute; width: 0; height: 0; }
+.cosmos-marks .m-spoke i { position: absolute; }
+.cosmos-marks .m-ray { left: -.5px; width: 1px; background: rgba(238, 242, 247, .2); }
+.cosmos-marks .m-edge { left: -.6px; width: 1.2px; background: var(--ink); }
 .cosmos-marks .m-label { paint-order: stroke; stroke: var(--blue); stroke-width: 7px; stroke-linejoin: round; fill: var(--ink); font-family: var(--text); font-size: 15px; letter-spacing: .16em; text-anchor: middle; dominant-baseline: central; }
 .cg {
   position: absolute;
@@ -321,6 +332,7 @@ body.view-home .brand { opacity: 0; pointer-events: none; }
   content: "";
   position: absolute;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - var(--notch)), 0 100%);
+  transform-origin: 50% 0;
 }
 .nav-tag::before { inset: 0; background: var(--rule); }
 .nav-tag::after {
@@ -892,6 +904,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 }
 .history-panel::before { content: ""; position: absolute; inset: 5px; border: 1px solid var(--rule-soft); pointer-events: none; }
 .history-panel.show { transform: none; visibility: visible; transition: transform .6s var(--ease-out); }
+/* 关着的页面：内容不排版、不绘制（settings.js 在收起动画放完后加上） */
+.history-panel.parked { content-visibility: hidden; }
 /* 从挂签展开 / 收回的过程中：面板停在展开位置，形状交给 theme.js 的 clip-path 动画 */
 .history-panel.morphing,
 #historyPanel.archive.morphing { visibility: visible; transform: none; opacity: 1; transition: none; }
@@ -1121,7 +1135,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 #baziSettings.beckon .birth-dial { animation-delay: 1s; }
 @keyframes bz-mark { 0% { transform: scaleY(0); opacity: 1; } 35% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 @keyframes bz-label { 0%, 70% { color: var(--ink); } }
-@keyframes bz-wake { from { opacity: .18; filter: blur(3px); transform: translateY(8px); } }
+@keyframes bz-wake { from { opacity: .18; transform: translateY(8px); } }
 .settings-hint { margin-top: 8px; font-size: 13.5px; line-height: 1.7; color: var(--ink-3); }
 /* 关于：原来的页脚挪到设置最后 */
 .settings-about .github-support-link { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); }
@@ -1573,7 +1587,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .show .gs-glyph .bar:nth-child(1) { animation-delay: .55s; }
 /* 从首页飞过来的那份卦画：飞行时在最上层，落地后换回详情页里的真卦画，所以爻条不再逐根落下 */
 .gs-flyer { position: fixed; z-index: 75; margin: 0; pointer-events: none; transform-origin: 0 0; }
-.flown .gs-glyph .bar { animation: none; }
+.gs-flown .gs-glyph .bar { animation: none; }
 .show .gs-yao li::before { animation: lead-in .45s var(--ease-out) both; animation-delay: calc(.3s + (5 - var(--r)) * 80ms); }
 .show .gs-yao li span { animation: fade-in .4s ease both; animation-delay: calc(.45s + (5 - var(--r)) * 80ms); }
 @keyframes lead-in { from { transform: scaleX(0); } }

@@ -265,6 +265,18 @@ function restoreSettingsUI() {
     updateBaziSaveState();
 }
 
+function parkPanelLater(panel) {
+    if (panel.id !== 'settingsPanel') return;
+    clearTimeout(panel._parkT);
+    const park = () => {
+        if (panel.classList.contains('show')) return;
+        // 收回的动画还没放完就再等一会儿
+        if (panel.classList.contains('morphing')) { panel._parkT = window.setTimeout(park, 200); return; }
+        panel.classList.add('parked');
+    };
+    panel._parkT = window.setTimeout(park, 900);
+}
+
 function setFloatingPanelState(panelId, overlayId, shouldOpen) {
     const panel = document.getElementById(panelId);
     const overlay = document.getElementById(overlayId);
@@ -279,6 +291,7 @@ function setFloatingPanelState(panelId, overlayId, shouldOpen) {
             // 设置被牌册直接顶掉时，首页那一行攒着的换新也要放出来
             const hint = peerPanelId === 'settingsPanel' && document.getElementById('methodHint');
             if (hint && hint._swapLater) window.setTimeout(() => playMethodHintSwap(hint), 560);
+            if (peerPanel.classList.contains('show')) parkPanelLater(peerPanel);
             peerPanel.classList.remove('show');
             peerPanel.setAttribute('aria-hidden', 'true');
         }
@@ -288,15 +301,22 @@ function setFloatingPanelState(panelId, overlayId, shouldOpen) {
         }
     }
 
-    // 页面从顶栏挂签里展开、收回（theme.js 提供；没有它时照旧直接开合）
-    if (typeof morphPanelFromTag === 'function' && panel.classList.contains('show') !== shouldOpen) {
-        morphPanelFromTag(panel, shouldOpen);
-    }
+    // 设置关着时整个不参与排版和绘制（光生辰转盘就有两千多个节点）；收起的动画放完再停。
+    // 牌册不停：它内容不多，而且一直排好版，打开时卦才能立刻往方图里飞
+    if (shouldOpen) { clearTimeout(panel._parkT); panel.classList.remove('parked'); }
+    else if (panel.classList.contains('show')) parkPanelLater(panel);
+
+    // 页面从顶栏挂签里展开、收回（theme.js 提供；没有它时照旧直接开合）。
+    // 打开时先挂上 show 再开始量尺寸：面板从隐藏变可见要把里面每个元素的样式重算一遍，
+    // 和 morphing 那几个类放在同一次重算里，不用算两遍
+    const morph = typeof morphPanelFromTag === 'function' && panel.classList.contains('show') !== shouldOpen;
+    if (morph && !shouldOpen) morphPanelFromTag(panel, false);
     panel.classList.toggle('show', shouldOpen);
     overlay.classList.toggle('show', shouldOpen);
     panel.setAttribute('aria-hidden', String(!shouldOpen));
     overlay.setAttribute('aria-hidden', String(!shouldOpen));
     document.body.classList.toggle('dialog-open', Boolean(document.querySelector('.history-panel.show')));
+    if (morph && shouldOpen) morphPanelFromTag(panel, true);
 
     if (shouldOpen) {
         window.setTimeout(() => panel.querySelector('.btn-close')?.focus({ preventScroll: true }), 180);

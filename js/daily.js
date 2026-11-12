@@ -152,7 +152,7 @@ function closeGuaDetail(overlay) {
 }
 
 // 首页那枚小卦画飞起、放大，落到详情页卦画的位置变成大卦画；详情页同时从模糊中清晰浮现。
-// 关闭时大卦画飞回首页原位，详情页模糊淡去。飞行的是一份克隆，真卦画在落地前先藏起来
+// 关闭时大卦画飞回首页原位，详情页淡去（不用模糊：整框模糊在手机上太吃显卡）。飞行的是一份克隆，真卦画在落地前先藏起来
 function guaSheetFlight(overlay, open) {
     const sheet = overlay.querySelector('.gua-sheet');
     const glyph = sheet && sheet.querySelector('.gs-glyph');
@@ -168,7 +168,7 @@ function guaSheetFlight(overlay, open) {
     sheet.style.transition = 'none';
     sheet.style.transform = 'none';
     sheet.offsetWidth;
-    overlay.classList.add('flown');
+    overlay.classList.add('gs-flown');
     const g = glyph.getBoundingClientRect();
     const flyer = document.createElement('div');
     flyer.className = 'gs-glyph gs-flyer';
@@ -192,13 +192,13 @@ function guaSheetFlight(overlay, open) {
         flyer.animate([{ transform: atSrc }, { transform: mid, offset: .5 }, { transform: 'none' }],
             { duration: 760, easing: 'cubic-bezier(.45, 0, .2, 1)' }).onfinish = land;
         sheet.animate([
-            { opacity: 0, filter: 'blur(10px)', transform: 'translateY(18px)' },
-            { opacity: 1, filter: 'blur(0px)', transform: 'none' }
+            { opacity: 0, transform: 'translateY(18px)' },
+            { opacity: 1, transform: 'none' }
         ], { duration: 620, delay: 160, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
     } else {
         flyer.animate([{ transform: 'none' }, { transform: mid, offset: .5 }, { transform: atSrc }],
             { duration: 520, easing: 'cubic-bezier(.5, 0, .25, 1)', fill: 'forwards' }).onfinish = land;
-        sheet.animate([{ opacity: 1, filter: 'blur(0px)' }, { opacity: 0, filter: 'blur(8px)' }],
+        sheet.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(8px)' }],
             { duration: 260, easing: 'ease-in', fill: 'forwards' });
     }
     return true;

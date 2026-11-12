@@ -588,3 +588,21 @@ test('AI request that stops answering is aborted and offers a retry', async () =
     assert.match(body.innerHTML, /90 秒没有回应/);
     assert.match(body.innerHTML, /aiRetryBtn/);
 });
+
+test('opening the archive reuses the drawn grid unless records, filter or day changed', () => {
+    const f = fixture(); twoRecords(f);
+    f.run(`var drawn = 0; var _ram = renderArchiveMap; renderArchiveMap = h => { drawn++; _ram(h); };`);
+    f.byId('historyMap').childElementCount = 1;
+    f.run('loadHistory()');
+    assert.equal(f.run('drawn'), 1);
+    f.run('loadHistory({ reuse: true })');
+    assert.equal(f.run('drawn'), 1, 'nothing changed: keep the drawn archive');
+    f.run(`saveToHistory('新的一卦', gua, '111111', lines, change, {method:'coin'})`);
+    f.run('loadHistory({ reuse: true })');
+    assert.equal(f.run('drawn'), 2, 'a new record redraws');
+    f.advanceDay();
+    f.run('loadHistory({ reuse: true })');
+    assert.equal(f.run('drawn'), 3, '今天/昨天 labels move with the date');
+    f.run('_archiveFilter = 63; loadHistory({ reuse: true })');
+    assert.equal(f.run('drawn'), 4, 'a filter change redraws');
+});
