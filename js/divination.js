@@ -74,6 +74,9 @@ async function divine() {
         if (typeof dropQuestionCarry === 'function') dropQuestionCarry();
         if (typeof setPageView === 'function') setPageView('home');
         resultArea.innerHTML = '';
+        // 圆图可能还停在刻度盘上（标线、转到一半），收回首页的样子
+        if (typeof Cosmos !== 'undefined') Cosmos.toCircle();
+        if (typeof playHomeEnter === 'function') playHomeEnter(150);
         showToast('起卦未完成，请重试', 'error');
         console.error(error);
     } finally {

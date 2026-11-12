@@ -42,7 +42,8 @@ function saveToHistory(question, gua, fullBin, hexLines, change, readingContext 
         localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
         return id;
     } catch (e) {
-        showToast('牌册已满，无法记录本次占卜', 'error');
+        // 牌册满 50 条会自动挤掉最旧的，走到这里是浏览器不让写存储（空间满了、隐私模式等）
+        showToast('浏览器不让保存记录，这一卦没能记进牌册', 'error');
         return null;
     }
 }
@@ -252,9 +253,9 @@ function loadHistory(opts) {
 }
 
 function loadHistoryItem(id, fromRect) {
-    // 结果渲染会移除选牌节点；仪式未结束时不能切走，否则选牌 Promise 永远无法完成。
+    // 起卦途中不能切去别的结果：仪式那一页会被换掉，起卦流程就停在半路了
     if (_divineRunning) {
-        showToast('正在起卦，请先完成选牌或跳过仪式，再回看牌册');
+        showToast('正在起卦，掷完六爻或点跳过之后再回看');
         return;
     }
     const history = readHistorySafe();

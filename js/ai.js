@@ -60,7 +60,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
     }
 
     const prompt = fillPrompt(profile.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question, readingContext));
-    bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在叩问天机…</span></div>';
+    bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在解读…</span></div>';
 
     const url = profile.baseUrl.replace(/\/+$/, '') + '/chat/completions';
     let acc = '';
@@ -73,14 +73,14 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         textEl.textContent = s;
     };
     const fail = (msg) => {
-        bodyEl.innerHTML = `<div class="ai-error">${escHtml(msg)}</div><button class="btn-ai-run" id="aiRetryBtn"><span class="btn-rune">↺</span> 重试</button>`;
+        bodyEl.innerHTML = `<div class="ai-error">${escHtml(msg)}</div><button class="btn" id="aiRetryBtn">重试</button>`;
         const rb = bodyEl.querySelector('#aiRetryBtn');
         if (rb) rb.addEventListener('click', () => {
             requestAiReading(gua, change, question, bodyEl, readingContext).then(t => { if (t) persistAiReading(t, readingContext.historyId); });
         });
     };
 
-    // 接口久不回话（连不上、流卡在半路）就掐断，换成可重试的错误，不让「叩问」一直转下去
+    // 接口久不回话（连不上、流卡在半路）就掐断，换成可重试的错误，不让加载一直转下去
     const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
     let idle = 0;
     const watch = () => { clearTimeout(idle); if (ctrl) idle = setTimeout(() => ctrl.abort(), AI_IDLE_TIMEOUT_MS); };
@@ -119,6 +119,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         const reader = resp.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
+        let streamError = '';   // 有的接口在流中途用 {"error": …} 报错，记下来，最后没内容时显示它
         const eat = (raw) => {
             const line = raw.trim();
             if (!line || !line.startsWith('data:')) return;
@@ -126,9 +127,14 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
             if (payload === '[DONE]') return;
             try {
                 const json = JSON.parse(payload);
+                if (json && json.error) {
+                    const e = json.error;
+                    streamError = typeof e === 'string' ? e : (e.message || JSON.stringify(e));
+                    return;
+                }
                 const delta = json.choices && json.choices[0] && json.choices[0].delta && json.choices[0].delta.content;
                 if (delta) { acc += delta; paint(acc); }
-            } catch (e) { /* 分片不完整，留待下一轮拼接 */ }
+            } catch (e) { /* 不是完整的 JSON（按行切过，正常不会出现），跳过这一行 */ }
         };
         while (true) {
             const { done, value } = await reader.read();
@@ -142,7 +148,9 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         // 流结束时最后一行可能没有换行符，别把它丢掉
         buffer += decoder.decode();
         if (buffer) eat(buffer);
-        if (!acc) { fail('接口没有返回解读内容。'); return; }
+        if (!acc) { fail(streamError ? `接口报错：${streamError.slice(0, 240)}` : '接口没有返回解读内容。'); return; }
+        // 已经写出一部分又报错：留着已写的，末尾注明中断
+        if (streamError) { paint(acc + `\n\n（接口中途报错，解读未写完：${streamError.slice(0, 160)}）`); return acc; }
         paint(acc);
         return acc;
     } catch (err) {

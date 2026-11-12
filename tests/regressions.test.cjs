@@ -472,6 +472,32 @@ test('AI stream keeps the final event even when it has no trailing newline', asy
     assert.equal(text, '甲乙');
 });
 
+test('an error reported in the middle of an AI stream is shown instead of being swallowed', async () => {
+    const f = fixture();
+    configureAi(f);
+    const enc = new TextEncoder();
+    const chunks = [enc.encode('data: {"error":{"message":"quota exceeded"}}\n')];
+    f.context.fetch = async () => {
+        let i = 0;
+        return { ok: true, headers: { get: () => 'text/event-stream' },
+            body: { getReader: () => ({ read: async () => i < chunks.length ? { done: false, value: chunks[i++] } : { done: true } }) } };
+    };
+    const body = f.byId('aiBody');
+    const text = await f.run(`requestAiReading(gua, change, '问', document.getElementById('aiBody'), {})`);
+    assert.equal(text, undefined);
+    assert.match(body.innerHTML, /quota exceeded/);
+    assert.match(body.innerHTML, /class="btn" id="aiRetryBtn"/);
+});
+
+test('a failed divination sends the chart back to the home circle', async () => {
+    const f = fixture();
+    const calls = [];
+    f.context.Cosmos = { toCircle: () => calls.push('toCircle'), hide() {}, toDial() {} };
+    await f.run(`showInvocation=async()=>{throw new Error('boom')};console.error=()=>{};divine();`);
+    await new Promise(r => setImmediate(r));
+    assert.deepEqual(calls, ['toCircle']);
+});
+
 test('share card shows when the reading was cast, not when the image is made', () => {
     const f = fixture();
     const date = f.run(`var r = document.getElementById('resultArea');
