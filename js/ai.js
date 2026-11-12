@@ -5,10 +5,9 @@
 const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '生辰起卦（公历生日换算农历，梅花易数取数）' };
 
 function buildAiContext(gua, change, question, readingContext = {}) {
-    const posCN = ['初', '二', '三', '四', '五', '上'];
     const changing = change.changingYaos || [];
     const changePos = changing.length
-        ? changing.map(p => posCN[p]).join('、') + ' 爻动'
+        ? changing.map(p => YAO_POS_CN[p]).join('、') + ' 爻动'
         : '静卦无变';
     // 主断之爻：复用既有取爻规则，只给 AI 主断指向的那一爻，而非六爻全丢
     const main = getMainReading(gua, change);
@@ -308,7 +307,8 @@ async function testAiConnection() {
     }
 }
 
-const DEFAULT_AI_PROMPT = `你是一位精通《周易》象数与义理的解卦师，既懂卦象推演，也善于把卦理落到问卦者的现实处境上。请依据下列卦象，为问卦者写一份诚恳、具体、能用得上的解读。
+// 以前的默认提示词。档案里存的还是它（用户没改过）时，自动换成新的默认
+const LEGACY_AI_PROMPTS = [`你是一位精通《周易》象数与义理的解卦师，既懂卦象推演，也善于把卦理落到问卦者的现实处境上。请依据下列卦象，为问卦者写一份诚恳、具体、能用得上的解读。
 
 【所问之事】{question}
 【起卦时间】{time}
@@ -329,7 +329,29 @@ const DEFAULT_AI_PROMPT = `你是一位精通《周易》象数与义理的解�
 - 用简体中文、纯文本分段，段首以方括号小标题标注，如【卦象总览】。
 - 不要使用 Markdown 符号（如 #、*、**），它们会原样显示。
 - 共五段，依次为：【卦象总览】【应问而断】【变爻玄机】【行止之议】【箴言】。
-- 每段约 2 至 4 句，【箴言】一句收束；全文约 400 至 700 字，语气古雅而通俗，如对坐谈心。`;
+- 每段约 2 至 4 句，【箴言】一句收束；全文约 400 至 700 字，语气古雅而通俗，如对坐谈心。`];
+
+const DEFAULT_AI_PROMPT = `你是熟悉《周易》的解卦人，懂卦象，也会把卦理落到问卦人的实际处境上。请根据下面这一卦，回答问卦人的问题。
+
+【所问】{question}
+【起卦时间】{time}
+【起卦方式】{method}
+【本卦】{benGua}（{benTitle}）
+【卦象】{symbol}
+【之卦】{bianGua}
+【动爻】{changePos}
+【主断】{changeYao}
+
+要求：
+1. 紧扣所问来谈本卦、动爻和之卦，不写放到哪个问题上都成立的空话。
+2. 本卦看眼下的处境，之卦看事情往哪里走，主断是最要紧的那一句，把三者连起来讲清楚。
+3. 利弊、宜忌可以直说，不必含糊；但给的是参考和建议，不是断言。
+4. 没写问题时，就近况和心态来谈。
+
+格式：
+- 简体中文纯文本，不用 Markdown 符号（#、* 这类会原样显示）。
+- 分五段，段首用方括号标题：【卦象】【所问】【动爻】【怎么做】【一句话】。
+- 每段两到四句，【一句话】只写一句；全文四百到七百字。说人话，像当面聊，不要堆文言。`;
 
 const DEFAULT_AI = {
     enabled: false,
@@ -343,7 +365,6 @@ const AI_PROFILE_MAX = 5;
 function makeAiProfile(name, src) {
     src = src || {};
     return {
-        id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
         name: name || '新配置',
         baseUrl: src.baseUrl || '',
         apiKey: src.apiKey || '',
@@ -363,6 +384,7 @@ function ensureAiProfiles(ai) {
         ai.activeProfile = 0;
     }
     if (ai.profiles.length > AI_PROFILE_MAX) ai.profiles = ai.profiles.slice(0, AI_PROFILE_MAX);
+    ai.profiles.forEach(p => { if (!p.prompt || LEGACY_AI_PROMPTS.includes(p.prompt)) p.prompt = DEFAULT_AI_PROMPT; });
     if (typeof ai.activeProfile !== 'number' || ai.activeProfile < 0 || ai.activeProfile >= ai.profiles.length) {
         ai.activeProfile = 0;
     }

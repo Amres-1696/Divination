@@ -19,9 +19,9 @@ async function divine() {
         date: startedAt.toLocaleString('zh-CN')
     };
 
-    // 八字起卦需要检查八字数据
+    // 生辰起卦需要先存生辰
     if (settings.method === 'bazi' && !settings.bazi) {
-        showToast('请先在设置中填写并保存公历生辰', 'error');
+        if (typeof promptForBirth === 'function') promptForBirth();
         _divineRunning = false;
         return;
     }
@@ -97,7 +97,6 @@ function getMainReading(gua, change) {
     const n = changing.length;
     const benName = gua[0];
     const zhi = change.changeGua;
-    const posCN = ['初', '二', '三', '四', '五', '上'];
     const all = [0, 1, 2, 3, 4, 5];
     // 「上九：亢龙有悔」→ 出处「本卦《乾为天》上九」+ 辞「亢龙有悔」
     const yaoLine = (label, name, raw) => {
@@ -111,7 +110,7 @@ function getMainReading(gua, change) {
         return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」`,
             lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '六爻皆静，看本卦卦辞' };
     if (n === 1)
-        return { rule: '一爻动', text: `以本卦《${benName}》${posCN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
+        return { rule: '一爻动', text: `以本卦《${benName}》${YAO_POS_CN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
             lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: '一爻动，看动的这一爻' };
     if (n === 2)
         return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}`,
@@ -310,7 +309,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     watchYaoLeaders(resultArea);
 
-    resultArea.querySelector('#shareBtn').addEventListener('click', shareAsImage);
+    const shareBtn = resultArea.querySelector('#shareBtn');
+    shareBtn.addEventListener('click', shareAsImage);
+    // 出图要用的 html2canvas（约 200 KB）不给每个访客预取：指到、按到分享按钮时才开始取
+    const warm = () => { if (typeof loadHtml2canvas === 'function') loadHtml2canvas(); };
+    shareBtn.addEventListener('pointerenter', warm, { once: true });
+    shareBtn.addEventListener('focus', warm, { once: true });
+    shareBtn.addEventListener('touchstart', warm, { once: true, passive: true });
     const newBtn = resultArea.querySelector('#newDivineBtn');
     if (newBtn) newBtn.addEventListener('click', () => {
         if (typeof returnToInquiry === 'function') returnToInquiry({ clear: true });
@@ -409,31 +414,15 @@ function generateHexagramBazi(bazi, question) {
     const qn = normalizeQuestion(question);
     const qNum = qn ? simpleHash(qn) : 0;        // 稳定非负整数，同问题恒定
 
-    // 梅花易数以农历起卦：年取地支数（子1…亥12）、月日取农历月日（闰月按其月数计）
-    // 公历生辰先换算；早于1900年正月初一换算失败时退回公历数值，确定性不变
-    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
-    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
-    const monthNum = lunar ? lunar.month : bazi.month;
-    const dayNum = lunar ? lunar.day : bazi.day;
-
-    // 梅花易数：以「年月日」起上卦，「年月日时」起下卦——八字即先天之命
-    const baseUpper = yearNum + monthNum + dayNum;
-    const baseLower = baseUpper + (bazi.hour + 1);
-
+    const base = birthNumbers(bazi);
     // 融入所问之事（确定性：同一问题恒定，不同问题分散；取质数模以打散分布）
-    const sumUpper = baseUpper + (qNum % 97);
-    const sumLower = baseLower + (Math.floor(qNum / 97) % 89);
+    const sumUpper = base.upper + (qNum % 97);
+    const sumLower = base.lower + (Math.floor(qNum / 97) % 89);
     // 动爻＝年月日时总数 mod 6（梅花传统，同下卦总数；问题项随下卦总数自然融入，
     // 观梅占原例：34 起兑为上、43 起离为下，动爻 43%6=1 取初爻——总数只计一次）
-    const sumYao   = sumLower;
-
-    const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
-    const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
-    const changingYao = ((sumYao - 1) % 6 + 6) % 6;
-
-    const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
-    const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
-    const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
+    const changingYao = ((sumLower - 1) % 6 + 6) % 6;
+    const upperBin = trigramOfNumber(sumUpper);
+    const lowerBin = trigramOfNumber(sumLower);
 
     const lines = [];
     for (let i = 0; i < 3; i++) lines.push(lowerBin[2 - i] === '1' ? 7 : 8);

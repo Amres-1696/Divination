@@ -30,12 +30,6 @@ function getDailyGua(d = new Date()) {
     const settings = loadSettings();
 
     if (settings.bazi) {
-        const b = settings.bazi;
-        // 与八字起卦同规：生辰与今日皆换算农历（年取地支数），换算失败退回公历数值
-        const lunarBazi = solarToLunar(b.year, b.month, b.day);
-        const yearNum = lunarBazi ? lunarYearBranch(lunarBazi.year) : (b.year % 100 || 100);
-        const bMonth = lunarBazi ? lunarBazi.month : b.month;
-        const bDay = lunarBazi ? lunarBazi.day : b.day;
         const nowLunar = solarToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
         // 今日之数：把农历年月日（含闰月）打散成一个整数，再拆成两份分别融入上下卦。
         // 以前是把「日」直接加进上卦、「日+月」加进下卦，日子每过一天上下卦同进一位，
@@ -45,15 +39,9 @@ function getDailyGua(d = new Date()) {
             ? nowLunar.year * 10000 + nowLunar.month * 100 + nowLunar.day + (nowLunar.isLeap ? 5000000 : 0)
             : d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
         const dNum = mixInt(dayKey);
-        const baseUpper = yearNum + bMonth + bDay;
-        const baseLower = baseUpper + (b.hour + 1);
-        const sumUpper = baseUpper + (dNum % 97);
-        const sumLower = baseLower + (Math.floor(dNum / 97) % 89);
-        const upperIdx = ((sumUpper - 1) % 8 + 8) % 8;
-        const lowerIdx = ((sumLower - 1) % 8 + 8) % 8;
-        const xiantianOrder = ['☰','☱','☲','☳','☴','☵','☶','☷'];
-        const upperBin = TRIGRAM_TO_BINARY[xiantianOrder[upperIdx]];
-        const lowerBin = TRIGRAM_TO_BINARY[xiantianOrder[lowerIdx]];
+        const base = birthNumbers(settings.bazi);
+        const upperBin = trigramOfNumber(base.upper + (dNum % 97));
+        const lowerBin = trigramOfNumber(base.lower + (Math.floor(dNum / 97) % 89));
         return lookupGua(upperBin + lowerBin);
     }
 

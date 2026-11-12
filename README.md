@@ -56,7 +56,7 @@ python -m http.server 8000 --bind 127.0.0.1
 
 部署到任何静态托管都一样：保持 `index.html`、`style.css`、`data.js`、`html2canvas.min.js` 和 `js/`、`fonts/` 目录的相对位置即可。
 
-`index.html` 里每个脚本和样式的地址后面带着 `?v=日期` 的版本号，用来让浏览器丢掉旧缓存。改了哪个文件，记得把它的版本号也改一下。
+`index.html` 里每个脚本和样式的地址后面带着 `?v=` 版本号，用来让浏览器丢掉旧缓存。版本号是文件内容的哈希，改完代码运行 `python tools/stamp-versions.py` 自动更新，不用手改；忘了运行的话回归测试会提醒。
 
 改了卦名、卦辞、爻辞或界面文字，出现了以前没有的字，要重新裁一次标题字体，否则新字会退回宋体（回归测试会提醒）。先下载[站酷小薇原字体](https://github.com/google/fonts/tree/main/ofl/zcoolxiaowei)，然后：
 
@@ -65,7 +65,7 @@ pip install fonttools brotli
 python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 ```
 
-裁完把 `style.css` 和 `index.html` 里字体地址后面的版本号也改一下，两处要一致。
+裁完运行一次 `python tools/stamp-versions.py` 更新版本号。
 
 ## 代码放在哪
 
@@ -87,6 +87,7 @@ python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 | `js/main.js` | 初始化和事件绑定 |
 | `fonts/` | 站酷小薇子集（SIL OFL 授权，附 `OFL.txt`）和它包含的字表 |
 | `tools/subset-font.py` | 重新生成字体子集的脚本 |
+| `tools/stamp-versions.py` | 按文件内容更新 `?v=` 版本号 |
 | `tests/regressions.test.cjs` | 回归测试 |
 
 脚本之间没有模块系统，靠 `index.html` 里的加载顺序决定依赖，调整顺序时要留意。

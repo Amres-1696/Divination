@@ -126,7 +126,10 @@ const Cosmos = (() => {
         }
         marks.innerHTML = out ? `<svg width="100%" height="100%">${out}</svg>` : '';
     }
-    // 刻度盘期间每帧核对一次：圆心挪了（窗口变了、页面排版变了）或正在转动，就重摆一遍
+    // 刻度盘只在需要时重摆：入场滑过来、转动中、窗口尺寸变了。静止时不跑，也不量位置
+    function kickDial() {
+        if (state === 'dial' && dial && !dialRaf) dialRaf = requestAnimationFrame(dialFrame);
+    }
     function dialFrame(now) {
         dialRaf = 0;
         if (state !== 'dial' || !dial) return;
@@ -161,7 +164,7 @@ const Cosmos = (() => {
             deco.style.transform = `translate3d(${(cx - c.cx).toFixed(1)}px, ${(cy - c.cy).toFixed(1)}px, 0) rotate(${dial.theta.toFixed(2)}deg)`;
             drawMarks(cx, cy, c.R);
         }
-        dialRaf = requestAnimationFrame(dialFrame);
+        if (dial.from || dial.anim) dialRaf = requestAnimationFrame(dialFrame);
     }
     function endDial() {
         if (!dial) return;
@@ -267,6 +270,7 @@ const Cosmos = (() => {
             }
             window.addEventListener('scroll', () => { if (state === 'circle') applyShift(); }, { passive: true });
             window.addEventListener('resize', () => {
+                kickDial();
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(() => this.relayout(), 120);
             });
@@ -320,11 +324,10 @@ const Cosmos = (() => {
             deco.style.animation = 'none';
             dial = { c: a, from, t0: performance.now(), theta: spin, half: 180, anim: null, cuts: [], arc: null, label: '', sig: '', decoKey: '' };
             items.forEach(it => {
-                it.out = false; it.hit = false;
-                it.el.classList.remove('hit');
+                it.out = false;
                 tween(it, { sc: a.sc, op: .9 }, { dur: 700, delay: a.order(it.v) * 10, ease: 'out' });
             });
-            if (!dialRaf) dialRaf = requestAnimationFrame(dialFrame);
+            kickDial();
         },
 
         // 第 i 爻落定：与之不符的一半暗下去，剩下的那段弧转到正上方，标线跟着收窄
@@ -360,14 +363,16 @@ const Cosmos = (() => {
                 th0: dial.theta, th1: dial.theta + shortest(-mid - dial.theta),
                 h0: dial.half, h1: (arc[1] - arc[0]) / 2
             };
+            kickDial();
         },
 
         // 六爻掷完：剩下的那一卦放大
         settle(v, label) {
             const it = items.find(x => x.v === v);
             if (!it || !dial) return;
-            it.hit = true;
             dial.label = label || dial.label;
+            dial.sig = '';
+            kickDial();
             tween(it, { sc: dial.c.sc * 2.3, op: 1 }, { dur: 600, ease: 'outBack' });
         },
 
@@ -379,7 +384,6 @@ const Cosmos = (() => {
             endDial();
             root.classList.remove('away', 'show-deco');
             state = 'result';
-            it.el.classList.remove('hit');
             if (opts.fromRect) {
                 const f = opts.fromRect;
                 set(it, { x: f.left + f.width / 2, y: f.top + f.height / 2, rot: 0, sc: f.width / B, op: 1 });
@@ -422,7 +426,6 @@ const Cosmos = (() => {
             root.style.transform = '';
             items.forEach(x => { if (x !== it) set(x, { op: 0 }); });
             set(it, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rot: 0, sc: rect.width / B, op: 1 });
-            it.el.classList.remove('hit');
             endDial();
             root.classList.add('instant-show');
             root.classList.remove('away', 'show-deco');
@@ -447,7 +450,7 @@ const Cosmos = (() => {
             applyShift();
             root.classList.remove('away');
             root.classList.add('show-deco');
-            items.forEach(it => { it.out = false; it.hit = false; it.el.classList.remove('hit'); });
+            items.forEach(it => { it.out = false; });
             if (prev === 'lifted' && home != null) {
                 const hv = items.find(x => x.v === home);
                 const hOrder = geo.angle(home);

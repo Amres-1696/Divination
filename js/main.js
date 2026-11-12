@@ -29,16 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
             this.value = loadSettings().method;
             return;
         }
-        // 选八字起卦但尚未填八字：就地提示并高亮表单，避免回到主页起卦时才报错
-        if (this.value === 'bazi' && !loadSettings().bazi) {
-            showToast('生辰起卦需先填写并保存公历生辰', 'error');
-            const seals = document.querySelector('.bazi-seals');
-            if (seals) {
-                seals.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                seals.classList.add('hint-flash');
-                setTimeout(() => seals.classList.remove('hint-flash'), 1600);
-            }
-        }
+        // 选了生辰起卦但还没存生辰：就地引到生辰那一组，免得回首页起卦时才发现
+        if (this.value === 'bazi' && !loadSettings().bazi) promptForBirth();
     });
     document.getElementById('settingRitual').addEventListener('change', function() {
         if (!saveSetting('ritual', this.value)) this.value = loadSettings().ritual || 'full';
@@ -109,15 +101,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (historyO && historyO.classList.contains('show')) { toggleHistory(); return; }
     });
     const questionInput = document.getElementById('question');
-    const divineButton = document.getElementById('divineBtn');
     questionInput.addEventListener('keydown', e => {
         // 输入法选字时的回车只是上屏，不起卦（Safari 上屏后还会补发一次 keyCode 229 的 Enter）
         if (e.key !== 'Enter' || e.isComposing || e.keyCode === 229) return;
         e.preventDefault();
         divine();
-    });
-    questionInput.addEventListener('input', () => {
-        divineButton.classList.toggle('charged', questionInput.value.trim().length > 0);
     });
 
     // 回到顶部按钮

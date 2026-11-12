@@ -91,6 +91,19 @@ function lunarYearBranch(lunarYear) {
     return ((lunarYear - 4) % 12 + 12) % 12 + 1;
 }
 
+// 梅花易数的生辰取数：年取地支数（子1…亥12），月、日取农历月日（闰月按其月数计）。
+// 上卦数＝年＋月＋日，下卦数＝上卦数＋时辰数（子1…亥12）。早于农历历表时退回公历数值，结果仍然确定。
+function birthNumbers(bazi) {
+    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
+    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
+    const upper = yearNum + (lunar ? lunar.month : bazi.month) + (lunar ? lunar.day : bazi.day);
+    return { upper, lower: upper + (bazi.hour + 1) };
+}
+// 先天八卦数取卦（乾1 兑2 离3 震4 巽5 坎6 艮7 坤8，满八循环），返回自上而下的三位二进制
+function trigramOfNumber(sum) {
+    return TRIGRAM_TO_BINARY['☰☱☲☳☴☵☶☷'[((sum - 1) % 8 + 8) % 8]];
+}
+
 // 农历月名：正月、二月…冬月、腊月；闰月前缀「闰」
 function lunarMonthName(month, isLeap) {
     const names = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];

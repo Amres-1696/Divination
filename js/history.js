@@ -122,16 +122,16 @@ function renderArchiveMap(history) {
     const max = Math.max(1, ...counts);
     const lit = counts.filter(c => c > 0).length;
     const top = counts.indexOf(max);
-    const topGua = history.length ? lookupGua(linesFromShao(top).map(x => x % 2 ? '1' : '0').reverse().join('')) : null;
+    const topGua = history.length ? guaOfShao(top) : null;
     const labels = TRIGRAM_BY_VALUE.map(n => `<span>${n}</span>`).join('');
     let cells = '';
     for (let v = 0; v < 64; v++) {
         const c = counts[v];
-        const g = lookupGua(linesFromShao(v).map(x => x % 2 ? '1' : '0').reverse().join(''));
+        const g = guaOfShao(v);
         cells += `<button type="button" class="am-cell${c ? ' lit' : ''}${_archiveFilter === v ? ' sel' : ''}" data-v="${v}" style="--w:${(c / max).toFixed(3)};--o:${(v >> 3) + (v & 7)}" ${c ? '' : 'tabindex="-1" disabled'} aria-label="${g ? g[0] : ''}${c ? `，${c} 次` : '，未抽到'}">${buildHexBars(linesFromShao(v))}${c > 1 ? `<em>${c}</em>` : ''}</button>`;
     }
     const filtered = _archiveFilter != null
-        ? lookupGua(linesFromShao(_archiveFilter).map(x => x % 2 ? '1' : '0').reverse().join(''))
+        ? guaOfShao(_archiveFilter)
         : null;
     map.innerHTML = history.length ? `
 <div class="am-stats">
@@ -155,7 +155,7 @@ function renderArchiveMap(history) {
             loadHistory({ quiet: true });
         });
         cell.addEventListener('mouseenter', () => {
-            const g = lookupGua(linesFromShao(Number(cell.dataset.v)).map(x => x % 2 ? '1' : '0').reverse().join(''));
+            const g = guaOfShao(Number(cell.dataset.v));
             const cap = document.getElementById('amCaption');
             if (cap && _archiveFilter == null && g) cap.innerHTML = `<b>${g[0]}</b> · ${counts[Number(cell.dataset.v)]} 次 · ${guaOrdinal(g)}`;
         });

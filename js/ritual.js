@@ -2,16 +2,6 @@
 // 卦象在仪式前已经算好（铜钱随机或生辰取数），仪式负责把它一爻一爻揭出来。
 // 只用 style / classList / sleep 和可选的 Cosmos，测试环境里也能跑完。
 
-const YAO_POS_CN = ['初', '二', '三', '四', '五', '上'];
-const YAO_TYPE_CN = { 6: '老阴', 7: '少阳', 8: '少阴', 9: '老阳' };
-const LINE_TO_BEI = { 9: 3, 8: 2, 7: 1, 6: 0 }; // 背面朝上的铜钱数
-
-function yaoLabel(line, i) {
-    const num = (line === 7 || line === 9) ? '九' : '六';
-    if (i === 0) return '初' + num;
-    if (i === 5) return '上' + num;
-    return num + YAO_POS_CN[i];
-}
 
 class HexRitual {
     // mode：'full' 一爻一爻掷；'quick' 点一次六爻连掷，各处停顿也短一些

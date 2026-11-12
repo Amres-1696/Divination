@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=20261112-1") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=1e52ad1b") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -24,7 +24,6 @@
 :root {
   --blue: #17396E;
   --blue-deep: #102B55;
-  --blue-lift: #1E4682;
   --ink: #EEF2F7;
   /* --ink-3 在最亮的底色上也有约 4.4:1，小号标签仍看得清 */
   --ink-2: #C5D1E2;
@@ -710,7 +709,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .title-block > div:nth-child(3), .title-block > div:nth-child(5) { border-right: 0; }
 .title-block dt { font-size: 11px; letter-spacing: .3em; color: var(--ink-3); line-height: 1.6; }
 .title-block dd { font-size: 14.5px; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.title-block .tb-wide:first-child dd { font-family: var(--text); font-weight: 400; font-size: 16px; }
 /* 结果页图签：卦序｜上下 / 起卦｜方图 / 时间 */
 .title-block.tb-result > div:nth-child(3), .title-block.tb-result > div:nth-child(5) { border-right: 1px solid var(--rule-soft); }
 .title-block.tb-result > div:nth-child(2n):not(.tb-wide) { border-right: 0; }
@@ -789,7 +787,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .block > h3::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
 .rule-tag { font-family: var(--text); font-size: 13.5px; font-weight: 400; letter-spacing: 0; color: var(--ink-3); }
 .analysis-list { font-size: 18px; line-height: 1.95; }
-.analysis-list.lead { font-size: 20px; line-height: 1.8; }
 .change-details { margin-top: 16px; }
 .change-details p { font-size: 17px; }
 
@@ -959,7 +956,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .am-top { margin-left: auto; }
 
 .am-frame {
-  --gs: min(100%, 336px);
   margin-top: 26px;
   display: grid;
   grid-template-columns: 22px minmax(0, 1fr);
@@ -1312,8 +1308,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   background: var(--blue-deep);
   box-shadow: inset 0 2px 0 var(--ink);
 }
-.bazi-seals.hint-flash { animation: flash 1.6s ease; }
-@keyframes flash { 0%, 60% { box-shadow: 0 0 0 6px rgba(238, 242, 247, .25); } 100% { box-shadow: 0 0 0 6px transparent; } }
 .btn-save-bazi { margin-top: 16px; }
 .bazi-status { margin-top: 10px; font-size: 13.5px; line-height: 1.6; }
 .bazi-status:empty { display: none; }
@@ -1674,7 +1668,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .verdict-seal span { font-size: 21px; }
   .block { margin-top: 38px; }
   .analysis-list { font-size: 17px; }
-  .analysis-list.lead { font-size: 18.5px; }
   .yao-plate { grid-template-columns: 50px 34px minmax(0, 1fr); }
   .yp-glyph { width: 50px; height: 64px; }
   .yao-item { grid-template-columns: 2.8em minmax(0, 1fr); gap: 2px 12px; font-size: 16px; }

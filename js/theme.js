@@ -422,19 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
     playHomeEnter(500);
     // 顶栏挂签的入场动画播完就撤掉 intro，之后记录数变化不再重播
     setTimeout(() => document.body.classList.remove('intro'), 2200);
-    // 入场放完、页面空闲了再取分享要用的 html2canvas
-    const idle = window.requestIdleCallback || (fn => setTimeout(fn, 1200));
-    setTimeout(() => idle(() => loadHtml2canvas()), 2600);
     document.getElementById('homeBtn').addEventListener('click', () => returnToInquiry());
     document.getElementById('questionForm').addEventListener('submit', e => { e.preventDefault(); divine(); });
     const method = document.getElementById('homeMethod');
     method.addEventListener('change', () => {
         if (!saveSetting('method', method.value)) { method.value = loadSettings().method; return; }
-        if (method.value === 'bazi' && !loadSettings().bazi) {
-            toggleSettings(true);
-            document.getElementById('baziYear').focus({ preventScroll: true });
-            showToast('请先填写并保存公历生辰');
-        }
+        if (method.value === 'bazi' && !loadSettings().bazi) promptForBirth();
     });
     // 首页起卦方式那一行：点已存的生辰或「还没有保存」去设置里填写；点行尾的「换成…」换一种起法
     document.getElementById('methodHint').addEventListener('click', e => {

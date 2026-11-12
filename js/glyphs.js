@@ -11,6 +11,13 @@ function shaoBit(v, lineIndex) {
 function linesFromShao(v) {
     return [0, 1, 2, 3, 4, 5].map(i => shaoBit(v, i) ? 7 : 8);
 }
+// 先天序数 → 卦（GUA 里的那一条）。牌册要反复查 64 卦，表只建一次
+let _guaByShao = null;
+function guaOfShao(v) {
+    if (!_guaByShao) _guaByShao = Array.from({ length: 64 }, (_, k) =>
+        lookupGua(k.toString(2).padStart(6, '0').split('').reverse().join('')));
+    return _guaByShao[v];
+}
 function guaBinary(gua) {
     return TRIGRAM_TO_BINARY[gua[2][0]] + TRIGRAM_TO_BINARY[gua[2][1]];
 }

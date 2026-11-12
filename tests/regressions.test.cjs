@@ -329,6 +329,20 @@ test('the result page records the six line values the share card draws from', ()
     assert.equal(f.run(`document.getElementById('resultArea').dataset.lines`), '779767');
 });
 
+test('every ?v= cache key matches the file it points to (run tools/stamp-versions.py after editing)', () => {
+    const crypto = require('node:crypto');
+    const stale = [];
+    for (const rel of ['style.css', 'index.html']) {
+        const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+        for (const m of text.matchAll(/(?:src|href)="([\w./-]+)\?v=([\w-]*)"|url\("([\w./-]+)\?v=([\w-]*)"/g)) {
+            const file = m[1] || m[3], v = m[2] || m[4];
+            const want = crypto.createHash('sha1').update(fs.readFileSync(path.join(ROOT, path.dirname(rel), file))).digest('hex').slice(0, 8);
+            if (v !== want) stale.push(`${rel}: ${file}`);
+        }
+    }
+    assert.deepEqual(stale, []);
+});
+
 test('daily detail always opens the visible snapshot', () => {
     const f = fixture();
     f.run(`renderDailyGua();var shown=getDailyGua()[0];showGuaDetail=g=>globalThis.clicked=g[0];
@@ -496,6 +510,16 @@ test('a failed divination sends the chart back to the home circle', async () => 
     await f.run(`showInvocation=async()=>{throw new Error('boom')};console.error=()=>{};divine();`);
     await new Promise(r => setImmediate(r));
     assert.deepEqual(calls, ['toCircle']);
+});
+
+test('profiles still holding the old default prompt move to the new one; edited prompts are kept', () => {
+    const f = fixture();
+    const legacy = f.run('LEGACY_AI_PROMPTS[0]');
+    const ai = f.run(`ensureAiProfiles({ profiles: [{ name: 'a', prompt: LEGACY_AI_PROMPTS[0] }, { name: 'b', prompt: '我自己的提示词 {question}' }], activeProfile: 0 })`);
+    assert.equal(ai.profiles[0].prompt, f.run('DEFAULT_AI_PROMPT'));
+    assert.equal(ai.profiles[1].prompt, '我自己的提示词 {question}');
+    assert.match(legacy, /变爻玄机/);
+    assert.doesNotMatch(f.run('DEFAULT_AI_PROMPT'), /玄机|叩问/);
 });
 
 test('share card shows when the reading was cast, not when the image is made', () => {

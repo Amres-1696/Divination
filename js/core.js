@@ -3,6 +3,19 @@
 
 
 const HISTORY_MAX = 50;
+
+// 爻位、爻类、爻题（如「九二」「上六」）
+const YAO_POS_CN = ['初', '二', '三', '四', '五', '上'];
+const YAO_TYPE_CN = { 6: '老阴', 7: '少阳', 8: '少阴', 9: '老阳' };
+const LINE_TO_BEI = { 9: 3, 8: 2, 7: 1, 6: 0 }; // 背面朝上的铜钱数
+
+function yaoLabel(line, i) {
+    const num = (line === 7 || line === 9) ? '九' : '六';
+    if (i === 0) return '初' + num;
+    if (i === 5) return '上' + num;
+    return num + YAO_POS_CN[i];
+}
+
 const COIN_TO_LINE = { 3: 9, 2: 8, 1: 7, 0: 6 }; // 铜钱法：3阳=老阳9, 2阳=少阴8, 1阳=少阳7, 0阳=老阴6
 
 function generateHexagram() {
