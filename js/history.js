@@ -135,7 +135,7 @@ function renderArchiveMap(history) {
         : null;
     map.innerHTML = history.length ? `
 <div class="am-stats">
-  <p class="am-big">起过 <b>${history.length}</b> 次卦，抽到 <b>${lit}</b> 个不同的卦</p>
+  <p class="am-big">起过 <b>${history.length}</b> 次卦，抽到过 <b>${lit}</b> 种卦</p>
   <div class="am-bar" aria-hidden="true"><i class="ji" style="flex:${tally.ji}"></i><i class="ping" style="flex:${tally.ping}"></i><i class="xiong" style="flex:${tally.xiong}"></i></div>
   <p class="am-legend"><span class="am-legend-k">${term('seal', '本卦吉凶')}</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">抽到最多：${topGua[0]} ${max} 次</span>` : ''}</p>
 </div>
