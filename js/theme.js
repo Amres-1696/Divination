@@ -28,6 +28,8 @@ async function returnToInquiry(opts) {
     if (_divineRunning) { showToast('请先掷完六爻，或跳过仪式'); return; }
     if (_viewBusy) return;
     _viewBusy = true;
+    // 还在往标题上落的问题不跟回首页
+    dropQuestionCarry();
     const resultArea = document.getElementById('resultArea');
     const page = resultArea.querySelector('.result');
     const glyph = resultArea.querySelector('#resultGlyph');
@@ -88,17 +90,27 @@ function carryQuestion(question) {
         { duration: 500, delay: 820, easing: 'ease-out', fill: 'backwards' });
 }
 
-function dropQuestionCarry() {
-    document.querySelectorAll('.q-carry').forEach(el => el.remove());
+// 撤掉一张飞着的问题：连它身上的动画一起停掉，免得它的收尾回调再去动别的；最后一张撤掉时输入框里的字才露回来
+function dropCarry(carry) {
+    // 正落着就被撤掉：页面上藏着等它的标题直接露出来
+    if (carry.classList.contains('landing')) document.querySelectorAll('.result-question.carried').forEach(box => box.classList.remove('carried'));
+    carry.getAnimations({ subtree: true }).forEach(a => a.cancel());
+    carry.remove();
     const input = document.getElementById('question');
-    if (input && input.style) input.style.color = '';
+    if (input && input.style && !document.querySelector('.q-carry')) input.style.color = '';
+}
+function dropQuestionCarry() {
+    document.querySelectorAll('.q-carry').forEach(dropCarry);
 }
 
 // 结果页渲染后调用：顶栏里挂着的问题飞到「所问」大标题的位置，换成页面上的标题
+// 每张问题只落一次、只落在它自己那一卦上：已经在落的（上一卦的）直接撤掉；从牌册打开的记录没有挂着的问题，标题照常显示
 function landQuestion(box) {
+    document.querySelectorAll('.q-carry.landing').forEach(dropCarry);
     const carry = document.querySelector('.q-carry');
     const h1 = box && box.querySelector('h1');
     if (!carry || !h1) { dropQuestionCarry(); return; }
+    carry.classList.add('landing');
     // 升到顶栏那一段要是还没飞完（仪式很快被跳过），先让它落定再量
     carry.getAnimations({ subtree: true }).forEach(a => a.finish());
     box.classList.add('carried');
@@ -115,7 +127,7 @@ function landQuestion(box) {
         { duration: 820, delay: 120, easing: 'cubic-bezier(.5, 0, .2, 1)', fill: 'forwards' });
     fly.onfinish = () => {
         box.classList.remove('carried');
-        carry.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }).onfinish = dropQuestionCarry;
+        carry.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }).onfinish = () => dropCarry(carry);
     };
 }
 

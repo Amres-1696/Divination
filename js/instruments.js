@@ -378,7 +378,8 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
 // ---------- 时辰：十二时辰钟，拖指针选 ----------
 function makeHourDial(sel) {
     const NAMES = DI_ZHI;
-    const RANGE = ['23–1', '1–3', '3–5', '5–7', '7–9', '9–11', '11–13', '13–15', '15–17', '17–19', '19–21', '21–23'];
+    // 子时以 0 点为界分成两半：0–1 点是当天的早子时（0），23–24 点是晚子时（12），按「子初换日」算第二天
+    const RANGE = ['0–1', '1–3', '3–5', '5–7', '7–9', '9–11', '11–13', '13–15', '15–17', '17–19', '19–21', '21–23', '23–24'];
     const pt = (r, deg) => { const a = deg * Math.PI / 180; return [(r * Math.sin(a)).toFixed(2), (-r * Math.cos(a)).toFixed(2)]; };
     const arc = (r1, r2, a1, a2) => {
         const [x1, y1] = pt(r2, a1), [x2, y2] = pt(r2, a2), [x3, y3] = pt(r1, a2), [x4, y4] = pt(r1, a1);
@@ -403,7 +404,7 @@ function makeHourDial(sel) {
     root.setAttribute('role', 'slider');
     root.setAttribute('aria-label', '出生时辰');
     root.setAttribute('aria-valuemin', 0);
-    root.setAttribute('aria-valuemax', 11);
+    root.setAttribute('aria-valuemax', 12);
     root.innerHTML = `
 <svg viewBox="-120 -120 240 240" aria-hidden="true">
   <g class="hd-face">${parts.join('')}</g>
@@ -423,16 +424,19 @@ function makeHourDial(sel) {
         hand.style.transition = smooth && !_reduceMotion() ? 'transform .45s cubic-bezier(.3,1.4,.5,1)' : 'none';
         hand.style.transform = `rotate(${deg}deg)`;
     }
-    function nearest(deg) { return ((Math.round(deg / 30) % 12) + 12) % 12; }
+    // 指针落在子时格里 0 点刻度左边（23–24 点）就是晚子时
+    function nearest(deg) { const i = ((Math.round(deg / 30) % 12) + 12) % 12; return i === 0 && deg > 180 ? 12 : i; }
     function show(i) {
-        selG.style.transform = `rotate(${i * 30}deg)`;
-        root.querySelectorAll('.hd-name').forEach(t => t.classList.toggle('on', Number(t.dataset.i) === i));
-        read.innerHTML = `<b>${NAMES[i]}时</b><span>${RANGE[i]} 点</span>`;
+        const z = i % 12, note = i === 12 ? '，按次日' : '';
+        selG.style.transform = `rotate(${z * 30}deg)`;
+        root.querySelectorAll('.hd-name').forEach(t => t.classList.toggle('on', Number(t.dataset.i) === z));
+        read.innerHTML = `<b>${NAMES[z]}时</b><span>${RANGE[i]} 点${note}</span>`;
         root.setAttribute('aria-valuenow', i);
-        root.setAttribute('aria-valuetext', `${NAMES[i]}时，${RANGE[i]} 点`);
+        root.setAttribute('aria-valuetext', `${NAMES[z]}时，${RANGE[i]} 点${note}`);
     }
     function turnTo(i, smooth) {
-        const target = i * 30;
+        // 子时的指针停在所选那半格的正中，看得出是 0 点前还是 0 点后
+        const target = i === 12 ? -7.5 : i === 0 ? 7.5 : i * 30;
         let d = ((target - angle) % 360 + 540) % 360 - 180;
         angle += d;
         setHand(angle, smooth);
@@ -449,7 +453,7 @@ function makeHourDial(sel) {
     }
     function fromSel() {
         const i = parseInt(sel.value, 10);
-        if (i >= 0 && i <= 11) { has = true; root.classList.remove('empty'); turnTo(i, root.isConnected); }
+        if (i >= 0 && i <= 12) { has = true; root.classList.remove('empty'); turnTo(i, root.isConnected); }
         else {
             has = false;
             root.classList.add('empty');
@@ -490,7 +494,8 @@ function makeHourDial(sel) {
     root.addEventListener('keydown', e => {
         const cur = has ? parseInt(sel.value, 10) : -1;
         const map = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
-        if (map[e.key] !== undefined) { e.preventDefault(); commit(((cur < 0 ? 0 : cur + map[e.key]) + 12) % 12); }
+        // 顺着一天走：早子 → 丑 … 亥 → 晚子 → 早子
+        if (map[e.key] !== undefined) { e.preventDefault(); commit(((cur < 0 ? 0 : cur + map[e.key]) + 13) % 13); }
     });
     // 生辰这一组展开时，指针和选中的时辰格一起顺时针转一整圈回到原位
     root.spinIn = () => {

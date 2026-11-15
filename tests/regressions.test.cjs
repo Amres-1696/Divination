@@ -606,3 +606,44 @@ test('opening the archive reuses the drawn grid unless records, filter or day ch
     f.run('_archiveFilter = 63; loadHistory({ reuse: true })');
     assert.equal(f.run('drawn'), 4, 'a filter change redraws');
 });
+
+test('one record asks the AI only once per page session, even when reopened mid-request or without saving', async () => {
+    const f = fixture();
+    configureAi(f, 'settings.ai.saveToHistory=false;');
+    let calls = 0, release;
+    f.context.fetch = () => { calls++; return new Promise(r => { release = () => r({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ choices: [{ message: { content: '解读一次' } }] }) }); }); };
+    const first = f.byId('aiFirst'), again = f.byId('aiAgain'), later = f.byId('aiLater');
+    [first, again, later].forEach(el => { el.isConnected = true; });
+    const ctx = '{ historyId: "rec-1" }';
+    const p1 = f.run(`runAiReading(gua, change, '问', document.getElementById('aiFirst'), ${ctx})`);
+    const p2 = f.run(`runAiReading(gua, change, '问', document.getElementById('aiAgain'), ${ctx})`);
+    await new Promise(r => setImmediate(r));
+    release();
+    assert.equal(await p1, '解读一次');
+    assert.equal(await p2, '解读一次');
+    await f.run(`runAiReading(gua, change, '问', document.getElementById('aiLater'), ${ctx})`);
+    await new Promise(r => setImmediate(r));
+    assert.equal(calls, 1);
+    assert.equal(again.querySelector('.ai-reading-text').textContent, '解读一次');
+    assert.equal(later.querySelector('.ai-reading-text').textContent, '解读一次');
+});
+
+test('a failed AI request is not remembered, so the record can be asked again', async () => {
+    const f = fixture();
+    configureAi(f);
+    let calls = 0;
+    f.context.fetch = async () => { calls++; return { ok: false, status: 500, text: async () => 'down' }; };
+    await f.run(`runAiReading(gua, change, '问', document.getElementById('aiBody'), { historyId: 'rec-2' })`);
+    await f.run(`runAiReading(gua, change, '问', document.getElementById('aiBody'), { historyId: 'rec-2' })`);
+    assert.equal(calls, 2);
+});
+
+test('a birth after 23:00 (late 子 hour) counts as 子 hour of the next day', () => {
+    const f = fixture();
+    const same = (a, b) => assert.deepEqual(JSON.parse(f.run(`JSON.stringify(birthNumbers(${a}))`)), JSON.parse(f.run(`JSON.stringify(birthNumbers(${b}))`)));
+    same('{year:1990,month:3,day:3,hour:12}', '{year:1990,month:3,day:4,hour:0}');
+    same('{year:2024,month:2,day:29,hour:12}', '{year:2024,month:3,day:1,hour:0}');
+    same('{year:1999,month:12,day:31,hour:12}', '{year:2000,month:1,day:1,hour:0}');
+    assert.notDeepEqual(JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:12}))')), JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:0}))')));
+    assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23 点后，按次日）/);
+});

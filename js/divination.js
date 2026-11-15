@@ -352,19 +352,14 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     const aiBody = resultArea.querySelector('#aiReadingBody');
     if (aiBody) {
-        const runAi = () => {
-            requestAiReading(gua, change, question, aiBody, readingContext).then(text => {
-                if (text) persistAiReading(text, readingContext.historyId);
-            });
-        };
         if (savedAi) {
             aiBody.innerHTML = '<div class="ai-reading-text"></div>';
             aiBody.querySelector('.ai-reading-text').textContent = savedAi;
-        } else if (aiSettings.autoRun) {
-            runAi();
+        } else if (aiSettings.autoRun || (readingContext.historyId && _aiByRecord.has(readingContext.historyId))) {
+            // 自动解读；或者这条记录这次已经请过（正在请 / 请到了没存进牌册），接着用那一次的
+            runAiReading(gua, change, question, aiBody, readingContext);
         } else {
-            aiBody.innerHTML = '<button class="btn" id="aiRunBtn">请 AI 解读这一卦</button>';
-            aiBody.querySelector('#aiRunBtn').addEventListener('click', runAi);
+            offerAiReading(gua, change, question, aiBody, readingContext);
         }
     }
 
