@@ -77,7 +77,7 @@ async function divine() {
         // 圆图可能还停在刻度盘上（标线、转到一半），收回首页的样子
         if (typeof Cosmos !== 'undefined') Cosmos.toCircle();
         if (typeof playHomeEnter === 'function') playHomeEnter(150);
-        showToast('起卦未完成，请重试', 'error');
+        showToast('这一卦没起成，再试一次', 'error');
         console.error(error);
     } finally {
         btn.disabled = false;
@@ -107,38 +107,38 @@ function getMainReading(gua, change) {
     };
 
     if (n === 0)
-        return { rule: '静卦无变', text: `以本卦《${benName}》卦辞为主断：「${gua[1]}」`,
-            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '六爻皆静，看本卦卦辞' };
+        return { rule: '静卦无变', text: `没有动爻，取本卦《${benName}》卦辞：「${gua[1]}」`,
+            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '没有动爻，读本卦卦辞' };
     if (n === 1)
-        return { rule: '一爻动', text: `以本卦《${benName}》${YAO_POS_CN[changing[0]]}爻为主断 —— ${yaoArr[changing[0]] || ''}`,
-            lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: '一爻动，看动的这一爻' };
+        return { rule: '一爻动', text: `一爻动，取本卦《${benName}》这一爻：${yaoArr[changing[0]] || ''}`,
+            lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: '一根动爻，读这一爻的爻辞' };
     if (n === 2)
-        return { rule: '二爻动', text: `二爻变，以上动爻为主 —— ${yaoArr[changing[1]] || ''}`,
-            lines: [yaoLine('本卦', benName, yaoArr[changing[1]])], how: '二爻动，以上面那一爻为主' };
+        return { rule: '二爻动', text: `两爻动，取本卦《${benName}》上面那根动爻：${yaoArr[changing[1]] || ''}`,
+            lines: [yaoLine('本卦', benName, yaoArr[changing[1]])], how: '两根动爻，读上面那一根的爻辞' };
     if (n === 3)
-        return { rule: '三爻动', text: `三爻变，本卦《${benName}》与之卦《${zhi[0]}》卦辞并参 —— 本卦「${gua[1]}」，之卦「${zhi[1]}」。`,
+        return { rule: '三爻动', text: `三爻动，本卦《${benName}》和之卦《${zhi[0]}》的卦辞合看：本卦「${gua[1]}」，之卦「${zhi[1]}」`,
             lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }, { from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }],
-            how: '三爻动，本卦和之卦的卦辞合看' };
+            how: '三根动爻，本卦和之卦的卦辞合起来读' };
     if (n === 4) {
         const low = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[low] || '';
-        return { rule: '四爻动', text: `四爻变，看之卦《${zhi[0]}》中二不变爻，以下爻为主 —— ${raw}`,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: '四爻动，看之卦里没动的两爻，以下面那一爻为主' };
+        return { rule: '四爻动', text: `四爻动，取之卦《${zhi[0]}》没动的两爻里下面那一根：${raw}`,
+            lines: [yaoLine('之卦', zhi[0], raw)], how: '四根动爻，读之卦里没动的两爻中下面那一根' };
     }
     if (n === 5) {
         const only = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[only] || '';
-        return { rule: '五爻动', text: `五爻变，以之卦《${zhi[0]}》唯一不变之爻为主 —— ${raw}`,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: '五爻动，看之卦里唯一没动的那一爻' };
+        return { rule: '五爻动', text: `五爻动，取之卦《${zhi[0]}》唯一没动的那一爻：${raw}`,
+            lines: [yaoLine('之卦', zhi[0], raw)], how: '五根动爻，读之卦里唯一没动的那一爻' };
     }
     if (benName === '乾为天')
-        return { rule: '六爻全变·用九', text: '乾卦六爻全变，用九：「见群龙无首，吉。」',
-            lines: [{ from: '乾卦用九', text: '见群龙无首，吉。' }], how: '乾卦六爻全动，看「用九」' };
+        return { rule: '六爻全变·用九', text: '乾卦六爻全动，取「用九」：「见群龙无首，吉。」',
+            lines: [{ from: '乾卦用九', text: '见群龙无首，吉。' }], how: '六爻全动，乾卦读「用九」' };
     if (benName === '坤为地')
-        return { rule: '六爻全变·用六', text: '坤卦六爻全变，用六：「利永贞。」',
-            lines: [{ from: '坤卦用六', text: '利永贞。' }], how: '坤卦六爻全动，看「用六」' };
-    return { rule: '六爻全变', text: `六爻全变，以之卦《${zhi[0]}》卦辞为主断：「${zhi[1]}」`,
-        lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
+        return { rule: '六爻全变·用六', text: '坤卦六爻全动，取「用六」：「利永贞。」',
+            lines: [{ from: '坤卦用六', text: '利永贞。' }], how: '六爻全动，坤卦读「用六」' };
+    return { rule: '六爻全变', text: `六爻全动，取之卦《${zhi[0]}》卦辞：「${zhi[1]}」`,
+        lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，读之卦卦辞' };
 }
 
 // 术语：虚线下划，悬停、聚焦或点一下浮出一句白话（解释在 theme.js 的 TERMS 里）
@@ -183,7 +183,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     // 印章是每一卦固定的粗略标注，既不看动爻，也不等于卦辞（比如困卦标凶，卦辞却是亨）。
     // 所以它不再当结论盖在卦名旁：缩成一枚淡色小印，注明说的是本卦的底色，结论交给主断
     const sealMoving = change.changingYaos.length > 0;
-    const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">${term('seal', '卦本身的吉凶')}${sealMoving ? '<br>未算动爻' : ''}</span></span>`;
+    const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">${term('seal', '本卦吉凶')}${sealMoving ? '<br>不含动爻' : ''}</span></span>`;
     // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示
     const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
     // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字。
@@ -253,10 +253,10 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <button type="button" class="bz-opt" id="benBtn" aria-pressed="true">本卦<b>${gua[0]}</b></button>
         <button type="button" class="bz-opt" id="zhiBtn" aria-pressed="false">之卦<b>${zhi[0]}</b></button>
         <span class="bz-mark" aria-hidden="true"></span>
-      </div>` : `<p class="zhi-none" style="--d:4">六爻皆静，没有${term('zhigua', '之卦')}</p>`}
+      </div>` : `<p class="zhi-none" style="--d:4">没有动爻，所以没有${term('zhigua', '之卦')}</p>`}
       <dl class="title-block tb-result" style="--d:5">
         <div><dt>${term('guaxu', '卦序')}</dt><dd>${guaOrdinal(gua)}</dd></div>
-        <div><dt>${term('shangxia', '上下')}</dt><dd>上${upperName} 下${lowerName}</dd></div>
+        <div><dt>${term('shangxia', '上下卦')}</dt><dd>上${upperName} 下${lowerName}</dd></div>
         <div><dt>起卦</dt><dd>${methodText}</dd></div>
         <div><dt>${term('yuantu', '圆图')}</dt><dd>${buildMiniRing(v)}</dd></div>
         <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
@@ -272,7 +272,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
-      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3>
+      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">从上往下</span></h3>
         <ol class="yao-list">${yaoHtml}</ol>
       </section>
       </div>
@@ -281,7 +281,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <button class="btn" id="newDivineBtn">再问一卦</button>
         <button class="btn btn-quiet" id="viewHistoryBtn">翻阅牌册</button>
       </div>
-      <p class="result-warning" style="--d:7">卦可以看，事情仍由自己决定。</p>
+      <p class="result-warning" style="--d:7">卦只作参考，主意还得自己拿。</p>
     </article>
   </div>
 </div>`;

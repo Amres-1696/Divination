@@ -154,14 +154,14 @@ function createShareCard(d) {
   <div class="sc-info">
     <div class="sc-info-text">
       <div class="sc-meta">${guaOrdinal(gua)}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}</div>
-      ${zhi ? `<div class="sc-change">之卦　${escHtml(zhi[0])}　<span>${escHtml(movingText)}</span></div>` : '<div class="sc-meta">六爻皆静</div>'}
+      ${zhi ? `<div class="sc-change">之卦　${escHtml(zhi[0])}　<span>${escHtml(movingText)}</span></div>` : '<div class="sc-meta">没有动爻</div>'}
     </div>
-    <div class="sc-seal-wrap"><div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div><div class="sc-seal-note">本卦底色</div></div>
+    <div class="sc-seal-wrap"><div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div><div class="sc-seal-note">本卦吉凶</div></div>
   </div>
   ${d.question ? `<div class="sc-ask"><span>所问</span>${escHtml(d.question)}</div>` : ''}
   <div class="sc-main"><span class="sc-label">主断</span>${mainHtml}</div>
   <div class="sc-reading">${escHtml(gua[4])}</div>
-  <div class="sc-foot"><span>卦可以看，事情仍由自己决定。</span><span>六十四卦 · 取其一</span></div>
+  <div class="sc-foot"><span>卦只作参考，主意还得自己拿。</span><span>六十四卦 · 取其一</span></div>
 </div>`;
 }
 
@@ -298,14 +298,14 @@ async function shareAsImage() {
     try {
         // 让版框的第一帧先画出来，再开始占主线程的活
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        if (!(await loadHtml2canvas())) throw new Error('分享功能没有加载出来，请检查网络后重试');
+        if (!(await loadHtml2canvas())) throw new Error('分享组件没加载出来，检查一下网络再试');
         if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
         if (!alive()) return;
         fitShareReading(card);
         scrubShareCardExternalUrls(card, window);
         const canvas = await renderShareCanvas(card, isMobile() ? 1.5 : 2);
         assertCanvasExportable(canvas);
-        if (!canvas || !canvas.width || !canvas.height) throw new Error('分享画布生成失败');
+        if (!canvas || !canvas.width || !canvas.height) throw new Error('分享图没生成出来');
         const blob = await canvasToBlob(canvas, 'image/png');
         if (!blob) throw new Error('toBlob returned null');
         if (!alive()) return;
@@ -333,7 +333,7 @@ async function shareAsImage() {
         if (isMobile()) preview.insertAdjacentHTML('beforeend', '<p class="share-hint">长按图片可保存到相册</p>');
         img.onerror = function() {
             this.onerror = null;
-            preview.innerHTML = '<p class="share-error">预览加载失败，可以直接点「保存图片」。</p>';
+            preview.innerHTML = '<p class="share-error">预览没显示出来，可以直接点「保存图片」。</p>';
         };
 
         const fileName = '天衍_' + data.gua[0] + '_' + Date.now() + '.png';
@@ -347,26 +347,26 @@ async function shareAsImage() {
                 a.remove();
                 if (isIOS()) {
                     // iOS Safari 对 <a download> 支持仍不稳定 —— 兜底引导
-                    setTimeout(() => showToast('若未自动保存，请长按上方预览图选择「保存到相册」'), 300);
+                    setTimeout(() => showToast('如果没有自动保存，长按上面的图片，选「保存到相册」'), 300);
                 }
             } catch (e) {
-                showToast('下载失败，请长按上方预览图保存到相册', 'error');
+                showToast('没能下载，长按上面的图片保存到相册', 'error');
             }
         };
         document.getElementById('shareCopyBtn').onclick = async () => {
             if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-                showToast('此浏览器不支持复制图片，请长按预览图保存到相册', 'error');
+                showToast('这个浏览器不支持复制图片，可以长按图片保存', 'error');
                 return;
             }
             if (!_lastBlob) {
-                showToast('图片尚未生成完毕，请稍候再试');
+                showToast('图片还在生成，稍等一下');
                 return;
             }
             try {
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': Promise.resolve(_lastBlob) })]);
-                showToast('已复制到剪贴板', 'success');
+                showToast('图片已复制', 'success');
             } catch (e) {
-                showToast(isMobile() ? '复制失败，请长按预览图保存到相册' : '复制失败，请点击下载图片', 'error');
+                showToast(isMobile() ? '没能复制，可以长按图片保存' : '没能复制，可以点「保存图片」', 'error');
             }
         };
     } catch (e) {

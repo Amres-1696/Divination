@@ -31,7 +31,7 @@ function saveSettings(settings) {
         localStorage.setItem('tianyan_settings', JSON.stringify(settings));
         return true;
     } catch (e) {
-        showToast('设置保存失败：浏览器存储空间不足或禁止写入，请检查后重试', 'error');
+        showToast('设置没能保存：浏览器存储可能满了或被禁用', 'error');
         return false;
     }
 }
@@ -52,18 +52,18 @@ function saveBazi() {
     const status = document.getElementById('baziStatus');
 
     if (!year || !month || !day || hour === '') {
-        status.textContent = '请填写完整的公历生辰';
+        status.textContent = '年、月、日和时辰都要填';
         status.className = 'bazi-status error';
         return;
     }
     if (year < 1900 || year > 2100) {
-        status.textContent = '年份范围：1900-2100';
+        status.textContent = '年份要在 1900 到 2100 之间';
         status.className = 'bazi-status error';
         return;
     }
     const maxDay = new Date(parseInt(year), parseInt(month), 0).getDate();
     if (day < 1 || day > maxDay) {
-        status.textContent = `${month}月最多${maxDay}天，请检查日期`;
+        status.textContent = `${month} 月只有 ${maxDay} 天`;
         status.className = 'bazi-status error';
         return;
     }
@@ -72,7 +72,7 @@ function saveBazi() {
     const settings = loadSettings();
     settings.bazi = bazi;
     if (!saveSettings(settings)) {
-        status.textContent = '保存失败，生辰内容已保留，请检查浏览器存储后重试';
+        status.textContent = '保存失败：浏览器存储可能满了或被禁用。填的内容还在';
         status.className = 'bazi-status error';
         return;
     }
@@ -84,7 +84,7 @@ function saveBazi() {
 // 生辰的一句话说法：农历年月日 + 时辰；早于农历历表时用公历
 function baziSummary(b) {
     const lu = solarToLunar(b.year, b.month, b.day);
-    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour % 12]}时` + (b.hour === 12 ? '（23 点后，按次日）' : '');
+    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour % 12]}时` + (b.hour === 12 ? '（23 点后，算作次日）' : '');
 }
 
 // 首页起卦方式下面的一行：铜钱和生辰各说各的起法；生辰模式直接亮出已存的生辰，没存就引导去填
@@ -95,11 +95,11 @@ function renderMethodHint(settings) {
     const coins = '<svg class="mh-ico" viewBox="0 0 30 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><rect x="4.4" y="4.4" width="3.2" height="3.2"/><circle cx="15" cy="6" r="5"/><rect x="13.4" y="4.4" width="3.2" height="3.2"/><circle cx="24" cy="6" r="5"/><rect x="22.4" y="4.4" width="3.2" height="3.2"/></svg>';
     const moon = '<svg class="mh-ico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><path class="lit" d="M6 1A5 5 0 0 1 6 11A2.6 5 0 0 0 6 1Z"/></svg>';
     // 行尾一个小字按钮换另一种起法（首页不再单独放切换控件）
-    const swap = `<button type="button" class="mh-switch" data-to="${bazi ? 'coin' : 'bazi'}">换成${bazi ? '铜钱' : '生辰'}</button>`;
+    const swap = `<button type="button" class="mh-switch" data-to="${bazi ? 'coin' : 'bazi'}">改用${bazi ? '铜钱' : '生辰'}</button>`;
     let html;
-    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱，自下而上掷六次</span>${swap}`;
-    else if (settings.bazi) html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>${swap}`;
-    else html = `${moon}<b>依生辰起卦</b><button type="button" class="mh-edit need">还没有保存生辰，点这里填写</button>${swap}`;
+    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱掷六次，从下往上定六爻</span>${swap}`;
+    else if (settings.bazi) html = `${moon}<b>生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>${swap}`;
+    else html = `${moon}<b>生辰起卦</b><button type="button" class="mh-edit need">还没填生辰，点这里去填</button>${swap}`;
     if (el.innerHTML === html) return;
     el.innerHTML = html;
     if (!el.classList) return;
@@ -120,7 +120,7 @@ function playMethodHintSwap(el) {
 // 选了生辰起卦却还没存生辰：三处（首页换起法、设置里换起法、点起卦）都走这里，说法和去处一致
 function promptForBirth() {
     openBaziSettings();
-    showToast('生辰起卦要先填写并保存公历生辰');
+    showToast('生辰起卦要先填好生辰并保存');
 }
 
 // 从首页那一行生辰点进来：设置照常从挂签展开，但直接停在生辰这一组，三件器具依次亮起
@@ -158,7 +158,7 @@ function updateBaziSaveState() {
         status.textContent = `已保存 · ${baziSummary(saved)}`;
         status.className = 'bazi-status success';
     } else if (saved) {
-        status.textContent = `有改动，还没保存（现存的是 ${baziSummary(saved)}）`;
+        status.textContent = `改动还没保存（现在存的是 ${baziSummary(saved)}）`;
         status.className = 'bazi-status dirty';
     }
 }

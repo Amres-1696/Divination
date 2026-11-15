@@ -165,7 +165,7 @@ test('saved history metadata, not current settings, reaches AI request and retry
     await f.byId('aiRetryBtn').fire('click');
     await new Promise(resolve => setImmediate(resolve));
     assert.equal(prompts.length, 2);
-    assert.ok(prompts.every(p => p.startsWith('2020/1/1 12:00:00|铜钱法（三枚铜钱）|')));
+    assert.ok(prompts.every(p => p.startsWith('2020/1/1 12:00:00|铜钱起卦（三枚铜钱掷六次）|')));
     assert.equal(f.run('readHistorySafe().find(h=>h.id===older).aiReading'), 'retried answer');
     assert.equal(f.run('readHistorySafe().find(h=>h.id===newer).aiReading'), undefined);
 });
@@ -645,5 +645,5 @@ test('a birth after 23:00 (late 子 hour) counts as 子 hour of the next day', (
     same('{year:2024,month:2,day:29,hour:12}', '{year:2024,month:3,day:1,hour:0}');
     same('{year:1999,month:12,day:31,hour:12}', '{year:2000,month:1,day:1,hour:0}');
     assert.notDeepEqual(JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:12}))')), JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:0}))')));
-    assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23 点后，按次日）/);
+    assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23 点后，算作次日）/);
 });

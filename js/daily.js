@@ -116,7 +116,7 @@ function showGuaDetail(gua, when) {
     <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
     <header class="gs-head">
         <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
-        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="这一卦的底色：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('seal', '卦本身的吉凶')}</span></span></div>
+        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="吉凶：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('seal', '大致吉凶')}</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
         ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>象曰</span>${DA_XIANG[gua[0]]}</p>` : ''}
     </header>
@@ -127,7 +127,7 @@ function showGuaDetail(gua, when) {
     <div class="detail-section"><h3>卦象</h3><div class="detail-analysis">${analysis}</div></div>
     <dl class="title-block gs-tb">
         <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
-        <div><dt>上下</dt><dd>上${TRIGRAM_BY_VALUE[v & 7]} 下${TRIGRAM_BY_VALUE[v >> 3]}</dd></div>
+        <div><dt>上下卦</dt><dd>上${TRIGRAM_BY_VALUE[v & 7]} 下${TRIGRAM_BY_VALUE[v >> 3]}</dd></div>
         <div><dt>圆图</dt><dd>${typeof buildMiniRing === 'function' ? buildMiniRing(v) : ''}</dd></div>
     </dl>
 </div>`;
