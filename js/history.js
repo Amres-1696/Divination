@@ -210,7 +210,7 @@ function renderArchiveList(history) {
 <span class="history-thumb">${buildHexBars(hexLines, item.changingYaos || [])}</span>
 <span class="tl-main">
   <span class="history-q${blank ? ' blank' : ''}">${blank ? '未写问题' : escHtml(item.question)}</span>
-  <span class="history-gua"><b>${item.gua || ''}</b>${zhi ? `<span class="history-change">→ ${zhi[0]}</span>` : ''}<span class="history-verdict v-${verdict}">${VERDICT_CN[verdict]}</span></span>
+  <span class="history-gua"><b>${item.gua || ''}</b><span class="history-verdict v-${verdict}" aria-label="本卦${VERDICT_CN[verdict]}">${VERDICT_CN[verdict]}</span>${zhi ? `<span class="history-change">→ ${zhi[0]}</span>` : ''}</span>
 </span>
 <button class="history-del" data-id="${item.id || ''}" aria-label="删除这条记录"></button>
 </li>`;

@@ -1109,6 +1109,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .history-gua { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 0 .7em; align-items: baseline; }
 .history-gua b { font-family: var(--text); font-weight: 600; font-size: 14px; color: var(--ink); }
 .history-change { color: var(--ink-3); }
+/* 吉凶小印紧跟本卦名：说的是本卦，不是箭头后面的之卦 */
+.history-verdict { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-left: -.35em; border: 1px solid currentColor; font-size: 11px; line-height: 1; align-self: center; }
 .history-verdict.v-ji { color: var(--ink); }
 /* 叉号还是 28px 那么大，可点范围用负外边距扩到 40px，不挤动这一行的布局 */
 .history-del { position: relative; width: 40px; height: 40px; margin: -6px; border-radius: 50%; opacity: 0; transition: opacity .2s ease, background-color .2s ease; }
