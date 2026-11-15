@@ -141,37 +141,13 @@ function getMainReading(gua, change) {
         lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六爻全动，看之卦卦辞' };
 }
 
-// 六爻那一段画成一张标注图：左边是卦画，每一爻引一条线到右边对应的爻辞。
-// 行高随文字换行变化，所以量出每根爻和每行字的位置再画线；尺寸一变就重画。
-function drawYaoLeaders(plate) {
-    const svg = plate && plate.querySelector && plate.querySelector('.yp-leaders');
-    if (!svg || !plate.getBoundingClientRect) return;
-    const box = plate.getBoundingClientRect();
-    if (!box.width || !box.height) return;
-    let out = '';
-    plate.querySelectorAll('.yao-item').forEach(row => {
-        const bar = plate.querySelector(`.yp-glyph .bar[data-i="${row.dataset.i}"]`);
-        const name = row.querySelector('.yao-name');
-        if (!bar || !name) return;
-        const b = bar.getBoundingClientRect(), n = name.getBoundingClientRect();
-        const x1 = b.right - box.left + 7, y1 = b.top + b.height / 2 - box.top;
-        const x2 = n.left - box.left - 9, y2 = n.top + n.height / 2 - box.top;
-        if (x2 - x1 < 8) return;
-        const k = Math.min(12, (x2 - x1) / 4);
-        const f = v => v.toFixed(1);
-        out += `<g${row.classList.contains('changing') ? ' class="chg"' : ''}><circle cx="${f(x1)}" cy="${f(y1)}" r="1.6"/>` +
-            `<path d="M${f(x1)} ${f(y1)}H${f(x1 + k)}L${f(x2 - k)} ${f(y2)}H${f(x2)}"/></g>`;
-    });
-    svg.setAttribute('viewBox', `0 0 ${f2(box.width)} ${f2(box.height)}`);
-    svg.innerHTML = out;
+// 术语：虚线下划，悬停、聚焦或点一下浮出一句白话（解释在 theme.js 的 TERMS 里）
+function term(key, text) {
+    return `<span class="term" data-term="${key}" tabindex="0">${text}</span>`;
 }
-function f2(v) { return Math.round(v * 10) / 10; }
-function watchYaoLeaders(root) {
-    const plate = root && root.querySelector && root.querySelector('.yao-plate');
-    if (!plate || !plate.querySelectorAll) return;
-    const redraw = () => drawYaoLeaders(plate);
-    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(redraw); else redraw();
-    if (typeof ResizeObserver === 'function') new ResizeObserver(redraw).observe(plate);
+// 主断用展示字放大，展示字的标点像西文的「, .」：标点换回正文字体
+function softPunct(s) {
+    return String(s).replace(/[，。；：、？！「」『』]/g, m => `<span class="pu${'「『'.includes(m) ? ' open' : ''}">${m}</span>`);
 }
 
 function buildCallouts(hexLines, changingYaos) {
@@ -207,7 +183,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     // 印章是每一卦固定的粗略标注，既不看动爻，也不等于卦辞（比如困卦标凶，卦辞却是亨）。
     // 所以它不再当结论盖在卦名旁：缩成一枚淡色小印，注明说的是本卦的底色，结论交给主断
     const sealMoving = change.changingYaos.length > 0;
-    const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">本卦的底色${sealMoving ? '<br>不计动爻' : ''}</span></span>`;
+    const sealHtml = `<span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="本卦${verdictText[verdict]}"><span>${verdictText[verdict]}</span></span><span class="seal-note">${term('seal', '卦本身的吉凶')}${sealMoving ? '<br>未算动爻' : ''}</span></span>`;
     // 主断取的就是本卦卦辞时（静卦、三爻动），卦名下面那行卦辞不再重复显示
     const titleInMain = mainReading.lines.some(l => l.text === gua[1] && l.from.startsWith('本卦'));
     // 主断是这一卦对所问的回答：辞放大，出处和取法缩成两行小字。
@@ -215,22 +191,26 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     const mainLen = mainReading.lines.reduce((n, l) => n + l.text.length, 0);
     const quoteCls = mainLen > 28 ? ' xl' : mainLen > 14 ? ' long' : '';
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
-        <h3 class="mr-label">主断</h3>
-        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${l.text}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
+        <h3 class="mr-label">${term('zhuduan', '主断')}</h3>
+        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${softPunct(l.text)}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
         <p class="mr-how">${mainReading.how}</p>
       </section>`;
 
     const yaoArr = gua[3].split('|');
-    const yaoHtml = hexLines.map((line, i) => {
+    // 爻名和少阳老阳这些词，每种只在第一次出现时加虚线解释，免得六行全是下划线
+    const explained = new Set();
+    const once = (key, text) => explained.has(key) ? text : (explained.add(key), term(key, text));
+    const yaoHtml = hexLines.map((line, i) => [line, i]).reverse().map(([line, i]) => {
         const isYang = (line === 9 || line === 7);
         const raw = yaoArr[i] || '';
         const cut = raw.indexOf('：');
         const yaoName = cut > 0 ? raw.slice(0, cut) : yaoLabel(line, i);
         const yaoText = cut > 0 ? raw.slice(cut + 1) : raw;
         const isChanging = change.changingYaos.includes(i);
+        // 每一行自己带着那一根爻（阴阳、动爻朱色），不再另画一个卦：左栏已经有大卦画了
         return `<li class="yao-item${isChanging ? ' changing' : ''}" data-i="${i}">
-<span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span></li>`;
-    }).reverse().join('');
+<span class="yao-mark ${isYang ? 'yang' : 'yin'}" aria-hidden="true"></span><span class="yao-name">${once('yaoname', yaoName)}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${once('yao' + line, YAO_TYPE_CN[line])}${isChanging ? '，动' : ''}</span></li>`;
+    }).join('');
 
     const analysisHtml = gua[4].split('。').filter(s => s.trim()).map(s =>
         `<span class="analysis-item">${s.trim()}。</span>`
@@ -241,7 +221,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 
     let changeHtml = '';
     if (zhi) {
-        changeHtml = `<section class="block change-section"><h3>之卦 <span class="rule-tag">${zhi[0]}</span></h3>
+        changeHtml = `<section class="block change-section"><h3>${term('zhigua', '之卦')} <span class="rule-tag">${zhi[0]}</span></h3>
 <div class="change-details"><p>${zhi[4]}</p></div></section>`;
     }
 
@@ -273,12 +253,12 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <button type="button" class="bz-opt" id="benBtn" aria-pressed="true">本卦<b>${gua[0]}</b></button>
         <button type="button" class="bz-opt" id="zhiBtn" aria-pressed="false">之卦<b>${zhi[0]}</b></button>
         <span class="bz-mark" aria-hidden="true"></span>
-      </div>` : '<p class="zhi-none" style="--d:4">六爻皆静，没有之卦</p>'}
+      </div>` : `<p class="zhi-none" style="--d:4">六爻皆静，没有${term('zhigua', '之卦')}</p>`}
       <dl class="title-block tb-result" style="--d:5">
-        <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
-        <div><dt>上下</dt><dd>上${upperName} 下${lowerName}</dd></div>
+        <div><dt>${term('guaxu', '卦序')}</dt><dd>${guaOrdinal(gua)}</dd></div>
+        <div><dt>${term('shangxia', '上下')}</dt><dd>上${upperName} 下${lowerName}</dd></div>
         <div><dt>起卦</dt><dd>${methodText}</dd></div>
-        <div><dt>圆图</dt><dd>${buildMiniRing(v)}</dd></div>
+        <div><dt>${term('yuantu', '圆图')}</dt><dd>${buildMiniRing(v)}</dd></div>
         <div class="tb-wide"><dt>时间</dt><dd>${readingContext.date ? escHtml(String(readingContext.date)) : '—'}</dd></div>
       </dl>
     </aside>
@@ -292,11 +272,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
-      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3><div class="yao-plate">
-        <div class="yp-glyph">${buildHexBars(hexLines, change.changingYaos, 'hx-plate')}</div>
-        <svg class="yp-leaders" aria-hidden="true"></svg>
+      <section class="block yao-details" style="--d:6"><h3>六爻 <span class="rule-tag">自上而下</span></h3>
         <ol class="yao-list">${yaoHtml}</ol>
-      </div></section>
+      </section>
       </div>
       <div class="result-actions" style="--d:7">
         <button class="btn btn-primary" id="shareBtn">生成分享图</button>
@@ -310,7 +288,6 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     const backBtn = resultArea.querySelector('#backHomeBtn');
     if (backBtn) backBtn.addEventListener('click', () => { if (typeof returnToInquiry === 'function') returnToInquiry(); });
 
-    watchYaoLeaders(resultArea);
 
     const shareBtn = resultArea.querySelector('#shareBtn');
     shareBtn.addEventListener('click', shareAsImage);

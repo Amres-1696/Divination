@@ -116,7 +116,7 @@ function showGuaDetail(gua, when) {
     <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
     <header class="gs-head">
         <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
-        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="这一卦的底色：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">这一卦的底色</span></span></div>
+        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="这一卦的底色：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('seal', '卦本身的吉凶')}</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
         ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>象曰</span>${DA_XIANG[gua[0]]}</p>` : ''}
     </header>

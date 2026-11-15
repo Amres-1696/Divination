@@ -577,7 +577,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   place-items: center;
   padding: 0 var(--gutter);
 }
-.ritual-head { position: absolute; top: 6px; right: var(--gutter); z-index: 2; }
+/* 「跳过」放在掷钱按钮正下方：主操作和次操作上下排着，不再挤在右上角的挂签底下 */
+.ritual-foot { margin-top: 14px; text-align: center; }
 .ritual-skip { font-size: 14.5px; color: var(--ink-3); padding: 6px 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease; }
 .ritual-skip:hover { color: var(--ink); }
 /* 高度固定：按钮出现、消失时圆心不挪 */
@@ -622,8 +623,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .dial-core > :nth-child(2) { transition-delay: 180ms; }
 .dial-core > :nth-child(3) { transition-delay: 260ms; }
 .dial-core > :nth-child(4) { transition-delay: 340ms; }
-.ritual-head { transition: opacity .3s ease; }
-.ritual-stage.settling .ritual-head,
+.dial-core > :nth-child(5) { transition-delay: 420ms; }
 .ritual-stage.settling .dial-core > * { opacity: 0; transform: none; transition-duration: .3s; transition-delay: 0ms; }
 
 .invocation { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; cursor: pointer; transition: opacity .38s ease; }
@@ -793,6 +793,13 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .result.entering .seal-wrap.aside .verdict-seal { animation: none; }
 .seal-wrap.aside .verdict-seal.xiong span { background: var(--ink-3); border-color: var(--ink-3); }
 .seal-note { font-size: 12.5px; line-height: 1.5; color: var(--ink-3); }
+/* 术语：虚线下划，悬停、聚焦或点一下浮出一句白话（theme.js 的 TERMS） */
+.term { cursor: help; text-decoration: underline dotted; text-decoration-color: var(--ink-3); text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.term:focus-visible { outline: 1px solid var(--ink-3); outline-offset: 3px; }
+.term-tip { position: fixed; z-index: 70; left: 0; top: 0; max-width: min(300px, calc(100vw - 32px)); padding: 10px 13px 11px; background: var(--blue-deep); border: 1px solid var(--rule); box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .65);
+  font-family: var(--text); font-size: 13.5px; font-weight: 400; line-height: 1.7; letter-spacing: 0; text-align: left; color: var(--ink-2); pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity .16s ease, transform .2s var(--ease-out); }
+.term-tip.on { opacity: 1; transform: none; }
+.term-tip b { display: block; margin-bottom: 3px; font-weight: 600; letter-spacing: .12em; color: var(--ink); }
 
 /* 主断：结果页的主角。辞用展示字放大，出处和取法是两行小字 */
 .main-reading { margin-top: 34px; padding-left: 22px; border-left: 2px solid var(--ink); }
@@ -801,6 +808,11 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .mr-line + .mr-line { margin-top: 18px; }
 .mr-quote { display: block; quotes: none; font-family: var(--display); font-size: clamp(30px, 3.5vw, 42px); line-height: 1.35; letter-spacing: .04em; overflow-wrap: anywhere; }
 .mr-quote.long { font-size: clamp(24px, 2.5vw, 30px); line-height: 1.45; }
+/* 展示字的逗号句号像西文标点：标点用正文字体，不加字距 */
+.mr-quote .pu { font-family: var(--text); letter-spacing: 0; }
+/* 标点挤压：全角标点只占半个字宽，字面在哪半边就收掉另一半，大字号下不再空出一大块 */
+.mr-quote .pu { margin-right: -.42em; }
+.mr-quote .pu.open { margin-right: 0; margin-left: -.42em; }
 .mr-quote.xl { font-family: var(--text); font-size: 20px; line-height: 1.75; letter-spacing: .02em; }
 .mr-from { display: block; margin-top: 6px; font-style: normal; font-size: 15px; color: var(--ink-2); }
 .mr-how { margin-top: 12px; font-size: 13.5px; color: var(--ink-3); }
@@ -823,19 +835,15 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .change-details { margin-top: 16px; }
 .change-details p { font-size: 17px; }
 
-/* 六爻：一张标注图。左边卦画，每一爻引一条线到右边的爻辞（线由 drawYaoLeaders 量着位置画） */
-.yao-plate { position: relative; display: grid; grid-template-columns: 92px 64px minmax(0, 1fr); align-items: center; margin-top: 4px; }
-.yp-glyph { grid-column: 1; width: 92px; height: 112px; }
-.yp-leaders { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.yp-leaders path { fill: none; stroke: var(--rule); stroke-width: 1; }
-.yp-leaders circle { fill: var(--ink-3); }
-.yp-leaders .chg path { stroke: var(--zhu); }
-.yp-leaders .chg circle { fill: var(--zhu); }
-.yao-list { grid-column: 3; list-style: none; margin: 0; padding: 0; }
+/* 六爻：每一行开头是它自己那一根爻（阴爻中间断开，动爻朱色），左栏已经有大卦画，这里不再重画一个 */
+.yao-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.yao-mark { --c: var(--ink-2); align-self: start; width: 32px; height: 6px; margin-top: .72em; background: var(--c); }
+.yao-mark.yin { background: linear-gradient(90deg, var(--c) 40%, transparent 40% 60%, var(--c) 60%); }
+.yao-item.changing .yao-mark { --c: var(--zhu); }
 .yao-item {
   position: relative;
   display: grid;
-  grid-template-columns: 3.2em minmax(0, 1fr) auto;
+  grid-template-columns: 32px 3.2em minmax(0, 1fr) auto;
   gap: 14px;
   align-items: baseline;
   padding: 10px 0;
@@ -1693,7 +1701,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .btn-divine { padding: 11px 26px; }
   .daily-gua { margin-top: 40px; }
 
-  .ritual-head { top: 0; }
   .ritual-status-main { font-size: 26px; }
   .cast-btn { padding: 12px 36px; }
 
@@ -1721,10 +1728,9 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .verdict-seal span { font-size: 21px; }
   .block { margin-top: 38px; }
   .analysis-list { font-size: 17px; }
-  .yao-plate { grid-template-columns: 50px 34px minmax(0, 1fr); }
-  .yp-glyph { width: 50px; height: 64px; }
-  .yao-item { grid-template-columns: 2.8em minmax(0, 1fr); gap: 2px 12px; font-size: 16px; }
-  .yao-type { grid-column: 2; }
+  .yao-item { grid-template-columns: 24px 2.8em minmax(0, 1fr); gap: 2px 12px; font-size: 16px; }
+  .yao-mark { width: 24px; height: 5px; }
+  .yao-type { grid-column: 3; }
 
   .history-panel {
     top: auto;
