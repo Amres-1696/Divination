@@ -33,14 +33,12 @@ class HexRitual {
     buildStage() {
         // 圆心那一块：状态、铜钱、正在长出来的卦、掷钱按钮。圆图（Cosmos）以它的中心为圆心
         this.stage.innerHTML = `
-<div class="ritual-head">
-  <button type="button" class="ritual-skip" id="ritualSkip">跳过，直接看结果</button>
-</div>
 <div class="dial-core" id="dialCenter">
   <p class="ritual-status" id="ritualStatus" aria-live="polite"></p>
   <div class="coins" id="coins">${buildCoin()}${buildCoin()}${buildCoin()}</div>
   <div class="cast-build" id="castBuild">${buildHexBars(null, [], 'hx-build')}</div>
   <div class="cast-actions" id="castActions"></div>
+  <div class="ritual-foot"><button type="button" class="ritual-skip" id="ritualSkip">跳过，直接看结果</button></div>
 </div>
 <p class="sr-only" id="gridCount" aria-live="polite"></p>`;
         this.statusEl = this.stage.querySelector('#ritualStatus');
