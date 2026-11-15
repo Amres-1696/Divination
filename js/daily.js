@@ -116,9 +116,9 @@ function showGuaDetail(gua, when) {
     <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
     <header class="gs-head">
         <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
-        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="吉凶：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('seal', '大致吉凶')}</span></span></div>
+        <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="吉凶：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('大致吉凶', TIPS.sealDaily)}</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
-        ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>象曰</span>${DA_XIANG[gua[0]]}</p>` : ''}
+        ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>${term('象曰', TIPS.xiang)}</span>${DA_XIANG[gua[0]]}</p>` : ''}
     </header>
     <figure class="gs-figure">
         <div class="gs-glyph">${buildHexBars(lines)}</div>
@@ -126,9 +126,7 @@ function showGuaDetail(gua, when) {
     </figure>
     <div class="detail-section"><h3>卦象</h3><div class="detail-analysis">${analysis}</div></div>
     <dl class="title-block gs-tb">
-        <div><dt>卦序</dt><dd>${guaOrdinal(gua)}</dd></div>
-        <div><dt>上下卦</dt><dd>上${TRIGRAM_BY_VALUE[v & 7]} 下${TRIGRAM_BY_VALUE[v >> 3]}</dd></div>
-        <div><dt>圆图</dt><dd>${typeof buildMiniRing === 'function' ? buildMiniRing(v) : ''}</dd></div>
+        ${titleBlockCells(gua, v)}
     </dl>
 </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) closeGuaDetail(overlay); });

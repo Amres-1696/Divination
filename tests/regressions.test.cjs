@@ -647,3 +647,20 @@ test('a birth after 23:00 (late 子 hour) counts as 子 hour of the next day', (
     assert.notDeepEqual(JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:12}))')), JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:0}))')));
     assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23 点后，算作次日）/);
 });
+
+test('term tips speak about the hexagram on screen, and the how line names the line it reads', () => {
+    const f = fixture();
+    const g = `GUA.find(x => x[0] === '风火家人')`;
+    assert.match(f.run(`TIPS.shangxia(${g}, shaoValue(guaBinary(${g})))`), /上巽下离，巽是风，离是火，所以叫风火家人/);
+    assert.match(f.run(`TIPS.guaxu(${g})`), /家人卦前面是明夷卦，后面是睽卦/);
+    assert.match(f.run(`TIPS.guaxu(lookupGua('111111'))`), /乾卦是第一卦/);
+    // 坤卦只有六三动：取法小字点名六三，六爻浮窗的例子落在同一爻
+    const m = JSON.parse(f.run(`JSON.stringify(getMainReading(lookupGua('000000'), calculateChangeGua([8,8,6,8,8,8], '000000')))`));
+    assert.equal(m.how, '只有六三一根动爻，读它的爻辞。');
+    assert.equal(m.at, 2);
+    assert.match(f.run(`TIPS.liuyao([8,8,6,8,8,8], 2)`), /主断读的六三，是从下数第三根阴爻/);
+    // 浮窗标题取页面上的词本身，解释进 data-tip 并转义
+    assert.equal(f.run(`term('本卦吉凶', '他说"吉"')`), '<span class="term" tabindex="0" data-tip="他说&quot;吉&quot;">本卦吉凶</span>');
+    assert.match(f.run(`TIPS.yaotype(9, 'coin')`), /三枚都是背面/);
+    assert.doesNotMatch(f.run(`TIPS.yaotype(9, 'bazi')`), /掷钱/);
+});

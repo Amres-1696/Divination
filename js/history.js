@@ -108,6 +108,10 @@ function historyGroup(d, now) {
 }
 function pad2(n) { return String(n).padStart(2, '0'); }
 
+// 方图下的说明：鼠标移开格子时也用它复原（要用 innerHTML，「方图」带着虚线解释）
+function archiveCaption() {
+    return `${term('方图', TIPS.fangtu)}里亮着的格子是抽到过的卦，越亮抽到得越多。点一格，只看这一卦的记录。`;
+}
 function renderArchiveMap(history) {
     const map = document.getElementById('historyMap');
     if (!map) return;
@@ -137,7 +141,7 @@ function renderArchiveMap(history) {
 <div class="am-stats">
   <p class="am-big">起过 <b>${history.length}</b> 次卦，抽到过 <b>${lit}</b> 种卦</p>
   <div class="am-bar" aria-hidden="true"><i class="ji" style="flex:${tally.ji}"></i><i class="ping" style="flex:${tally.ping}"></i><i class="xiong" style="flex:${tally.xiong}"></i></div>
-  <p class="am-legend"><span class="am-legend-k">${term('seal', '本卦吉凶')}</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">抽到最多：${topGua[0]} ${max} 次</span>` : ''}</p>
+  <p class="am-legend"><span class="am-legend-k">${term('本卦吉凶', TIPS.sealArchive(history.length))}</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">抽到最多：${topGua[0]} ${max} 次</span>` : ''}</p>
 </div>
 <div class="am-frame">
   <div class="am-cols" aria-hidden="true">${labels}</div>
@@ -146,7 +150,7 @@ function renderArchiveMap(history) {
 </div>
 <p class="am-caption" id="amCaption">${filtered
         ? `只看 <b>${filtered[0]}</b> · ${counts[_archiveFilter]} 次 <button type="button" class="am-clear" id="amClear">显示全部</button>`
-        : '亮着的格子是抽到过的卦，越亮抽到得越多。点一格，只看这一卦的记录。'}</p>` : '';
+        : archiveCaption()}</p>` : '';
 
     map.querySelectorAll('.am-cell.lit').forEach(cell => {
         cell.addEventListener('click', () => {
@@ -161,7 +165,7 @@ function renderArchiveMap(history) {
         });
         cell.addEventListener('mouseleave', () => {
             const cap = document.getElementById('amCaption');
-            if (cap && _archiveFilter == null) cap.textContent = '亮着的格子是抽到过的卦，越亮抽到得越多。点一格，只看这一卦的记录。';
+            if (cap && _archiveFilter == null) cap.innerHTML = archiveCaption();
         });
     });
     const clr = map.querySelector('#amClear');

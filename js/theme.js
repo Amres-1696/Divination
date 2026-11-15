@@ -548,21 +548,8 @@ function initFrameScroll() {
     update();
 }
 
-// ---------- 术语：虚线下划的词，悬停、聚焦或点一下，浮出一句白话 ----------
-// 结果页、每日一卦、牌册里出现的行话（主断、之卦、少阳老阳……），第一次来的人不一定懂
-const TERMS = {
-    zhuduan: ['主断', '这一卦里最该读的一句，用来回答你问的事。按朱熹的读法，动爻有几根，决定了读卦辞，还是读哪一爻的爻辞。'],
-    seal: ['吉凶', '按卦辞的大意，把每一卦粗分成吉、平、凶，没有算动爻，只作参考。回答你问的事，以主断为准。'],
-    zhigua: ['之卦', '动爻的阴阳翻转之后得到的另一卦，看的是事情接下来的走向。没有动爻，就没有之卦。'],
-    yaoname: ['爻名', '每一爻的名字由位置和阴阳组成。位置从下往上依次叫初、二、三、四、五、上；阳爻叫九，阴爻叫六。比如最下面一根阳爻叫「初九」，第二根阴爻叫「六二」。'],
-    yao7: ['少阳', '不动的阳爻，到之卦里还是阳爻。掷钱时一枚背面朝上，就是少阳。'],
-    yao8: ['少阴', '不动的阴爻，到之卦里还是阴爻。掷钱时两枚背面朝上，就是少阴。'],
-    yao9: ['老阳', '会变的阳爻，也就是动爻，到之卦里变成阴爻。掷钱时三枚都是背面，就是老阳。'],
-    yao6: ['老阴', '会变的阴爻，也就是动爻，到之卦里变成阳爻。掷钱时三枚都是正面，就是老阴。'],
-    guaxu: ['卦序', '这一卦在《周易》里的排位。通行本从乾卦排到未济卦，共六十四卦。'],
-    shangxia: ['上下卦', '一卦六爻，下面三爻是下卦，上面三爻是上卦，各是乾、坤、震、巽、坎、离、艮、兑中的一个。卦名就从这两卦来，比如上坤下震，叫「地雷复」。'],
-    yuantu: ['圆图', '首页转动的那一圈，是伏羲六十四卦圆图。小图里那根长针，指着这一卦在圈上的位置。']
-};
+// ---------- 术语：虚线下划的词，悬停、聚焦或点一下，浮出解释 ----------
+// 词由 divination.js 的 term(text, tip) 生成：浮窗标题就是词本身，解释在 data-tip 里（按这一卦算好）
 function initTermTips() {
     const tip = document.createElement('div');
     tip.className = 'term-tip';
@@ -571,12 +558,12 @@ function initTermTips() {
     document.body.appendChild(tip);
     let cur = null, pressed = 0, wasOpen = false;
     const show = el => {
-        const t = TERMS[el.dataset.term];
-        if (!t) return;
+        const body = el.dataset.tip;
+        if (!body) return;
         cur = el;
         tip.innerHTML = '<b></b>';
-        tip.firstChild.textContent = t[0];
-        tip.appendChild(document.createTextNode(t[1]));
+        tip.firstChild.textContent = el.textContent.trim();
+        tip.appendChild(document.createTextNode(body));
         el.setAttribute('aria-describedby', 'termTip');
         // 摆在词的上方居中，贴边就往里收；上面放不下就放到下面
         const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;

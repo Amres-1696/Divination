@@ -152,7 +152,7 @@ class HexRitual {
         const typeText = YAO_TYPE_CN[line] + (moving ? '，动爻' : '');
         const bei = LINE_TO_BEI[line];
         this.setStatus(`${yaoLabel(line, i)}　${typeText}`,
-            withCoins ? ['三枚都是正面', '一枚背面朝上', '两枚背面朝上', '三枚都是背面'][bei] : `第${'一二三四五六'[i]}爻`);
+            withCoins ? COIN_FACE_CN[bei] : `第${'一二三四五六'[i]}爻`);
         const left = 64 >> (i + 1);
         const leftText = left === 1 ? '只剩这一卦' : `还剩${toChineseNum(left)}卦`;
         this.countEl.textContent = leftText;

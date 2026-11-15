@@ -8,6 +8,7 @@ const HISTORY_MAX = 50;
 const YAO_POS_CN = ['初', '二', '三', '四', '五', '上'];
 const YAO_TYPE_CN = { 6: '老阴', 7: '少阳', 8: '少阴', 9: '老阳' };
 const LINE_TO_BEI = { 9: 3, 8: 2, 7: 1, 6: 0 }; // 背面朝上的铜钱数
+const COIN_FACE_CN = ['三枚都是正面', '一枚背面朝上', '两枚背面朝上', '三枚都是背面']; // 按背面数取
 
 function yaoLabel(line, i) {
     const num = (line === 7 || line === 9) ? '九' : '六';
