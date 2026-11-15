@@ -119,7 +119,7 @@ function landQuestion(box) {
     };
 }
 
-// ---------- 挂签 → 页面：签条先往下拉长成一根竖条，再向两边铺开成整页；关闭时原路收回签条 ----------
+// ---------- 挂签 → 页面：牌册是抽到的卦飞进方图；设置是挂签当轴头，放下一张图纸 ----------
 const PANEL_TAG = { historyPanel: 'historyBtn', settingsPanel: 'settingsGear' };
 // 只撤掉脚本自己放的动画；.show 带起来的 CSS 入场动画 / 过渡不动
 const cancelScripted = el => el.getAnimations().forEach(a => { if (a.constructor === Animation) a.cancel(); });
@@ -128,40 +128,91 @@ function morphPanelFromTag(panel, open) {
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!tag || !panel.animate || reduce) return;
     if (panel.id === 'historyPanel') return archiveFlight(panel, tag, open);
-    // morphing 期间面板固定在展开位置、可见、不走 CSS 过渡，形状全由 clip-path 决定。
-    // 先挂上再去取动画列表（取的时候会重算样式），省得多算一遍
-    panel.classList.add('morphing');
-    // 打断上一次还没放完的开合
-    [panel, ...panel.children].forEach(cancelScripted);
+    unrollSettings(panel, tag, open);
+}
+
+// ---------- 设置：像挂轴一样放下 ----------
+// 挂签就是卷着的图纸：打开时挂签处的轴先向两边撑到整页宽，再往下走，图纸跟着一路露出来；
+// 轴经过哪一组设置，那一组的字墨才浮上来，走过它底边时再用尺子画出分隔的虚线。关闭时轴原路卷回挂签。
+// 轴的位置和图纸露出的边缘用同一组关键帧、同一段段缓动，所以始终贴在一起
+const ROD_OPEN = { ms: 980, spread: .26, easeSpread: 'cubic-bezier(.5, 0, .3, 1)', easeDrop: 'cubic-bezier(.42, 0, .22, 1)' };
+const ROD_CLOSE = { ms: 720, climb: .7, easeClimb: 'cubic-bezier(.55, 0, .45, 1)', easeGather: 'cubic-bezier(.6, 0, .3, 1)' };
+// cubic-bezier 缓动的反函数：进度 → 时间比例（用来算轴走到某一组时是第几毫秒）
+function bezierTimeAt(x1, y1, x2, y2, progress) {
+    const at = (a, b, u) => 3 * a * u * (1 - u) * (1 - u) + 3 * b * u * u * (1 - u) + u * u * u;
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (at(y1, y2, m) < progress) lo = m; else hi = m; }
+    return at(x1, x2, (lo + hi) / 2);
+}
+function unrollSettings(panel, tag, open) {
+    if (panel._rod) panel._rod.remove();
+    panel.classList.add('morphing', 'unrolling');
+    const groups = Array.from(panel.querySelectorAll('.settings-group')).filter(g => !g.hidden);
+    [panel, ...panel.children, ...groups].forEach(cancelScripted);
+    tugTag(tag, 16);
     const p = panel.getBoundingClientRect(), t = tag.getBoundingClientRect();
-    const top = t.top - p.top, left = t.left - p.left, right = p.right - t.right, bottom = p.bottom - t.bottom;
-    const atTag = `inset(${top}px ${right}px ${bottom}px ${left}px)`;
-    const strip = `inset(${top}px ${right}px 0px ${left}px)`;
-    const full = 'inset(0px 0px 0px 0px)';
-    const shape = [{ clipPath: atTag }, { clipPath: strip, offset: .42 }, { clipPath: full }];
-    const ease = 'cubic-bezier(.65, 0, .25, 1)';
-    const kids = Array.from(panel.children);
-    let anim;
+    const H = p.height;
+    // 轴：一根细杆，两头各有一个轴头
+    const rod = document.createElement('div');
+    rod.className = 'scroll-rod';
+    document.body.appendChild(rod);
+    panel._rod = rod;
+    // 三个位置：卷在挂签底下（挂签那么宽）→ 撑开到整页宽 → 走到页底
+    const y0 = Math.max(p.top, t.bottom), y1 = y0, y2 = p.bottom;
+    const at = (x, w, y) => ({ left: x + 'px', width: w + 'px', top: y + 'px' });
+    const clip = (l, r, y) => ({ clipPath: 'inset(0px ' + r + 'px ' + Math.max(0, p.bottom - y) + 'px ' + l + 'px)' });
+    const tl = Math.max(0, t.left - p.left), tr = Math.max(0, p.right - t.right);
+    const rodAt = [at(p.left + tl, p.width - tl - tr, y0), at(p.left, p.width, y1), at(p.left, p.width, y2)];
+    const paperAt = [clip(tl, tr, y0), clip(0, 0, y1), clip(0, 0, y2)];
+    const frames = (list, offsets, eases) => list.map((k, i) => ({ ...k, offset: offsets[i], easing: eases[i] || 'linear' }));
+    let paper;
     if (open) {
-        anim = panel.animate(shape, { duration: 720, easing: ease });
-        kids.forEach(el => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 420, easing: 'ease', fill: 'backwards' }));
+        const o = [0, ROD_OPEN.spread, 1], e = [ROD_OPEN.easeSpread, ROD_OPEN.easeDrop];
+        paper = panel.animate(frames(paperAt, o, e), { duration: ROD_OPEN.ms, fill: 'backwards' });
+        rod.animate(frames(rodAt, o, e), { duration: ROD_OPEN.ms, fill: 'forwards' });
+        rod.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, fill: 'backwards' });
+        // 每一组：轴走到它顶上时字墨浮起，走过它底边时画分隔线
+        const tA = ROD_OPEN.ms * ROD_OPEN.spread, tB = ROD_OPEN.ms - tA;
+        const [bx1, by1, bx2, by2] = ROD_OPEN.easeDrop.match(/[\d.]+/g).map(Number);
+        const when = y => {
+            const prog = (y - y1) / Math.max(1, y2 - y1);
+            return prog <= 0 ? tA : prog >= 1 ? ROD_OPEN.ms : tA + tB * bezierTimeAt(bx1, by1, bx2, by2, prog);
+        };
+        groups.forEach(g => {
+            const r = g.getBoundingClientRect();
+            g.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+                { duration: 420, delay: when(r.top + 14) + 30, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
+            try {
+                g.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }],
+                    { duration: 380, delay: when(r.bottom), easing: 'cubic-bezier(.5, 0, .2, 1)', fill: 'backwards', pseudoElement: '::after' });
+            } catch (err) { /* 不支持给伪元素放动画的浏览器：线随图纸一起露出来 */ }
+        });
     } else {
-        kids.forEach(el => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease', fill: 'forwards' }));
-        anim = panel.animate(shape.slice().reverse().map((k, i) => ({ ...k, offset: [0, .58, 1][i] })),
-            { duration: 600, delay: 120, easing: ease, fill: 'forwards' });
+        // 先收起字墨，轴从页底往上卷，卷到挂签底下再收拢成挂签那么宽
+        groups.forEach(g => g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'ease', fill: 'forwards' }));
+        const o = [0, ROD_CLOSE.climb, 1], e = [ROD_CLOSE.easeClimb, ROD_CLOSE.easeGather];
+        paper = panel.animate(frames(paperAt.slice().reverse(), o, e), { duration: ROD_CLOSE.ms, delay: 80, fill: 'forwards' });
+        rod.animate(frames(rodAt.slice().reverse(), o, e), { duration: ROD_CLOSE.ms, delay: 80, fill: 'both' });
+        rod.animate([{ opacity: 0 }, { opacity: 1, offset: .12 }, { opacity: 1, offset: .86 }, { opacity: 0 }],
+            { duration: ROD_CLOSE.ms + 80, fill: 'forwards' });
     }
     // 收尾时关掉 CSS 过渡再撤 morphing：否则收回签条之后面板还会再滑走 / 淡出一遍
     const settle = () => {
+        if (panel._rod !== rod) return;
+        panel._rod = null;
         panel.style.transition = 'none';
-        panel.classList.remove('morphing');
+        panel.classList.remove('morphing', 'unrolling');
+        panel.classList.toggle('unrolled', open);
         panel.offsetHeight;
         panel.style.transition = '';
+        if (open) rod.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-out', fill: 'forwards' }).onfinish = () => rod.remove();
+        else {
+            rod.remove();
+            [panel, ...panel.children, ...groups].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+        }
     };
-    anim.onfinish = () => {
-        settle();
-        if (!open) [panel, ...kids].forEach(el => el.getAnimations().forEach(a => a.cancel()));
-    };
-    anim.oncancel = settle;
+    paper.onfinish = settle;
+    paper.oncancel = () => { if (panel._rod === rod) { rod.remove(); panel._rod = null; panel.classList.remove('unrolling'); } };
 }
 
 // ---------- 牌册：抽到过的卦飞进方图 ----------
@@ -297,6 +348,7 @@ function archiveFlight(panel, tag, open) {
     panel._flyers = layer;
     const ease = 'cubic-bezier(.5, 0, .2, 1)';
     let longest = 0;
+    const anims = [];
     // 按方图上从左上到右下的次序一个接一个飞；卦少时间隔大一些，卦多时总共也不超过约 0.7 秒。
     // 结果页上的那一卦不排队：打开时最先起飞，关闭时最先回到卦画上
     flights.sort((a, b) => a.order - b.order);
@@ -328,6 +380,7 @@ function archiveFlight(panel, tag, open) {
             : [{ transform: from, opacity: 0 }, { opacity: .95, offset: .25 }, { transform: to, opacity: endOp }];
         const back = frames.slice().reverse().map((k, i, a) => ({ ...k, offset: k.offset != null ? 1 - k.offset : i / (a.length - 1) }));
         const anim = f.animate(open ? frames : back, { duration: dur, delay, easing: ease, fill: 'both' });
+        anims.push(anim);
         // 落回原位：替身撤下，真卦当场接上（期间又打开了牌册就不管了，那边会重新安排空位）
         if (!open) anim.onfinish = () => {
             if (panel._flyers !== layer) return;
@@ -337,11 +390,18 @@ function archiveFlight(panel, tag, open) {
     });
     // 面板本身：打开时稍晚一点浮上来，关闭时先淡去。
     // （整页模糊再变清晰在手机上太吃显卡，只用透明度和一点位移）
-    if (open) panel.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
-        { duration: 520, delay: 80, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' });
-    else panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-in', fill: 'forwards' });
+    anims.push(open
+        ? panel.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 520, delay: 80, easing: 'cubic-bezier(.2, .7, .3, 1)', fill: 'backwards' })
+        : panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-in', fill: 'forwards' }));
 
-    panel._flightTimer = setTimeout(() => {
+    // 等每一卦真的飞完再收尾，不按预定时长掐：打开时第一帧要排版整本牌册，慢的机器上这一帧就要几百毫秒，
+    // 动画跟着晚开始，按时长掐会把还在半路的卦直接撤掉，真格子突然出现，像跳了一大下。
+    // 定时器只兜底：标签页在后台时动画不走，不能一直不收尾
+    const settle = () => {
+        if (panel._flightTimer !== timer) return;
+        clearTimeout(timer);
+        panel._flightTimer = null;
         layer.remove();
         if (panel._flyers === layer) panel._flyers = null;
         // 收尾时关掉 CSS 过渡再撤状态，免得面板再淡一遍；撤掉 flying 后抽到过的格子依次亮起
@@ -353,7 +413,9 @@ function archiveFlight(panel, tag, open) {
             panel.getAnimations().forEach(a => a.cancel());
             showSlots();
         }
-    }, longest + 30);
+    };
+    const timer = panel._flightTimer = setTimeout(settle, longest + 2000);
+    Promise.all(anims.map(a => a.finished)).then(settle, settle);
 }
 
 // ---------- 起卦方式：两段式切换（保留原生 select 作为数据源） ----------
