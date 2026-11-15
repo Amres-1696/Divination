@@ -28,6 +28,7 @@ async function returnToInquiry(opts) {
     if (_divineRunning) { showToast('卦还没起完。掷完六爻，或者点「跳过」'); return; }
     if (_viewBusy) return;
     _viewBusy = true;
+    if (typeof clearShareParams === 'function') clearShareParams();
     // 还在往标题上落的问题不跟回首页
     dropQuestionCarry();
     const resultArea = document.getElementById('resultArea');

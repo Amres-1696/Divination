@@ -294,11 +294,16 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     resultArea.dataset.date = readingContext.date || '';
     // 六爻的数（6 老阴 / 7 少阳 / 8 少阴 / 9 老阳，自初爻起）：分享图照这个画卦，不从页面元素的样子去反推
     resultArea.dataset.lines = hexLines.join('');
+    resultArea.dataset.method = readingContext.method || '';
+    resultArea.dataset.gua = gua[0];
+    // 别人分享来的一卦：顶上注明，回首页的按钮改叫「我也问一卦」；看自己的卦时去掉地址栏里分享的参数
+    const shared = !!readingContext.shared;
+    if (!shared && typeof clearShareParams === 'function') clearShareParams();
     if (typeof setPageView === 'function') setPageView('result');
 
     resultArea.innerHTML = `
 <div class="result entering">
-  <div class="result-bar" style="--d:0"><button class="back-link" id="backHomeBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>回到起卦</button></div>
+  <div class="result-bar" style="--d:0"><button class="back-link" id="backHomeBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>${shared ? '我也问一卦' : '回到起卦'}</button>${shared ? '<span class="shared-note">朋友分享的一卦</span>' : ''}</div>
   <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '心中所念'}</h1></div>
   <div class="reading-layout">
     <aside class="result-header">
@@ -332,8 +337,16 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       </div>
       <div class="result-actions" style="--d:7">
         <button class="btn btn-primary" id="shareBtn">生成分享图</button>
-        <button class="btn" id="newDivineBtn">再问一卦</button>
+        <button class="btn" id="linkBtn" aria-expanded="false" aria-controls="linkPanel">分享链接</button>
+        <button class="btn" id="newDivineBtn">${shared ? '我也问一卦' : '再问一卦'}</button>
         <button class="btn btn-quiet" id="viewHistoryBtn">翻阅牌册</button>
+      </div>
+      <div class="link-panel" id="linkPanel" hidden>
+        <input class="link-url" id="linkUrl" readonly aria-label="这一卦的链接">
+        <button type="button" class="btn btn-small" id="linkCopy">复制</button>
+        ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="btn btn-small" id="linkSend">发送</button>' : ''}
+        ${question ? '<label class="link-q"><input type="checkbox" id="linkWithQ">链接里附上所问</label>' : ''}
+        <p class="link-hint">打开链接的人会看到同一卦。${question ? '所问默认不放进链接。' : ''}</p>
       </div>
       <p class="result-warning" style="--d:7">卦只作参考，主意还得自己拿。</p>
     </article>
@@ -350,6 +363,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     shareBtn.addEventListener('pointerenter', warm, { once: true });
     shareBtn.addEventListener('focus', warm, { once: true });
     shareBtn.addEventListener('touchstart', warm, { once: true, passive: true });
+    if (typeof initShareLinkPanel === 'function') initShareLinkPanel(resultArea);
     const newBtn = resultArea.querySelector('#newDivineBtn');
     if (newBtn) newBtn.addEventListener('click', () => {
         if (typeof returnToInquiry === 'function') returnToInquiry({ clear: true });

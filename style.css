@@ -862,6 +862,16 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 @keyframes ai-pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 
 .result-actions { margin-top: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+/* 分享链接：一行链接 + 复制 / 发送，下面是「附上所问」和说明 */
+.link-panel { margin-top: 18px; max-width: 600px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.link-panel[hidden] { display: none; }
+.link-url { min-width: 0; width: 100%; padding: 9px 12px; font: 13.5px/1.5 var(--text); color: var(--ink); background: rgba(238, 242, 247, .06); border: 1px solid var(--rule-soft); border-radius: 0; }
+.link-url:focus { outline: none; border-color: var(--rule); }
+.link-q, .link-hint { grid-column: 1 / -1; margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.link-q { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; justify-self: start; }
+.link-q input { width: 15px; height: 15px; margin: 0; accent-color: var(--ink); }
+.link-hint { color: var(--ink-3); }
+.shared-note { margin-left: 14px; padding-left: 14px; border-left: 1px solid var(--rule-soft); font-size: 13.5px; color: var(--ink-3); }
 .btn {
   --c: var(--ink);
   position: relative;
@@ -1717,6 +1727,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .reading-sheet { order: 5; margin-top: 30px; padding: 24px 18px 28px; }
   .title-block { order: 6; margin-top: 40px; }
   .result-actions { order: 7; }
+  .link-panel { order: 7; }
   .result-warning { order: 8; }
   .mr-quote { font-size: 28px; }
   .mr-quote.long { font-size: 23px; }

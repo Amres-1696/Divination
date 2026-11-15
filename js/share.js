@@ -532,3 +532,97 @@ function closeShare() {
     }
     _lastBlob = null;
 }
+
+// ---------- 分享链接：打开就是这一卦 ----------
+// ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问
+// 所问可能很私人，默认不放进链接，要用户勾选才带上
+function buildShareLink(lines, opts) {
+    opts = opts || {};
+    const p = new URLSearchParams();
+    p.set('y', lines.join(''));
+    const d = /(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(opts.date || '');
+    if (d) p.set('d', d[1] + d[2].padStart(2, '0') + d[3].padStart(2, '0'));
+    if (opts.method === 'coin' || opts.method === 'bazi') p.set('m', opts.method[0]);
+    if (opts.question) p.set('q', String(opts.question).trim().slice(0, 80));
+    return (opts.base || (location.origin + location.pathname)) + '?' + p.toString();
+}
+function parseShareLink(search) {
+    const p = new URLSearchParams(search || '');
+    const y = p.get('y') || '';
+    if (!/^[6-9]{6}$/.test(y)) return null;
+    const d = /^(\d{4})(\d{2})(\d{2})$/.exec(p.get('d') || '');
+    return {
+        lines: Array.from(y, Number),
+        question: (p.get('q') || '').trim().slice(0, 80),
+        date: d ? `${d[1]}/${Number(d[2])}/${Number(d[3])}` : '',
+        method: { c: 'coin', b: 'bazi' }[p.get('m')]
+    };
+}
+// 打开带 ?y= 的地址：直接显示这一卦，不记进打开者的牌册
+function openSharedReading() {
+    if (typeof location === 'undefined') return false;
+    const s = parseShareLink(location.search);
+    if (!s) return false;
+    const bin = s.lines.map(v => (v === 7 || v === 9) ? '1' : '0').reverse().join('');
+    const gua = lookupGua(bin);
+    if (!gua) return false;
+    renderResult(gua, s.lines, calculateChangeGua(s.lines, bin), s.question, bin, null, null,
+        { date: s.date, method: s.method, shared: true });
+    return true;
+}
+// 离开分享的这一卦（回首页、打开自己的记录）时，把地址栏的参数去掉，免得刷新又回到别人那一卦
+function clearShareParams() {
+    if (typeof location === 'undefined' || !location.search || !/[?&]y=/.test(location.search)) return;
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {}
+}
+
+function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
+    return Promise.resolve(legacyCopy(text));
+}
+function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-100px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    return ok;
+}
+
+// 结果页的「分享链接」：展开一行链接、一个「附上所问」的勾选和复制 / 发送按钮
+function initShareLinkPanel(root) {
+    const btn = root.querySelector('#linkBtn');
+    const panel = root.querySelector('#linkPanel');
+    if (!btn || !panel) return;
+    const r = document.getElementById('resultArea');
+    const urlEl = panel.querySelector('#linkUrl');
+    const withQ = panel.querySelector('#linkWithQ');
+    const current = () => buildShareLink(Array.from(r.dataset.lines, Number), {
+        date: r.dataset.date, method: r.dataset.method,
+        question: withQ && withQ.checked ? r.dataset.question : ''
+    });
+    const refresh = () => { urlEl.value = current(); };
+    btn.addEventListener('click', () => {
+        const open = panel.hidden;
+        panel.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) { refresh(); urlEl.focus({ preventScroll: true }); urlEl.select(); }
+    });
+    if (withQ) withQ.addEventListener('change', refresh);
+    urlEl.addEventListener('focus', () => urlEl.select());
+    panel.querySelector('#linkCopy').addEventListener('click', async () => {
+        refresh();
+        if (await copyText(urlEl.value)) showToast('链接已复制', 'success');
+        else { urlEl.select(); showToast('没能自动复制，链接已选中，可以手动复制'); }
+    });
+    const send = panel.querySelector('#linkSend');
+    if (send) send.addEventListener('click', () => {
+        refresh();
+        const name = r.dataset.gua || '';
+        navigator.share({ title: `天衍 · ${name}`, text: `我起了一卦：${name}`, url: urlEl.value }).catch(() => {});
+    });
+}
