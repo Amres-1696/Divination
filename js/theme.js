@@ -25,7 +25,7 @@ function playHomeEnter(delay) {
 // 结果页 → 首页：卦画从结果页飞回圆图原位，其余卦沿圆周亮起，首页内容随后进场
 async function returnToInquiry(opts) {
     opts = opts || {};
-    if (_divineRunning) { showToast('请先掷完六爻，或跳过仪式'); return; }
+    if (_divineRunning) { showToast('卦还没起完。掷完六爻，或者点「跳过」'); return; }
     if (_viewBusy) return;
     _viewBusy = true;
     // 还在往标题上落的问题不跟回首页
@@ -548,21 +548,8 @@ function initFrameScroll() {
     update();
 }
 
-// ---------- 术语：虚线下划的词，悬停、聚焦或点一下，浮出一句白话 ----------
-// 结果页、每日一卦、牌册里出现的行话（主断、之卦、少阳老阳……），第一次来的人不一定懂
-const TERMS = {
-    zhuduan: ['主断', '这一卦最该看的一句话。按朱熹的变占法，看动了几爻，从卦辞或爻辞里取一句来回答所问。'],
-    seal: ['卦本身的吉凶', '只按这一卦大致分成吉、平、凶，不看哪几爻在动，只当参考；怎么回答所问，以主断为准。'],
-    zhigua: ['之卦', '把动爻的阴阳翻过来得到的另一卦，说的是事情接下来往哪里走。六爻都不动，就没有之卦。'],
-    yaoname: ['爻名', '九是阳爻，六是阴爻；初、二、三、四、五、上是从下往上数的位置。比如「初九」就是最下面那根阳爻。'],
-    yao7: ['少阳', '阳爻，稳定，不会变。'],
-    yao8: ['少阴', '阴爻，稳定，不会变。'],
-    yao9: ['老阳', '阳爻，但正在变：这就是动爻，到之卦里会变成阴爻。'],
-    yao6: ['老阴', '阴爻，但正在变：这就是动爻，到之卦里会变成阳爻。'],
-    guaxu: ['卦序', '这一卦在通行本《周易》六十四卦里排第几：乾第一，未济第六十四。'],
-    shangxia: ['上下', '六爻分成上下两半，各是一个八卦：上面三爻是上卦，下面三爻是下卦。'],
-    yuantu: ['圆图', '首页那一圈就是伏羲六十四卦圆图。小图上加长的那道刻度，是这一卦在圆上的位置。']
-};
+// ---------- 术语：虚线下划的词，悬停、聚焦或点一下，浮出解释 ----------
+// 词由 divination.js 的 term(text, tip) 生成：浮窗标题就是词本身，解释在 data-tip 里（按这一卦算好）
 function initTermTips() {
     const tip = document.createElement('div');
     tip.className = 'term-tip';
@@ -571,12 +558,12 @@ function initTermTips() {
     document.body.appendChild(tip);
     let cur = null, pressed = 0, wasOpen = false;
     const show = el => {
-        const t = TERMS[el.dataset.term];
-        if (!t) return;
+        const body = el.dataset.tip;
+        if (!body) return;
         cur = el;
         tip.innerHTML = '<b></b>';
-        tip.firstChild.textContent = t[0];
-        tip.appendChild(document.createTextNode(t[1]));
+        tip.firstChild.textContent = el.textContent.trim();
+        tip.appendChild(document.createTextNode(body));
         el.setAttribute('aria-describedby', 'termTip');
         // 摆在词的上方居中，贴边就往里收；上面放不下就放到下面
         const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;

@@ -43,7 +43,7 @@ function saveToHistory(question, gua, fullBin, hexLines, change, readingContext 
         return id;
     } catch (e) {
         // 牌册满 50 条会自动挤掉最旧的，走到这里是浏览器不让写存储（空间满了、隐私模式等）
-        showToast('浏览器不让保存记录，这一卦没能记进牌册', 'error');
+        showToast('浏览器不允许保存，这一卦没能记进牌册', 'error');
         return null;
     }
 }
@@ -108,6 +108,10 @@ function historyGroup(d, now) {
 }
 function pad2(n) { return String(n).padStart(2, '0'); }
 
+// 方图下的说明：鼠标移开格子时也用它复原（要用 innerHTML，「方图」带着虚线解释）
+function archiveCaption() {
+    return `${term('方图', TIPS.fangtu)}里亮着的格子是抽到过的卦，越亮抽到得越多。点一格，只看这一卦的记录。`;
+}
 function renderArchiveMap(history) {
     const map = document.getElementById('historyMap');
     if (!map) return;
@@ -135,9 +139,9 @@ function renderArchiveMap(history) {
         : null;
     map.innerHTML = history.length ? `
 <div class="am-stats">
-  <p class="am-big"><b>${history.length}</b> 卦，落在 <b>${lit}</b> 格</p>
+  <p class="am-big">起过 <b>${history.length}</b> 次卦，抽到过 <b>${lit}</b> 种卦</p>
   <div class="am-bar" aria-hidden="true"><i class="ji" style="flex:${tally.ji}"></i><i class="ping" style="flex:${tally.ping}"></i><i class="xiong" style="flex:${tally.xiong}"></i></div>
-  <p class="am-legend"><span class="am-legend-k">${term('seal', '本卦底色')}</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">最常见 ${topGua[0]} ×${max}</span>` : ''}</p>
+  <p class="am-legend"><span class="am-legend-k">${term('本卦吉凶', TIPS.sealArchive(history.length))}</span><span class="ji">吉 ${tally.ji}</span><span class="ping">平 ${tally.ping}</span><span class="xiong">凶 ${tally.xiong}</span>${topGua && max > 1 ? `<span class="am-top">抽到最多：${topGua[0]} ${max} 次</span>` : ''}</p>
 </div>
 <div class="am-frame">
   <div class="am-cols" aria-hidden="true">${labels}</div>
@@ -146,7 +150,7 @@ function renderArchiveMap(history) {
 </div>
 <p class="am-caption" id="amCaption">${filtered
         ? `只看 <b>${filtered[0]}</b> · ${counts[_archiveFilter]} 次 <button type="button" class="am-clear" id="amClear">显示全部</button>`
-        : '亮着的格子是抽到过的卦，越亮次数越多。点一格，只看这一卦。'}</p>` : '';
+        : archiveCaption()}</p>` : '';
 
     map.querySelectorAll('.am-cell.lit').forEach(cell => {
         cell.addEventListener('click', () => {
@@ -161,7 +165,7 @@ function renderArchiveMap(history) {
         });
         cell.addEventListener('mouseleave', () => {
             const cap = document.getElementById('amCaption');
-            if (cap && _archiveFilter == null) cap.textContent = '亮着的格子是抽到过的卦，越亮次数越多。点一格，只看这一卦。';
+            if (cap && _archiveFilter == null) cap.innerHTML = archiveCaption();
         });
     });
     const clr = map.querySelector('#amClear');
@@ -176,7 +180,7 @@ function renderArchiveList(history) {
         list.innerHTML = `<div class="history-empty">
 <span class="minimap big" aria-hidden="true">${cells}</span>
 <p>还没有起过卦</p>
-<p class="history-empty-hint">每起一卦，方图上就会亮起一格，记录按日期排在这里，最多 ${HISTORY_MAX} 条。</p>
+<p class="history-empty-hint">每起一卦，方图上就亮起一格，记录按日期列在这里，最多保留 ${HISTORY_MAX} 条。</p>
 </div>`;
         return;
     }
@@ -263,7 +267,7 @@ function loadHistory(opts) {
 function loadHistoryItem(id, fromRect) {
     // 起卦途中不能切去别的结果：仪式那一页会被换掉，起卦流程就停在半路了
     if (_divineRunning) {
-        showToast('正在起卦，掷完六爻或点跳过之后再回看');
+        showToast('正在起卦。掷完六爻或者点「跳过」，再来翻牌册');
         return;
     }
     const history = readHistorySafe();
@@ -359,7 +363,7 @@ function deleteHistoryItem(id) {
 }
 
 async function clearHistory() {
-    const yes = await showConfirm('清空后所有记录都会删除，方图也会全部熄灭。确定清空牌册？');
+    const yes = await showConfirm('所有记录都会删除，方图全部熄灭，删了就找不回来。确定清空牌册吗？');
     if (yes) {
         try { localStorage.removeItem('divinationHistory'); } catch (e) {}
         _archiveFilter = null;

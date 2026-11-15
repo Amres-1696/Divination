@@ -60,7 +60,7 @@ class HexRitual {
     }
     async actUnfold() {
         if (this.dead) return;
-        this.setStatus('六十四卦', '每定一爻，圆图去其半');
+        this.setStatus('六十四卦', '每定一爻，圆图上的卦去掉一半');
         if (typeof Cosmos !== 'undefined') Cosmos.toDial();
         await sleep(this.quick ? 250 : 450);
         if (this.stage.classList) this.stage.classList.remove('pre');
@@ -68,14 +68,14 @@ class HexRitual {
     }
     async actCast() {
         if (this.method === 'bazi') {
-            this.setStatus('依生辰取数', '生辰起卦不掷钱，六爻由生辰和所问推出');
+            this.setStatus('按生辰取数', '生辰起卦不用掷钱，六爻由你的生辰和所问推出');
             await sleep(this.quick ? 350 : 700);
             for (let i = 0; i < 6; i++) await this.revealLine(i, false);
             return;
         }
         const wide = (window.innerWidth || 1000) > 768;
-        if (this.quick) this.setStatus('六爻连掷', wide ? '点「掷钱」或按空格，六爻自下而上一次掷完' : '点「掷钱」，六爻自下而上一次掷完');
-        else this.setStatus('第一爻', wide ? '点「掷钱」或按空格，自下而上掷六次' : '点「掷钱」，自下而上掷六次');
+        if (this.quick) this.setStatus('六爻连掷', wide ? '点「掷钱」或按空格，六爻从下往上一次掷完' : '点「掷钱」，六爻从下往上一次掷完');
+        else this.setStatus('第一爻', wide ? '点「掷钱」或按空格，从下往上掷六次' : '点「掷钱」，从下往上掷六次');
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'cast-btn';
@@ -111,7 +111,7 @@ class HexRitual {
                     if (document.removeEventListener) document.removeEventListener('keydown', onKey);
                     resolve();
                 } else {
-                    this.setStatus(`第${'一二三四五六'[this.cast]}爻`, '再掷一次');
+                    this.setStatus(`第${'一二三四五六'[this.cast]}爻`, '接着掷');
                     if (btn.focus) btn.focus({ preventScroll: true });
                 }
             };
@@ -152,9 +152,9 @@ class HexRitual {
         const typeText = YAO_TYPE_CN[line] + (moving ? '，动爻' : '');
         const bei = LINE_TO_BEI[line];
         this.setStatus(`${yaoLabel(line, i)}　${typeText}`,
-            withCoins ? `${bei} 枚背面朝上` : `第${'一二三四五六'[i]}爻`);
+            withCoins ? COIN_FACE_CN[bei] : `第${'一二三四五六'[i]}爻`);
         const left = 64 >> (i + 1);
-        const leftText = left === 1 ? '余此一卦' : `余 ${toChineseNum(left)} 卦`;
+        const leftText = left === 1 ? '只剩这一卦' : `还剩${toChineseNum(left)}卦`;
         this.countEl.textContent = leftText;
         // 圆图转到位要花的时间。掷钱时下一爻等人来点；生辰起卦是自己往下走的，
         // 得等这一下转完再出下一爻，不然圆图转到一半又被拽去别处，来回晃
@@ -165,9 +165,9 @@ class HexRitual {
     }
     async actSettle() {
         if (this.dead) return;
-        if (typeof Cosmos !== 'undefined') Cosmos.settle(this.value, '余此一卦');
+        if (typeof Cosmos !== 'undefined') Cosmos.settle(this.value, '只剩这一卦');
         this.setStatus(this.finalGua[0], this.change.hasChange && this.change.changeGua
-            ? `动爻 ${this.change.changingYaos.length} 处，变为${this.change.changeGua[0]}` : '六爻皆静');
+            ? `${'一两三四五六'[this.change.changingYaos.length - 1]}根动爻，之卦是${this.change.changeGua[0]}` : '没有动爻');
         this.chosenCard = { cosmosValue: this.value };
         await sleep(this.quick ? 700 : 1200);
         if (this.stage.classList) this.stage.classList.add('settling');

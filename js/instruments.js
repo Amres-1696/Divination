@@ -71,7 +71,7 @@ function makeYearWheel(input, onChange) {
         root.classList.toggle('empty', !shown);
         if (shown) {
             const ny = newYearDay(y);
-            note.textContent = ny ? `正月初一在 ${ny}，之前出生算上一年（${ganZhiYear(y - 1)}）` : '';
+            note.textContent = ny ? `这一年春节是 ${ny}，春节前出生，农历算上一年（${ganZhiYear(y - 1)}年）` : '';
         } else {
             note.textContent = '上下滑动年轮，选出生年份';
         }
@@ -258,7 +258,7 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
         const shown = has || !!drag;
         if (shown) {
             read.innerHTML = `${x.m}月${x.d}日<small>周${BAND_WEEK_CN[x.w]}</small>`;
-            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '早于农历历表起点（1900 年正月初一），按公历起卦';
+            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '早于 1900 年春节，查不到农历，按公历日期起卦';
         } else {
             read.textContent = '—';
             lunarLine.textContent = '左右拖动月相带，让出生那天停在指针下';
@@ -427,7 +427,7 @@ function makeHourDial(sel) {
     // 指针落在子时格里 0 点刻度左边（23–24 点）就是晚子时
     function nearest(deg) { const i = ((Math.round(deg / 30) % 12) + 12) % 12; return i === 0 && deg > 180 ? 12 : i; }
     function show(i) {
-        const z = i % 12, note = i === 12 ? '，按次日' : '';
+        const z = i % 12, note = i === 12 ? '，算作次日' : '';
         selG.style.transform = `rotate(${z * 30}deg)`;
         root.querySelectorAll('.hd-name').forEach(t => t.classList.toggle('on', Number(t.dataset.i) === z));
         read.innerHTML = `<b>${NAMES[z]}时</b><span>${RANGE[i]} 点${note}</span>`;

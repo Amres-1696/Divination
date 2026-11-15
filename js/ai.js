@@ -2,20 +2,20 @@
 // 必须在 settings.js 之前加载（DEFAULT_SETTINGS 引用了本文件的 DEFAULT_AI）
 
 /* ============ AI 解卦 ============ */
-const AI_METHOD_LABEL = { coin: '铜钱法（三枚铜钱）', bazi: '生辰起卦（公历生日换算农历，梅花易数取数）' };
+const AI_METHOD_LABEL = { coin: '铜钱起卦（三枚铜钱掷六次）', bazi: '生辰起卦（公历生辰换算农历，按梅花易数取数）' };
 
 function buildAiContext(gua, change, question, readingContext = {}) {
     const changing = change.changingYaos || [];
     const changePos = changing.length
         ? changing.map(p => YAO_POS_CN[p]).join('、') + ' 爻动'
-        : '静卦无变';
+        : '没有动爻';
     // 主断之爻：复用既有取爻规则，只给 AI 主断指向的那一爻，而非六爻全丢
     const main = getMainReading(gua, change);
     const bianGua = (change.hasChange && change.changeGua)
         ? `${change.changeGua[0]}（${change.changeGua[1]}）`
-        : '无（静卦）';
+        : '无（没有动爻）';
     return {
-        question: (question && question.trim()) ? question.trim() : '未具问，泛问吉凶',
+        question: (question && question.trim()) ? question.trim() : '没写问题，看近况',
         time: readingContext.date || readingContext.createdAt || '未知（原记录未保存起卦时间）',
         readingTime: new Date().toLocaleString('zh-CN'),
         method: AI_METHOD_LABEL[readingContext.method] || '未知（原记录未保存起卦方式）',
@@ -45,7 +45,7 @@ function persistAiReading(reading, historyId) {
             localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
         }
     } catch (e) {
-        showToast('解读已生成，但未能保存到牌册，请先复制留存', 'error');
+        showToast('解读写好了，但未能保存到牌册。需要的话，先复制下来', 'error');
     }
 }
 
@@ -86,7 +86,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
     if (!profile.baseUrl || !profile.apiKey || !profile.model) {
-        bodyEl.innerHTML = '<div class="ai-error">请先在「设置 · AI 解卦」中填写完整配置（接口地址 / API Key / 模型）。</div>';
+        bodyEl.innerHTML = '<div class="ai-error">AI 还没配置好。到「设置 → AI 解卦」里填上接口地址、API Key 和模型名称。</div>';
         return;
     }
 
@@ -130,7 +130,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         if (!resp.ok) {
             let detail = '';
             try { detail = (await resp.text()).slice(0, 240); } catch (e) {}
-            fail(`接口返回错误 ${resp.status}。${detail}`);
+            fail(`接口报错（${resp.status}）。${detail}`);
             return;
         }
 
@@ -140,7 +140,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         if (!canStream || ctype.indexOf('json') !== -1) {
             const data = await resp.json();
             acc = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-            if (!acc) { fail('接口没有返回解读内容。'); return; }
+            if (!acc) { fail('接口有回应，但没有返回解读内容。'); return; }
             paint(acc);
             return acc;
         }
@@ -177,17 +177,17 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
         // 流结束时最后一行可能没有换行符，别把它丢掉
         buffer += decoder.decode();
         if (buffer) eat(buffer);
-        if (!acc) { fail(streamError ? `接口报错：${streamError.slice(0, 240)}` : '接口没有返回解读内容。'); return; }
+        if (!acc) { fail(streamError ? `接口报错：${streamError.slice(0, 240)}` : '接口有回应，但没有返回解读内容。'); return; }
         // 已经写出一部分又报错：留着已写的，末尾注明中断
-        if (streamError) { paint(acc + `\n\n（接口中途报错，解读未写完：${streamError.slice(0, 160)}）`); return acc; }
+        if (streamError) { paint(acc + `\n\n（接口中途出错，解读没写完：${streamError.slice(0, 160)}）`); return acc; }
         paint(acc);
         return acc;
     } catch (err) {
         if (err && err.name === 'AbortError') {
-            fail(`接口超过 ${AI_IDLE_TIMEOUT_MS / 1000} 秒没有回应，已中断。`);
+            fail(`接口 ${AI_IDLE_TIMEOUT_MS / 1000} 秒没有回应，已停止等待。`);
             return;
         }
-        fail('请求失败：' + (err && err.message ? err.message : String(err)) + '。可能是网络问题或接口被跨域(CORS)拦截。');
+        fail('请求失败：' + (err && err.message ? err.message : String(err)) + '。可能是网络不通，或者被浏览器的跨域限制（CORS）拦下了。');
     } finally {
         clearTimeout(idle);
     }
@@ -249,7 +249,7 @@ function saveAiConfig() {
     const settings = loadSettings();
     writeFormToActiveProfile(settings.ai);
     if (!saveSettings(settings)) {
-        setAiStatus('保存失败，表单内容已保留，请检查浏览器存储后重试', 'error');
+        setAiStatus('保存失败：浏览器存储可能满了或被禁用。填的内容还在', 'error');
         return false;
     }
     renderAiProfileSelect(settings.ai);
@@ -267,7 +267,7 @@ function switchAiProfile(index) {
     if (!saveSettings(settings)) {
         const sel = document.getElementById('aiProfileSelect');
         if (sel) sel.value = String(loadSettings().ai.activeProfile);
-        setAiStatus('切换失败，当前编辑已保留，请重试', 'error');
+        setAiStatus('切换失败，刚才填的内容还在，再试一次', 'error');
         return;
     }
     loadActiveProfileToForm(ai);
@@ -284,18 +284,18 @@ function newAiProfile() {
     ai.profiles.push(p);
     ai.activeProfile = ai.profiles.length - 1;
     if (!saveSettings(settings)) {
-        setAiStatus('新建失败，当前编辑已保留，请重试', 'error');
+        setAiStatus('新建失败，刚才填的内容还在，再试一次', 'error');
         return;
     }
     loadActiveProfileToForm(ai);
     renderAiProfileSelect(ai);
-    setAiStatus('已新建「' + p.name + '」，填写后保存', 'success');
+    setAiStatus('已新建「' + p.name + '」，填好后点保存', 'success');
 }
 
 function deleteAiProfile() {
     const settings = loadSettings();
     const ai = settings.ai;
-    if (ai.profiles.length <= 1) { setAiStatus('至少保留一套配置', 'error'); return; }
+    if (ai.profiles.length <= 1) { setAiStatus('至少要留一套配置', 'error'); return; }
     const idx = ai.activeProfile;
     const removed = ai.profiles[idx];
     showConfirm('确定删除配置「' + (removed.name || ('配置 ' + (idx + 1))) + '」？').then(ok => {
@@ -307,7 +307,7 @@ function deleteAiProfile() {
         fAi.profiles.splice(rmIdx, 1);
         fAi.activeProfile = Math.max(0, rmIdx - 1);
         if (!saveSettings(fresh)) {
-            setAiStatus('删除失败，配置未删除，请重试', 'error');
+            setAiStatus('删除失败，配置还在，再试一次', 'error');
             return;
         }
         loadActiveProfileToForm(fAi);
@@ -322,7 +322,7 @@ async function testAiConnection() {
     const profile = getActiveAiProfile(ai);
     const status = document.getElementById('aiStatus');
     const setStatus = (txt, cls) => { if (status) { status.textContent = txt; status.className = 'bazi-status' + (cls ? ' ' + cls : ''); } };
-    if (!profile.baseUrl || !profile.apiKey || !profile.model) { setStatus('请先填写完整的接口配置', 'error'); return; }
+    if (!profile.baseUrl || !profile.apiKey || !profile.model) { setStatus('先把接口地址、API Key 和模型名称填完整', 'error'); return; }
     setStatus('测试中…', '');
     try {
         const resp = await fetch(profile.baseUrl.replace(/\/+$/, '') + '/chat/completions', {
@@ -330,10 +330,10 @@ async function testAiConnection() {
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + profile.apiKey },
             body: JSON.stringify({ model: profile.model, stream: false, max_tokens: 8, messages: [{ role: 'user', content: '回复一个字：通' }] })
         });
-        if (resp.ok) { setStatus('连接成功 ✓', 'success'); }
-        else { let t = ''; try { t = (await resp.text()).slice(0, 160); } catch (e) {} setStatus(`失败 ${resp.status}：${t}`, 'error'); }
+        if (resp.ok) { setStatus('连接成功', 'success'); }
+        else { let t = ''; try { t = (await resp.text()).slice(0, 160); } catch (e) {} setStatus(`连接失败（${resp.status}）：${t}`, 'error'); }
     } catch (e) {
-        setStatus('连接失败：' + (e && e.message ? e.message : String(e)) + '（或被跨域拦截）', 'error');
+        setStatus('连接失败：' + (e && e.message ? e.message : String(e)) + '。也可能是被浏览器的跨域限制拦下了', 'error');
     }
 }
 
