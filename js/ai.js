@@ -50,6 +50,38 @@ function persistAiReading(reading, historyId) {
 }
 
 const AI_IDLE_TIMEOUT_MS = 90000;
+const AI_LOADING_HTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在解读…</span></div>';
+
+// 同一条记录的 AI 解读，这次打开页面期间只请求一次：还在请求时又打开这条记录，就等着同一个请求；
+// 关了「存进牌册」的解读也记在这里，再打开直接显示，不再花一次钱。请求失败的不记，下次照常可以再请
+const _aiByRecord = new Map();
+function runAiReading(gua, change, question, bodyEl, readingContext = {}) {
+    const id = readingContext.historyId;
+    const known = id && _aiByRecord.get(id);
+    if (known) {
+        bodyEl.innerHTML = AI_LOADING_HTML;
+        known.then(text => {
+            if (!bodyEl.isConnected) return;
+            if (text) {
+                bodyEl.innerHTML = '<div class="ai-reading-text"></div>';
+                bodyEl.querySelector('.ai-reading-text').textContent = text;
+            } else offerAiReading(gua, change, question, bodyEl, readingContext);
+        });
+        return known;
+    }
+    const pending = requestAiReading(gua, change, question, bodyEl, readingContext).then(text => {
+        if (text) persistAiReading(text, id);
+        else if (id && _aiByRecord.get(id) === pending) _aiByRecord.delete(id);
+        return text;
+    });
+    if (id) _aiByRecord.set(id, pending);
+    return pending;
+}
+function offerAiReading(gua, change, question, bodyEl, readingContext = {}) {
+    bodyEl.innerHTML = '<button class="btn" id="aiRunBtn">请 AI 解读这一卦</button>';
+    bodyEl.querySelector('#aiRunBtn').addEventListener('click', () => runAiReading(gua, change, question, bodyEl, readingContext));
+}
+
 async function requestAiReading(gua, change, question, bodyEl, readingContext = {}) {
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
@@ -59,7 +91,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
     }
 
     const prompt = fillPrompt(profile.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question, readingContext));
-    bodyEl.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-dot"></span><span class="ai-loading-text">正在解读…</span></div>';
+    bodyEl.innerHTML = AI_LOADING_HTML;
 
     const url = profile.baseUrl.replace(/\/+$/, '') + '/chat/completions';
     let acc = '';
@@ -74,9 +106,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
     const fail = (msg) => {
         bodyEl.innerHTML = `<div class="ai-error">${escHtml(msg)}</div><button class="btn" id="aiRetryBtn">重试</button>`;
         const rb = bodyEl.querySelector('#aiRetryBtn');
-        if (rb) rb.addEventListener('click', () => {
-            requestAiReading(gua, change, question, bodyEl, readingContext).then(t => { if (t) persistAiReading(t, readingContext.historyId); });
-        });
+        if (rb) rb.addEventListener('click', () => runAiReading(gua, change, question, bodyEl, readingContext));
     };
 
     // 接口久不回话（连不上、流卡在半路）就掐断，换成可重试的错误，不让加载一直转下去

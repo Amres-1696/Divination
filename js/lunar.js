@@ -100,11 +100,17 @@ function lunarYearBranch(lunarYear) {
 
 // 梅花易数的生辰取数：年取地支数（子1…亥12），月、日取农历月日（闰月按其月数计）。
 // 上卦数＝年＋月＋日，下卦数＝上卦数＋时辰数（子1…亥12）。早于农历历表时退回公历数值，结果仍然确定。
+// 时辰 0…11 是子…亥；12 是夜里 23–24 点的晚子时：按「子初换日」算到第二天，时辰数仍取子 1
 function birthNumbers(bazi) {
-    const lunar = solarToLunar(bazi.year, bazi.month, bazi.day);
-    const yearNum = lunar ? lunarYearBranch(lunar.year) : (bazi.year % 100 || 100);
-    const upper = yearNum + (lunar ? lunar.month : bazi.month) + (lunar ? lunar.day : bazi.day);
-    return { upper, lower: upper + (bazi.hour + 1) };
+    let { year, month, day } = bazi;
+    if (bazi.hour === 12) {
+        const next = new Date(year, month - 1, day + 1);
+        year = next.getFullYear(); month = next.getMonth() + 1; day = next.getDate();
+    }
+    const lunar = solarToLunar(year, month, day);
+    const yearNum = lunar ? lunarYearBranch(lunar.year) : (year % 100 || 100);
+    const upper = yearNum + (lunar ? lunar.month : month) + (lunar ? lunar.day : day);
+    return { upper, lower: upper + (bazi.hour % 12 + 1) };
 }
 // 先天八卦数取卦（乾1 兑2 离3 震4 巽5 坎6 艮7 坤8，满八循环），返回自上而下的三位二进制
 function trigramOfNumber(sum) {
