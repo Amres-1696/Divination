@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadHistory();
     renderDailyGua();
     restoreSettingsUI();
+    // 别人分享的链接（?y=…）：直接打开那一卦
+    if (typeof openSharedReading === 'function') openSharedReading();
     const sc = document.getElementById('shareImageContainer');
     if (sc) sc.addEventListener('click', e => { if (e.target === sc) closeShare(); });
 

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<!-- 生成分享卡片封面 og.jpg（1200×630）和 apple-touch-icon.png（180×180）的底稿。
+     用本地 HTTP 服务打开 tools/og.html，浏览器视口设成 1200×630 截图（JPEG，质量 88）得到 og.jpg；
+     打开 tools/og.html#icon，视口 180×180 截图得到 apple-touch-icon.png。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>天衍 封面底稿</title>
+<style>
+  @font-face { font-family: "ZCOOL XiaoWei"; src: url("../fonts/ZCOOLXiaoWei-subset.woff2") format("woff2"); }
+  html, body { margin: 0; }
+  body { width: 1200px; height: 630px; overflow: hidden; color: #EEF2F7; font-family: "Noto Serif SC", "Songti SC", serif;
+    background: radial-gradient(120% 90% at 30% 40%, #22508F 0%, #1A3D72 55%, #102B53 100%); position: relative; }
+  .grid { position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(238,242,247,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(238,242,247,.06) 1px, transparent 1px);
+    background-size: 30px 30px; }
+  .frame { position: absolute; inset: 28px; border: 1px solid rgba(238,242,247,.35); }
+  .ring { position: absolute; left: 610px; top: 55px; width: 520px; height: 520px; }
+  .text { position: absolute; left: 96px; top: 168px; }
+  h1 { margin: 0; font-family: "ZCOOL XiaoWei", serif; font-weight: 400; font-size: 132px; letter-spacing: .16em; line-height: 1; }
+  .sub { margin-top: 30px; font-size: 30px; letter-spacing: .3em; color: #C9D5E6; }
+  .tag { margin-top: 44px; font-size: 22px; letter-spacing: .12em; color: #A7B8D3; }
+  .icon { display: none; }
+  body.as-icon { width: 180px; height: 180px; background: #1A3D72; }
+  body.as-icon > :not(.icon) { display: none; }
+  body.as-icon .icon { display: block; position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+<div class="grid"></div>
+<div class="frame"></div>
+<svg class="ring" viewBox="-280 -280 560 560" id="ring"></svg>
+<div class="text">
+  <h1>天衍</h1>
+  <div class="sub">周易六十四卦起卦</div>
+  <div class="tag">掷六次铜钱，六十四卦只剩一卦</div>
+</div>
+<svg class="icon" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1A3D72"/><g fill="#EEF2F7"><rect x="18" y="20" width="64" height="11"/><rect x="18" y="44" width="27" height="11"/><rect x="55" y="44" width="27" height="11"/><rect x="18" y="68" width="64" height="11"/></g></svg>
+<script>
+  if (location.hash === '#icon') document.body.classList.add('as-icon');
+  // 先天圆图：乾在正上，左半圈乾→复，右半圈姤→坤（与 js/glyphs.js 的 circleAngle 一致）
+  const ring = document.getElementById('ring');
+  const step = 180 / 32, R = 228, W = 26, H = 3.2, G = 1.6;
+  let s = '<circle r="252" fill="none" stroke="rgba(238,242,247,.28)"/><circle r="200" fill="none" stroke="rgba(238,242,247,.18)"/>';
+  for (let v = 0; v < 64; v++) {
+    const deg = v >= 32 ? -((63 - v) + 0.5) * step : ((31 - v) + 0.5) * step;
+    let bars = '';
+    for (let i = 0; i < 6; i++) {
+      const yang = (v >> (5 - i)) & 1;   // 第 i 爻（自初爻起），与 js/glyphs.js 的 shaoBit 一致
+      const y = -R - 14 + (5 - i) * (H + G);
+      bars += yang ? `<rect x="${-W / 2}" y="${y}" width="${W}" height="${H}"/>`
+                   : `<rect x="${-W / 2}" y="${y}" width="${W * .42}" height="${H}"/><rect x="${W * .08}" y="${y}" width="${W * .42}" height="${H}"/>`;
+    }
+    s += `<g transform="rotate(${deg.toFixed(3)})" fill="${v === 63 ? '#FF8A5C' : 'rgba(238,242,247,.82)'}">${bars}</g>`;
+  }
+  ring.innerHTML = s;
+</script>
+</body>
+</html>

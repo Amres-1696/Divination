@@ -664,3 +664,18 @@ test('term tips speak about the hexagram on screen, and the how line names the l
     assert.match(f.run(`TIPS.yaotype(9, 'coin')`), /三枚都是背面/);
     assert.doesNotMatch(f.run(`TIPS.yaotype(9, 'bazi')`), /掷钱/);
 });
+
+test('a share link reopens the same reading, and the question only travels when asked to', () => {
+    const f = fixture();
+    f.context.URLSearchParams = URLSearchParams;
+    const base = `'https://example.test/Divination/'`;
+    const plain = f.run(`buildShareLink([9,7,7,8,6,7], { date: '2026/11/5 22:03:09', method: 'coin', base: ${base} })`);
+    assert.equal(plain, 'https://example.test/Divination/?y=977867&d=20261105&m=c');
+    const withQ = f.run(`buildShareLink([9,7,7,8,6,7], { question: '  年底换不换工作 ', method: 'bazi', base: ${base} })`);
+    assert.match(withQ, /[?&]m=b&q=%E5%B9%B4/);
+    const back = JSON.parse(f.run(`JSON.stringify(parseShareLink(${JSON.stringify(withQ.slice(withQ.indexOf('?')))}))`));
+    assert.deepEqual(back, { lines: [9, 7, 7, 8, 6, 7], question: '年底换不换工作', date: '', method: 'bazi' });
+    assert.equal(f.run(`parseShareLink('?y=97786&q=x')`), null);
+    assert.equal(f.run(`parseShareLink('?y=9778a7')`), null);
+    assert.equal(JSON.parse(f.run(`JSON.stringify(parseShareLink('?y=777777&d=2026115'))`)).date, '');
+});

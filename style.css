@@ -862,6 +862,16 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 @keyframes ai-pulse { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
 
 .result-actions { margin-top: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+/* 分享链接：一行链接 + 复制 / 发送，下面是「附上所问」和说明 */
+.link-panel { margin-top: 18px; max-width: 600px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.link-panel[hidden] { display: none; }
+.link-url { min-width: 0; width: 100%; padding: 9px 12px; font: 13.5px/1.5 var(--text); color: var(--ink); background: rgba(238, 242, 247, .06); border: 1px solid var(--rule-soft); border-radius: 0; }
+.link-url:focus { outline: none; border-color: var(--rule); }
+.link-q, .link-hint { grid-column: 1 / -1; margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.link-q { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; justify-self: start; }
+.link-q input { width: 15px; height: 15px; margin: 0; accent-color: var(--ink); }
+.link-hint { color: var(--ink-3); }
+.shared-note { margin-left: 14px; padding-left: 14px; border-left: 1px solid var(--rule-soft); font-size: 13.5px; color: var(--ink-3); }
 .btn {
   --c: var(--ink);
   position: relative;
@@ -1109,6 +1119,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .history-gua { font-size: 13px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 0 .7em; align-items: baseline; }
 .history-gua b { font-family: var(--text); font-weight: 600; font-size: 14px; color: var(--ink); }
 .history-change { color: var(--ink-3); }
+/* 吉凶小印紧跟本卦名：说的是本卦，不是箭头后面的之卦 */
+.history-verdict { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-left: -.35em; border: 1px solid currentColor; font-size: 11px; line-height: 1; align-self: center; }
 .history-verdict.v-ji { color: var(--ink); }
 /* 叉号还是 28px 那么大，可点范围用负外边距扩到 40px，不挤动这一行的布局 */
 .history-del { position: relative; width: 40px; height: 40px; margin: -6px; border-radius: 50%; opacity: 0; transition: opacity .2s ease, background-color .2s ease; }
@@ -1715,6 +1727,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   .reading-sheet { order: 5; margin-top: 30px; padding: 24px 18px 28px; }
   .title-block { order: 6; margin-top: 40px; }
   .result-actions { order: 7; }
+  .link-panel { order: 7; }
   .result-warning { order: 8; }
   .mr-quote { font-size: 28px; }
   .mr-quote.long { font-size: 23px; }
