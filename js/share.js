@@ -174,8 +174,21 @@ function fitShareReading(card) {
     if (!(lh > 0)) return;
     const lines = Math.floor((rd.clientHeight - pad) / lh);
     if (lines < 1) { rd.style.display = 'none'; return; }
+    const room = pad + lines * lh;
     rd.style.flex = 'none';
-    rd.style.height = `${pad + lines * lh}px`;
+    rd.style.height = `${room}px`;
+    if (rd.scrollHeight <= room + 1) return;
+    // 放不下全文：只留能完整放下的整句，不在半句话处截断；一句都放不下就整段不显示
+    const sentences = rd.textContent.match(/[^。！？]+[。！？]?/g) || [];
+    let fit = '';
+    for (const s of sentences) {
+        rd.textContent = fit + s;
+        if (rd.scrollHeight > room + 1) break;
+        fit += s;
+    }
+    if (!fit) { rd.style.display = 'none'; return; }
+    rd.textContent = fit;
+    rd.style.height = '';
 }
 
 let _lastBlobUrl = null;
