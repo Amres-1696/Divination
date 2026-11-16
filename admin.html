@@ -5,556 +5,879 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#17396E">
-<title>天衍 · 后台</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
+<title>天衍 · 背面</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23EDF0F3'/><g fill='%2317396E'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
+<!-- 展示字是站酷小薇的后台专用子集（tools/subset-admin-font.py 生成），和页面同源，不走外网 -->
+<link rel="preload" href="fonts/ZCOOLXiaoWei-admin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* 天衍 · 背面
+   前台是一张晒出来的蓝图。后台就是把这张图纸翻过来：白底，蓝墨，字从正面透过来是反的。
+   这段时间的数自己排成一卦：六项数各占一爻，比上一段多是阳爻，少是阴爻，涨跌过半标朱。
+   朱色和前台一个意思：只给「动」用。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2") format("woff2");
-  font-display: swap;
+  src: url("fonts/ZCOOLXiaoWei-admin.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
 }
 :root {
-  --blue: #17396E;
-  --blue-deep: #102B55;
-  --panel: rgba(16, 43, 85, .55);
-  --ink: #EEF2F7;
-  --ink-2: #C5D1E2;
-  --ink-3: #A7B8D3;
-  --rule: rgba(238, 242, 247, .26);
-  --rule-soft: rgba(238, 242, 247, .12);
-  --zhu: #FF8A5C;
-  /* 数据色：访问 / 起卦。在 --blue 底上验过对比度和色盲区分 */
-  --s-visit: #4C95E8;
-  --s-read: #C9832A;
-  --display: "ZCOOL XiaoWei", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  --text: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
-  --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --paper: #EDF0F3;
+  --paper-2: #E2E7ED;
+  --ink: #17396E;
+  --ink-deep: #0F2A54;
+  --ink-2: rgba(23, 57, 110, .72);
+  --ink-3: rgba(23, 57, 110, .52);
+  --rule: rgba(23, 57, 110, .2);
+  --zhu: #D63A16;
+  --front: #17396E;
+  --front-ink: #EEF2F7;
+  --display: "ZCOOL XiaoWei", "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --text: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --pad: clamp(18px, 4.4vw, 64px);
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-body {
-  min-height: 100vh;
-  background:
-    linear-gradient(var(--rule-soft) 1px, transparent 1px) 0 0 / 32px 32px,
-    linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px) 0 0 / 32px 32px,
-    var(--blue);
-  color: var(--ink);
-  font: 15px/1.6 var(--text);
-  -webkit-font-smoothing: antialiased;
-}
-button, input { font: inherit; color: inherit; }
-.num { font-family: var(--num); font-variant-numeric: tabular-nums; }
-
-/* ---------- 登录 ---------- */
-.gate {
-  min-height: 100vh; display: grid; place-items: center; padding: 24px;
-}
-.gate form {
-  width: min(360px, 100%); padding: 32px 28px;
-  border: 1px solid var(--rule); background: var(--panel);
-}
-.gate h1 { font: 32px/1.2 var(--display); margin: 0 0 4px; letter-spacing: .08em; }
-.gate p { margin: 0 0 24px; color: var(--ink-3); font-size: 13px; }
-.gate label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
-.gate input {
-  width: 100%; padding: 10px 12px; background: transparent;
-  border: 1px solid var(--rule); outline: none;
-}
-.gate input:focus { border-color: var(--ink-2); }
-.gate .err { color: var(--zhu); font-size: 13px; min-height: 20px; margin: 8px 0 0; }
-.btn {
-  border: 1px solid var(--rule); background: transparent; padding: 6px 14px; cursor: pointer;
-  transition: background .15s, border-color .15s;
-}
-.btn:hover { background: var(--rule-soft); border-color: var(--ink-3); }
-.btn[aria-pressed="true"] { background: var(--ink); color: var(--blue); border-color: var(--ink); }
-.btn:disabled { opacity: .5; cursor: default; }
-.gate .btn { width: 100%; margin-top: 12px; padding: 10px; }
-
-/* ---------- 主体 ---------- */
-.app { max-width: 1120px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 64px; }
-.top {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
-  padding-bottom: 16px; border-bottom: 1px solid var(--rule); margin-bottom: 24px;
-}
-.top h1 { font: 26px/1 var(--display); margin: 0; letter-spacing: .08em; }
-.top h1 small { font: 13px var(--text); color: var(--ink-3); margin-left: 10px; letter-spacing: 0; }
-.top .spacer { flex: 1; }
-.seg { display: inline-flex; }
-.seg .btn + .btn { border-left: 0; }
-.stamp { color: var(--ink-3); font-size: 12px; width: 100%; }
-
-.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
-.card {
-  grid-column: span 12; border: 1px solid var(--rule); background: var(--panel);
-  padding: 18px 20px; min-width: 0;
-}
-.card h2 {
-  font: 17px/1.3 var(--display); margin: 0 0 2px; letter-spacing: .06em;
-}
-.card .sub { color: var(--ink-3); font-size: 12px; margin: 0 0 14px; }
-.card-head { display: flex; align-items: flex-start; gap: 12px; }
-.card-head > div { flex: 1; }
-.half { grid-column: span 6; }
-.third { grid-column: span 4; }
-@media (max-width: 860px) { .half, .third { grid-column: span 12; } }
-
-/* KPI */
-.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-column: span 12; }
-@media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
-.kpi { border: 1px solid var(--rule); background: var(--panel); padding: 14px 16px; }
-.kpi .label { font-size: 13px; color: var(--ink-2); }
-.kpi .value { font: 600 30px/1.2 var(--num); font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
-.kpi .note { font-size: 12px; color: var(--ink-3); }
-
-/* 图例 */
-.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
-.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-
-/* 图 */
-.chart { position: relative; }
-.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-.axis text { fill: var(--ink-3); font-size: 11px; font-family: var(--num); }
-.grid-line { stroke: var(--rule-soft); stroke-width: 1; }
-.base-line { stroke: var(--rule); stroke-width: 1; }
-.tip {
-  position: absolute; pointer-events: none; z-index: 2;
-  background: var(--blue-deep); border: 1px solid var(--rule);
-  padding: 8px 10px; font-size: 12px; line-height: 1.6; white-space: nowrap;
-  transform: translate(-50%, calc(-100% - 12px)); display: none;
-}
-.tip b { font-weight: 600; display: block; color: var(--ink); }
-.tip .row { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
-.tip .row i { width: 8px; height: 8px; border-radius: 2px; }
-.tip .row span:last-child { margin-left: auto; padding-left: 12px; color: var(--ink); font-family: var(--num); }
-
-/* 横向条 */
-.bars { display: grid; gap: 6px; }
-.bar-row { display: grid; grid-template-columns: 5.5em 1fr 3em; align-items: center; gap: 10px; font-size: 13px; }
-.bar-row .name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar-row .track { height: 14px; position: relative; }
-.bar-row .fill { position: absolute; inset: 0 auto 0 0; background: var(--s-read); border-radius: 0 4px 4px 0; min-width: 2px; }
-.bar-row .val { text-align: right; font-family: var(--num); }
-
-/* 占比条 */
-.split { display: flex; height: 14px; gap: 2px; margin: 6px 0 8px; }
-.split span { border-radius: 2px; }
-.split-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
-.split-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
-.split-legend b { color: var(--ink); font-family: var(--num); font-weight: 600; margin-left: 4px; }
-.split-block + .split-block { margin-top: 18px; }
-.split-title { font-size: 13px; color: var(--ink-3); }
-
-/* 表 */
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule-soft); }
-th { color: var(--ink-3); font-weight: 400; }
-td.n, th.n { text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; }
-.table-wrap { overflow-x: auto; }
-#recent td, #recent th, #sources td { white-space: nowrap; }
-.muted { color: var(--ink-3); }
-.empty { color: var(--ink-3); font-size: 13px; padding: 20px 0; text-align: center; }
-.zhu { color: var(--zhu); }
-.toast { color: var(--zhu); font-size: 13px; }
+*, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; background: #0B2146; }
+html.on-back { background: var(--paper); }
+body { margin: 0; min-height: 100vh; color: var(--ink); font-family: var(--text); font-size: 15px; line-height: 1.7; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+
+/* ---------- 正面：登录 ---------- */
+.front {
+  position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 24px;
+  color: var(--front-ink);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(110% 85% at 50% 46%, #1F4A88 0%, var(--front) 52%, #10294F 100%);
+  transform-origin: 50% 50%;
+}
+.front::before { content: ""; position: absolute; inset: 18px; border: 1px solid rgba(238, 242, 247, .26); pointer-events: none; }
+.front-ring { position: absolute; left: 50%; top: 50%; width: min(86vmin, 640px); aspect-ratio: 1; transform: translate(-50%, -50%); color: rgba(238, 242, 247, .5); pointer-events: none; }
+.gate { position: relative; width: min(100%, 340px); text-align: center; }
+.gate h1 { font-family: var(--display); font-weight: 400; font-size: clamp(56px, 13vw, 76px); letter-spacing: .18em; text-indent: .18em; line-height: 1.1; }
+.gate-note { margin-top: 10px; color: #C5D1E2; font-size: 15px; }
+.gate form { margin-top: 44px; }
+.gate input {
+  width: 100%; background: none; border: 0; border-bottom: 1px solid var(--front-ink); border-radius: 0;
+  padding: 10px 2px; text-align: center; font-size: 18px; letter-spacing: .2em; outline: none;
+}
+.gate input::placeholder { color: #A7B8D3; letter-spacing: .08em; }
+.gate input:focus-visible { border-bottom-width: 2px; padding-bottom: 9px; }
+.gate-btn {
+  margin-top: 26px; min-width: 148px; padding: 12px 22px; background: var(--front-ink); color: var(--ink-deep);
+  font-family: var(--display); font-size: 18px; letter-spacing: .2em; text-indent: .2em;
+  box-shadow: 0 0 0 3px var(--front), 0 0 0 4px var(--front-ink);
+}
+.gate-btn:disabled { opacity: .6; cursor: default; }
+.gate-err { min-height: 1.7em; margin-top: 18px; color: #FF8A5C; font-size: 15px; }
+
+/* 翻面：正面转到侧立，背面从侧立转回来 */
+.front.leave { animation: turnAway .44s cubic-bezier(.5, 0, .9, .5) forwards; }
+.front.enter { animation: turnAway .44s cubic-bezier(.5, 0, .9, .5) reverse both; }
+.back.enter { animation: turnIn .62s var(--ease-out) both; transform-origin: 50vw 50vh; }
+.back.leave { animation: turnIn .36s cubic-bezier(.5, 0, .9, .5) reverse both; transform-origin: 50vw 50vh; }
+@keyframes turnAway { to { transform: perspective(1800px) rotateY(-90deg); filter: brightness(.7); } }
+@keyframes turnIn { from { transform: perspective(1800px) rotateY(90deg); filter: brightness(.82); } to { transform: perspective(1800px) rotateY(0); filter: none; } }
+
+/* ---------- 背面 ---------- */
+.back {
+  position: relative; min-height: 100vh; padding: 0 var(--pad) 56px; overflow: hidden;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .09 0 0 0 0 .22 0 0 0 0 .43 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(90% 60% at 78% 0%, rgba(23, 57, 110, .07), transparent 70%),
+    var(--paper);
+}
+.wrap { position: relative; max-width: 1280px; margin: 0 auto; }
+/* 正面的「天衍」透过纸背，所以是反的 */
+.ghost {
+  position: absolute; top: clamp(40px, 7vw, 84px); right: -0.06em; z-index: 0; pointer-events: none; user-select: none;
+  font-family: var(--display); font-size: clamp(150px, 27vw, 380px); line-height: 1; letter-spacing: .12em; white-space: nowrap;
+  color: var(--ink); opacity: .055; transform: scaleX(-1); filter: blur(1.2px);
+}
+
+.top { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 22px 0 0; }
+.brand { display: flex; align-items: baseline; gap: 12px; font-family: var(--display); }
+.brand b { font-weight: 400; font-size: 26px; letter-spacing: .16em; }
+.brand span { font-size: 15px; color: var(--ink-2); letter-spacing: .1em; }
+.tools { display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; }
+.range { display: flex; }
+.range button { padding: 5px 13px; font-size: 14px; color: var(--ink-2); border: 1px solid var(--rule); margin-left: -1px; min-height: 34px; }
+.range button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); position: relative; }
+.link { font-size: 14px; color: var(--ink-2); padding: 6px 2px; border-bottom: 1px solid var(--rule); min-height: 34px; }
+.link:hover, .range button:hover { color: var(--ink); }
+.range button[aria-pressed="true"]:hover { color: var(--paper); }
+.stamp { font-size: 13px; color: var(--ink-3); }
+.busy .stamp { opacity: .5; }
+
+/* ----- 这一卦 ----- */
+.reading { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px 56px; align-items: end; padding: clamp(28px, 3.4vw, 46px) 0 clamp(20px, 2.2vw, 30px); }
+.reading-lead { font-size: 16px; color: var(--ink-2); }
+.reading h1 { font-family: var(--display); font-weight: 400; font-size: clamp(60px, 8.6vw, 116px); line-height: 1.08; letter-spacing: .06em; margin: 2px 0 0 -0.04em; white-space: nowrap; }
+.reading-ci { margin-top: 8px; font-size: clamp(17px, 1.7vw, 21px); line-height: 1.6; max-width: 30em; letter-spacing: .04em; }
+.reading-how { position: relative; z-index: 1; margin-top: 14px; font-size: 14px; color: var(--ink-2); max-width: 46em; }
+.reading-how i { font-style: normal; color: var(--zhu); }
+.today { border-left: 1px solid var(--rule); padding-left: 22px; }
+.today h2 { font-family: var(--text); font-weight: 400; font-size: 14px; color: var(--ink-2); }
+.today p { font-size: 17px; line-height: 1.5; margin-top: 4px; }
+.today .num { font-size: clamp(34px, 3.8vw, 50px); line-height: 1.15; margin-right: 3px; }
+.today small { display: block; margin-top: 10px; font-size: 13px; color: var(--ink-3); }
+
+.yaos { position: relative; z-index: 1; --x: 100%; --bar-h: clamp(46px, 4.6vw, 64px); touch-action: pan-y; }
+.yaos-head { display: grid; grid-template-columns: 236px 1fr; align-items: end; padding-bottom: 8px; }
+.yaos-head span { font-size: 13px; color: var(--ink-3); }
+.yaos-date { text-align: right; }
+.yaos-date b { font-weight: 400; color: var(--ink); font-size: 15px; margin-left: 12px; }
+.yao { display: grid; grid-template-columns: 236px 1fr; align-items: center; margin-bottom: clamp(10px, 1vw, 14px); }
+.yao-label { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: baseline; padding-right: 18px; }
+.yao-pos { font-family: var(--display); font-size: 15px; color: var(--ink-3); grid-row: 1 / 3; align-self: center; writing-mode: vertical-rl; letter-spacing: .12em; }
+.yao-name { font-size: 14px; color: var(--ink-2); line-height: 1.25; }
+.yao-total { grid-column: 2; font-size: clamp(26px, 2.3vw, 31px); line-height: 1.1; }
+.yao-total small { font-family: var(--text); font-size: 13px; color: var(--ink-2); margin-left: 3px; }
+.yao-delta { grid-column: 2; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+.yao.moving .yao-pos, .yao.moving .yao-delta { color: var(--zhu); }
+.yao-bar { position: relative; height: var(--bar-h); color: var(--ink); }
+.yao.moving .yao-bar { color: var(--zhu); }
+.yao-bar svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.yao-bar .draw { clip-path: inset(0 0 0 0); }
+.yaos.casting .yao-bar .draw { animation: cast .8s var(--ease-out) both; animation-delay: calc(var(--i) * 110ms + 120ms); }
+@keyframes cast { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
+.yao-cur { position: absolute; top: -5px; bottom: -5px; left: var(--x); width: 0; border-left: 1px solid var(--ink-deep); pointer-events: none; }
+.yao-day {
+  position: absolute; top: 50%; left: var(--x); transform: translate(8px, -50%); pointer-events: none; white-space: nowrap;
+  background: var(--paper); color: var(--ink-deep); padding: 1px 8px; font-size: 17px; line-height: 1.5; box-shadow: 0 0 0 1px var(--ink-deep);
+}
+.yaos.flip-tag .yao-day { transform: translate(calc(-100% - 8px), -50%); }
+.yaos-axis { position: relative; margin-left: 236px; height: 24px; font-size: 12.5px; color: var(--ink-3); }
+.yaos-axis span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
+.yaos-axis span:first-child { transform: none; }
+.yaos-axis span:last-child { transform: translateX(-100%); }
+
+/* ----- 小节 ----- */
+.sec { position: relative; z-index: 1; margin-top: clamp(44px, 6vw, 84px); padding-top: 22px; border-top: 1px solid var(--ink); }
+.sec h2, .col h2 { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 2.6vw, 32px); letter-spacing: .06em; line-height: 1.3; }
+.sec-note { margin-top: 4px; font-size: 14px; color: var(--ink-2); max-width: 44em; }
+.empty { margin-top: 18px; color: var(--ink-2); }
+
+/* 方图 */
+.gua-sec { display: grid; grid-template-columns: minmax(0, 620px) minmax(0, 1fr); gap: 28px clamp(28px, 5vw, 76px); align-items: start; margin-top: 22px; }
+.square { display: grid; grid-template-columns: 30px repeat(8, 1fr); gap: 3px; user-select: none; }
+.sq-h { display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 15px; color: var(--ink-2); line-height: 1; padding: 3px 0 5px; }
+.sq-h.side { padding: 0 6px 0 0; justify-content: flex-start; }
+.sq-corner { font-size: 11px; color: var(--ink-3); line-height: 1.15; display: flex; align-items: flex-end; }
+.cell { position: relative; aspect-ratio: 1; display: grid; place-items: center; color: var(--ink); background: rgba(23, 57, 110, var(--a, 0)); box-shadow: inset 0 0 0 1px var(--rule); }
+.cell.dark { color: var(--paper); }
+.cell.zero svg { opacity: .3; }
+.cell svg { width: 46%; height: 46%; display: block; }
+.cell:hover, .cell.on { outline: 2px solid var(--ink-deep); outline-offset: 2px; z-index: 2; }
+.cell.from { outline: 2px solid var(--ink-deep); outline-offset: 2px; z-index: 2; }
+.cell.to { outline: 2px solid var(--zhu); outline-offset: 2px; z-index: 2; }
+.sq-wrap { position: relative; }
+.sq-link { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 3; }
+.sq-link path { fill: none; stroke: var(--zhu); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; animation: linkDraw .5s var(--ease-out) forwards; }
+.sq-link circle { fill: var(--zhu); }
+@keyframes linkDraw { to { stroke-dashoffset: 0; } }
+.pick { display: grid; grid-template-columns: 56px 1fr; gap: 4px 18px; align-items: center; margin-top: 20px; padding-left: 33px; min-height: 92px; }
+.pick svg { width: 56px; height: 56px; }
+.pick-name { font-family: var(--display); font-size: 27px; line-height: 1.25; }
+.pick-name span { font-family: var(--text); font-size: 14px; color: var(--ink-2); margin-left: 12px; }
+.pick-ci { font-size: 14px; color: var(--ink-2); line-height: 1.6; }
+
+.recent h3 { font-family: var(--text); font-weight: 400; font-size: 14px; color: var(--ink-2); padding-bottom: 8px; border-bottom: 1px solid var(--rule); }
+.recent li { display: grid; grid-template-columns: 5.6em minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--rule); cursor: default; }
+.recent li:hover, .recent li.on { background: linear-gradient(90deg, transparent, rgba(23, 57, 110, .06) 12%, rgba(23, 57, 110, .06) 88%, transparent); }
+.r-at { font-size: 13px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.r-at b { display: block; font-weight: 400; font-size: 15px; color: var(--ink); font-family: var(--display); }
+.r-gua { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-family: var(--display); font-size: 18px; line-height: 1.3; }
+.r-gua .pair { display: inline-flex; align-items: center; gap: 9px; white-space: nowrap; }
+.r-gua svg { width: 20px; height: 20px; flex: none; }
+.r-gua .to { color: var(--ink-3); font-family: var(--text); font-size: 13px; }
+.r-gua .still { font-family: var(--text); font-size: 13px; color: var(--ink-3); }
+.r-meta { font-size: 13px; color: var(--ink-2); text-align: right; line-height: 1.45; }
+.zhu { color: var(--zhu); }
+
+/* 三栏 */
+.cols { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 0 clamp(28px, 4vw, 64px); }
+.col { padding-top: 22px; }
+.col .sec-note { margin-bottom: 16px; }
+.src li { padding: 10px 0 11px; border-bottom: 1px solid var(--rule); }
+.src-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.src-name { font-size: 16px; overflow-wrap: anywhere; }
+.src-name small { font-size: 12.5px; color: var(--ink-3); margin-left: 6px; }
+.src-n { font-size: 20px; white-space: nowrap; }
+.src-n small { font-family: var(--text); font-size: 12.5px; color: var(--ink-2); margin-left: 2px; }
+.src-bar { height: 6px; margin-top: 6px; background: linear-gradient(90deg, var(--ink) var(--w), transparent var(--w)); box-shadow: inset 0 -1px 0 var(--rule); }
+.src-sub { margin-top: 5px; font-size: 13px; color: var(--ink-2); }
+
+.hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; height: 150px; align-items: end; border-bottom: 1px solid var(--ink); }
+.hr { position: relative; height: 100%; display: flex; align-items: flex-end; }
+.hr i { display: block; width: 100%; height: var(--v); background: rgba(23, 57, 110, .2); position: relative; min-height: 1px; }
+.hr i::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--r); background: var(--ink); }
+.hr:hover i, .hr.on i { background: rgba(23, 57, 110, .38); }
+.hours-axis { display: grid; grid-template-columns: repeat(12, 1fr); font-family: var(--display); font-size: 13.5px; color: var(--ink-2); margin: 5px 0 0 calc(-100% / 24); text-align: center; }
+.hours-read { margin-top: 12px; font-size: 14px; color: var(--ink-2); min-height: 3.4em; }
+.key { display: inline-block; width: 10px; height: 10px; margin: 0 5px 0 0; vertical-align: -1px; background: var(--ink); }
+.key.pale { background: rgba(23, 57, 110, .22); }
+
+.split { margin-bottom: 26px; }
+.split h3, .moves h3 { font-family: var(--text); font-weight: 400; font-size: 14px; color: var(--ink-2); margin-bottom: 8px; }
+.split-bar { display: flex; height: 26px; gap: 4px; }
+.split-bar i { background: var(--ink); min-width: 2px; }
+.split-bar i + i { background: none; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.split-key { display: flex; justify-content: space-between; margin-top: 6px; font-size: 14px; gap: 12px; }
+.split-key .num { font-size: 18px; margin-left: 5px; }
+.moves-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; }
+.mv { text-align: center; }
+.mv-col { height: 64px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 7px; }
+.mv-col i { width: 100%; max-width: 30px; height: var(--v); min-height: 1px; background: var(--ink); }
+.mv svg { width: 24px; height: 24px; display: block; margin: 0 auto; }
+.mv .num { display: block; font-size: 15px; line-height: 1.5; }
+.moves-cap { margin-top: 8px; font-size: 13px; color: var(--ink-3); }
+
+.foot { position: relative; z-index: 1; margin-top: clamp(44px, 6vw, 80px); padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--ink-2); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 24px; }
+.foot .num { font-size: 16px; color: var(--ink); }
+.oops { position: relative; z-index: 2; margin-top: 14px; padding: 8px 12px; border: 1px solid var(--zhu); color: var(--zhu); font-size: 14px; }
+
+@media (max-width: 1000px) {
+  .gua-sec { grid-template-columns: 1fr; }
+  .cols { grid-template-columns: 1fr 1fr; }
+  .cols .col:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  body { font-size: 15px; }
+  .top { padding-top: 16px; }
+  .stamp { order: 3; width: 100%; }
+  .reading { grid-template-columns: 1fr; align-items: start; }
+  .today { border-left: 0; border-top: 1px solid var(--rule); padding: 14px 0 0; }
+  .yaos { --bar-h: 46px; }
+  .yaos-head { grid-template-columns: 1fr auto; }
+  .yao { grid-template-columns: 1fr; margin-bottom: 16px; }
+  .yao-label { grid-template-columns: auto auto 1fr; column-gap: 9px; padding: 0 0 5px; }
+  .yao-pos { writing-mode: horizontal-tb; grid-row: auto; font-size: 14px; letter-spacing: 0; }
+  .yao-total { grid-column: auto; text-align: right; font-size: 25px; }
+  .yao-delta { grid-column: 1 / -1; }
+  .yaos-head span:first-child { display: none; }
+  .yaos-head { grid-template-columns: 1fr; }
+  .yaos-date { text-align: left; }
+  .pick-name span { display: block; margin: 0; }
+  .yaos-axis { margin-left: 0; }
+  .cols { grid-template-columns: 1fr; }
+  .square { grid-template-columns: 22px repeat(8, 1fr); gap: 2px; }
+  .sq-h { font-size: 13px; }
+  .pick { padding-left: 0; }
+  .recent li { grid-template-columns: 4.6em minmax(0, 1fr) auto; gap: 2px 10px; }
+  .r-gua { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .front.leave, .front.enter, .back.enter, .back.leave { animation-duration: .01s; }
+  .yaos.casting .yao-bar .draw, .sq-link path { animation: none; stroke-dashoffset: 0; }
+}
 </style>
 </head>
 <body>
 
-<section class="gate" id="gate">
-  <form id="gateForm" autocomplete="on">
+<!-- 正面：和前台一样的蓝图。输对密码，图纸翻过去 -->
+<div class="front" id="front">
+  <svg class="front-ring" viewBox="0 0 200 200" fill="none" stroke="currentColor" aria-hidden="true">
+    <circle cx="100" cy="100" r="99" stroke-width=".3"/><circle cx="100" cy="100" r="91" stroke-width=".3"/>
+    <g id="ringTicks" stroke-width=".9"></g>
+  </svg>
+  <div class="gate">
     <h1>天衍</h1>
-    <p>后台 · 访问与起卦统计</p>
-    <label for="pw">密码</label>
-    <input id="pw" name="password" type="password" autocomplete="current-password" required>
-    <p class="err" id="gateErr" role="alert"></p>
-    <button class="btn" type="submit" id="gateBtn">进入</button>
-  </form>
-</section>
-
-<main class="app" id="app" hidden>
-  <header class="top">
-    <h1>天衍<small>访问与起卦统计</small></h1>
-    <span class="spacer"></span>
-    <div class="seg" role="group" aria-label="时间范围">
-      <button class="btn" data-days="7">近 7 天</button>
-      <button class="btn" data-days="30">近 30 天</button>
-      <button class="btn" data-days="90">近 90 天</button>
-    </div>
-    <button class="btn" id="refreshBtn">刷新</button>
-    <button class="btn" id="logoutBtn">退出</button>
-    <div class="stamp" id="stamp"></div>
-  </header>
-
-  <div class="grid">
-    <div class="kpis" id="kpis"></div>
-
-    <section class="card">
-      <div class="card-head">
-        <div>
-          <h2>每天的访问和起卦</h2>
-          <p class="sub">访问 = 打开一次页面；起卦 = 起出一卦。同一个人一天里可以算多次</p>
-        </div>
-        <button class="btn" id="dailyTableBtn" aria-pressed="false">表格</button>
-      </div>
-      <div class="legend"><span><i style="background:var(--s-visit)"></i>访问</span><span><i style="background:var(--s-read)"></i>起卦</span></div>
-      <div class="chart" id="dailyChart"></div>
-      <div class="table-wrap" id="dailyTable" hidden></div>
-    </section>
-
-    <section class="card half">
-      <h2>从哪儿来</h2>
-      <p class="sub">带 <span class="num">?from=</span> 的按参数算，其余看来路网站，都没有就是直接访问</p>
-      <div class="table-wrap" id="sources"></div>
-    </section>
-
-    <section class="card half">
-      <h2>起得最多的卦</h2>
-      <p class="sub">本卦，前 12 名</p>
-      <div class="bars" id="hexagrams"></div>
-    </section>
-
-    <section class="card half">
-      <h2>一天里什么时候人多</h2>
-      <p class="sub">按北京时间，访问次数</p>
-      <div class="chart" id="hourChart"></div>
-    </section>
-
-    <section class="card half">
-      <h2>怎么起、用什么看</h2>
-      <p class="sub">起卦方式和动爻数按起卦算，设备按访问算</p>
-      <div id="splits"></div>
-    </section>
-
-    <section class="card">
-      <h2>最近起的卦</h2>
-      <p class="sub">最新 15 条</p>
-      <div class="table-wrap" id="recent"></div>
-    </section>
+    <p class="gate-note" id="gateNote">数记在这张图纸的背面</p>
+    <form id="gateForm" autocomplete="off">
+      <input id="pw" type="password" aria-label="后台密码" placeholder="后台密码" autocomplete="current-password">
+      <button class="gate-btn" id="gateBtn" type="submit">翻过去</button>
+      <p class="gate-err" id="gateErr" role="alert"></p>
+    </form>
   </div>
-</main>
+</div>
 
+<!-- 背面 -->
+<div class="back" id="back" hidden>
+  <div class="wrap">
+    <div class="ghost" aria-hidden="true">天衍</div>
+
+    <header class="top">
+      <div class="brand"><b>天衍</b><span>背面</span></div>
+      <div class="tools">
+        <span class="stamp" id="stamp"></span>
+        <div class="range" role="group" aria-label="看多少天">
+          <button type="button" data-days="7">7 天</button><button type="button" data-days="30">30 天</button><button type="button" data-days="90">90 天</button>
+        </div>
+        <button type="button" class="link" id="refreshBtn">刷新</button>
+        <button type="button" class="link" id="logoutBtn">退出</button>
+      </div>
+    </header>
+    <p class="oops" id="oops" role="alert" hidden></p>
+
+    <section class="reading" aria-labelledby="guaName">
+      <div>
+        <p class="reading-lead" id="lead"></p>
+        <h1 id="guaName"></h1>
+        <p class="reading-ci" id="guaCi"></p>
+      </div>
+      <div class="today" id="today"></div>
+    </section>
+
+    <section class="yaos" id="yaos" aria-label="六项数，每项一爻"></section>
+    <p class="reading-how" id="how"></p>
+
+    <section class="sec">
+      <h2>大家起到的卦</h2>
+      <p class="sec-note" id="guaNote"></p>
+      <div class="gua-sec">
+        <div>
+          <div class="sq-wrap"><div class="square" id="square"></div><svg class="sq-link" id="sqLink" aria-hidden="true"></svg></div>
+          <div class="pick" id="pick" aria-live="polite"></div>
+        </div>
+        <div class="recent">
+          <h3>最近起的十几卦</h3>
+          <ol id="recent"></ol>
+        </div>
+      </div>
+    </section>
+
+    <div class="sec cols">
+      <section class="col">
+        <h2>从哪里来</h2>
+        <p class="sec-note">链接带 ?from= 的按标记算，能对上起了多少卦；别的只知道是从哪个网站点过来的。</p>
+        <ol class="src" id="sources"></ol>
+      </section>
+      <section class="col">
+        <h2>几点来</h2>
+        <p class="sec-note"><span class="key pale"></span>访问　<span class="key"></span>起卦，按北京时间</p>
+        <div class="hours" id="hours"></div>
+        <div class="hours-axis" aria-hidden="true"><span>子</span><span>丑</span><span>寅</span><span>卯</span><span>辰</span><span>巳</span><span>午</span><span>未</span><span>申</span><span>酉</span><span>戌</span><span>亥</span></div>
+        <p class="hours-read" id="hoursRead"></p>
+      </section>
+      <section class="col">
+        <h2>怎么起的</h2>
+        <p class="sec-note">起卦方式和动爻按起卦算，设备按访问算。</p>
+        <div id="splits"></div>
+      </section>
+    </div>
+
+    <footer class="foot" id="foot"></footer>
+  </div>
+</div>
+
+<script src="data.js"></script>
 <script>
 (() => {
   const API = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudbase.com/api/admin-stats';
   const PW_KEY = 'tianyan_admin_pw';
   const DAYS_KEY = 'tianyan_admin_days';
-  // 本地打开 admin.html?mock 可以用假数据看排版
-  const MOCK = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname) && new URLSearchParams(location.search).has('mock');
+  // 本地打开 admin.html?mock 用假数据看排版（?mock=empty 是刚上线没什么数的样子，?mock=old 是云函数还没更新时的样子）。
+  // 假数据模式下随便输什么都能进，输「错」会按密码不对处理。
+  const QS = new URLSearchParams(location.search);
+  const MOCK = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname) && QS.has('mock') ? (QS.get('mock') || 'full') : '';
 
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = n => Number(n || 0).toLocaleString('zh-CN');
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
   const store = {
     get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
     del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
   };
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  let days = Number(store.get(DAYS_KEY)) || 30;
+  let days = Number(store.get(DAYS_KEY));
+  if (![7, 30, 90].includes(days)) days = 30;
   let password = store.get(PW_KEY) || '';
-  let last = null;
+  let data = null;
 
+  // ---------- 卦 ----------
+  // data.js 的键是六位 0/1，上爻在前
+  const TRI = [['乾', '111'], ['兑', '011'], ['离', '101'], ['震', '001'], ['巽', '110'], ['坎', '010'], ['艮', '100'], ['坤', '000']];
+  const BIN_OF = {};
+  Object.keys(GUA_LOOKUP).forEach(b => { BIN_OF[GUA_LOOKUP[b][0]] = b; });
+
+  // 小卦画。bin 上爻在前；marks 里的爻位（0 = 初爻）画成朱色
+  function glyph(bin, marks) {
+    let s = '';
+    for (let row = 0; row < 6; row++) {
+      const y = 1.5 + row * 3.4, c = marks && marks.includes(5 - row) ? ' fill="var(--zhu)"' : '';
+      s += bin[row] === '1' ? `<rect x="0" y="${y}" width="20" height="2"${c}/>` : `<rect x="0" y="${y}" width="8.6" height="2"${c}/><rect x="11.4" y="${y}" width="8.6" height="2"${c}/>`;
+    }
+    return `<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">${s}</svg>`;
+  }
+  const diffLines = (a, b) => a && b ? [0, 1, 2, 3, 4, 5].filter(i => a[5 - i] !== b[5 - i]) : [];
+
+  // ---------- 取数 ----------
   async function fetchStats(pw, d) {
-    if (MOCK) return mockData(d);
-    const res = await fetch(API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ password: pw, days: d })
-    });
+    if (MOCK) {
+      await new Promise(r => setTimeout(r, 260));
+      if (pw === '错') throw Object.assign(new Error('密码不对'), { auth: true });
+      return mockData(d, MOCK);
+    }
+    const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ password: pw, days: d }) });
     if (res.status === 401) throw Object.assign(new Error('密码不对'), { auth: true });
-    if (!res.ok) throw new Error('数据没取到（' + res.status + '），过会儿再试');
+    if (!res.ok) throw new Error('数没取到（' + res.status + '），过会儿再试');
     return res.json();
   }
+  const errText = err => err.auth ? '密码不对' : (err instanceof TypeError ? '连不上，过会儿再试' : (err.message || '连不上，过会儿再试'));
 
-  // ---------- 登录 ----------
+  // ---------- 翻面 ----------
+  const front = $('#front'), back = $('#back');
+  function once(el, cls, done) {
+    if (calm) { done && done(); return; }
+    el.classList.add(cls);
+    el.addEventListener('animationend', function f(e) {
+      if (e.target !== el) return;
+      el.removeEventListener('animationend', f); el.classList.remove(cls); done && done();
+    });
+  }
+  function turnToBack() {
+    scrollTo(0, 0);
+    once(front, 'leave', () => {
+      front.hidden = true; back.hidden = false;
+      document.documentElement.classList.add('on-back');
+      render(true);
+      once(back, 'enter');
+    });
+  }
+  function turnToFront(msg) {
+    store.del(PW_KEY); password = ''; data = null;
+    $('#pw').value = ''; $('#gateErr').textContent = msg || ''; setGateBusy(false);
+    const show = () => {
+      back.hidden = true; front.hidden = false;
+      document.documentElement.classList.remove('on-back');
+      once(front, 'enter', () => $('#pw').focus());
+      if (calm) $('#pw').focus();
+    };
+    if (back.hidden) { front.hidden = false; $('#pw').focus(); return; }
+    scrollTo(0, 0);
+    once(back, 'leave', show);
+  }
+  function setGateBusy(on) {
+    $('#gateBtn').disabled = on;
+    $('#gateBtn').textContent = on ? '正在翻' : '翻过去';
+  }
+
   $('#gateForm').addEventListener('submit', async e => {
     e.preventDefault();
     const pw = $('#pw').value;
-    $('#gateBtn').disabled = true;
-    $('#gateErr').textContent = '';
+    if (!pw) { $('#gateErr').textContent = '先输密码'; return; }
+    setGateBusy(true); $('#gateErr').textContent = '';
     try {
-      const data = await fetchStats(pw, days);
-      password = pw;
-      store.set(PW_KEY, pw);
-      showApp(data);
+      data = await fetchStats(pw, days);
+      password = pw; store.set(PW_KEY, pw);
+      turnToBack();
     } catch (err) {
-      $('#gateErr').textContent = err.auth ? '密码不对' : (err.message || '连不上，过会儿再试');
-    } finally {
-      $('#gateBtn').disabled = false;
+      $('#gateErr').textContent = errText(err);
+      setGateBusy(false);
+      $('#pw').select();
     }
   });
+  $('#logoutBtn').addEventListener('click', () => turnToFront());
 
-  $('#logoutBtn').addEventListener('click', () => {
-    store.del(PW_KEY);
-    password = '';
-    $('#app').hidden = true;
-    $('#gate').hidden = false;
-    $('#pw').value = '';
-    $('#pw').focus();
-  });
-
-  document.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => {
-    days = Number(b.dataset.days);
-    store.set(DAYS_KEY, days);
-    reload();
+  async function reload(cast) {
+    back.classList.add('busy'); $('#oops').hidden = true;
+    try {
+      data = await fetchStats(password, days);
+      render(cast);
+    } catch (err) {
+      if (err.auth) return turnToFront('密码不对，重新输一次');
+      $('#oops').textContent = errText(err); $('#oops').hidden = false;
+    } finally {
+      back.classList.remove('busy');
+    }
+  }
+  $('#refreshBtn').addEventListener('click', () => reload(false));
+  document.querySelectorAll('.range button').forEach(b => b.addEventListener('click', () => {
+    const d = Number(b.dataset.days);
+    if (d === days) return;
+    days = d; store.set(DAYS_KEY, String(d)); markRange();
+    reload(true);
   }));
-  $('#refreshBtn').addEventListener('click', reload);
-  $('#dailyTableBtn').addEventListener('click', e => {
-    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
-    e.currentTarget.setAttribute('aria-pressed', on);
-    $('#dailyTable').hidden = !on;
-    $('#dailyChart').hidden = on;
-  });
-
-  async function reload() {
-    const btn = $('#refreshBtn');
-    btn.disabled = true; btn.textContent = '读取中';
-    try {
-      showApp(await fetchStats(password, days));
-    } catch (err) {
-      if (err.auth) { $('#logoutBtn').click(); $('#gateErr').textContent = '密码已失效，重新输一次'; }
-      else $('#stamp').innerHTML = '<span class="toast">' + esc(err.message) + '</span>';
-    } finally {
-      btn.disabled = false; btn.textContent = '刷新';
-    }
+  function markRange() {
+    document.querySelectorAll('.range button').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.days) === days)));
   }
 
-  function showApp(data) {
-    last = data;
-    $('#gate').hidden = true;
-    $('#app').hidden = false;
-    document.querySelectorAll('[data-days]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.days) === days));
-    render(data);
-  }
-
-  // ---------- 渲染 ----------
-  function render(d) {
-    const t = new Date(d.generatedAt);
-    $('#stamp').textContent = '更新于 ' + t.toLocaleString('zh-CN', { hour12: false }) +
-      ' · 有记录以来共 ' + fmt(d.allTime.visits) + ' 次访问、' + fmt(d.allTime.readings) + ' 次起卦';
-    renderKpis(d);
-    renderDaily(d.daily);
-    renderSources(d.sources);
-    renderHexagrams(d.hexagrams);
-    renderHours(d.hours);
-    renderSplits(d);
-    renderRecent(d.recent);
-  }
-
-  function renderKpis(d) {
-    const rate = d.total.visitors ? Math.round(d.total.readers / d.total.visitors * 100) : null;
-    const tiles = [
-      ['今天访问', fmt(d.today.visits), fmt(d.today.visitors) + ' 人'],
-      ['今天起卦', fmt(d.today.readings), fmt(d.today.readers) + ' 人'],
-      [`近 ${d.days} 天访问`, fmt(d.total.visits), fmt(d.total.visitors) + ' 人'],
-      [`近 ${d.days} 天起卦`, fmt(d.total.readings), fmt(d.total.readers) + ' 人' + (rate === null ? '' : ` · 来的人里 ${rate}% 起了卦`)]
-    ];
-    $('#kpis').innerHTML = tiles.map(([l, v, n]) =>
-      `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join('');
-  }
-
-  // 刻度：取 0 到不小于最大值的整齐数
-  function niceMax(v) {
-    if (v <= 4) return 4;
-    const p = Math.pow(10, Math.floor(Math.log10(v)));
-    for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
-    return 10 * p;
-  }
-
-  function tipHtml(title, rows) {
-    return `<b>${esc(title)}</b>` + rows.map(([c, name, v]) =>
-      `<div class="row"><i style="background:${c}"></i><span>${esc(name)}</span><span>${fmt(v)}</span></div>`).join('');
-  }
-
-  function renderDaily(daily) {
-    const el = $('#dailyChart');
-    // 按容器实际宽度画，手机上字不会被缩小
-    const W = Math.max(300, el.clientWidth || 1000), H = W < 600 ? 220 : 260, L = 40, R = 40, T = 12, B = 28;
-    const iw = W - L - R, ih = H - T - B;
-    const max = niceMax(Math.max(1, ...daily.map(x => Math.max(x.visits, x.readings))));
+  // ---------- 六爻 ----------
+  // 自下而上：访问、来的人、起卦、起卦的人、来了就起卦的占几成、每人起几卦
+  function buildYaos(d) {
+    const daily = d.daily || [], t = d.total || {};
     const n = daily.length;
-    const x = i => L + (n === 1 ? iw / 2 : i * iw / (n - 1));
-    const y = v => T + ih - v / max * ih;
-    const ticks = [0, .25, .5, .75, 1].map(f => f * max);
-    const path = key => daily.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[key]).toFixed(1)).join(' ');
-    const every = Math.ceil(n / (W < 600 ? 4 : 8));
-    const md = s => s.slice(5).replace('-', '/');
-    const lastP = daily[n - 1];
-    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每天访问和起卦次数折线图">`;
-    svg += '<g class="axis">' + ticks.map(v => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(Math.round(v))}</text>`).join('');
-    svg += daily.map((p, i) => (i % every === 0 || i === n - 1) && !(i !== n - 1 && n - 1 - i < every / 2) ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${md(p.date)}</text>` : '').join('') + '</g>';
-    svg += `<line class="base-line" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>`;
-    svg += `<path d="${path('visits')}" fill="none" stroke="var(--s-visit)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    svg += `<path d="${path('readings')}" fill="none" stroke="var(--s-read)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
-    // 末端直接标数，两条线挨太近就错开
-    let yv = y(lastP.visits), yr = y(lastP.readings);
-    if (Math.abs(yv - yr) < 14) { if (yv <= yr) { yv -= 7; yr += 7; } else { yv += 7; yr -= 7; } }
-    svg += `<text x="${x(n - 1) + 8}" y="${yv + 4}" fill="var(--ink-2)" font-size="12" font-family="var(--num)">${fmt(lastP.visits)}</text>`;
-    svg += `<text x="${x(n - 1) + 8}" y="${yr + 4}" fill="var(--ink-2)" font-size="12" font-family="var(--num)">${fmt(lastP.readings)}</text>`;
-    svg += `<g id="dailyHover" style="display:none"><line class="base-line" y1="${T}" y2="${T + ih}"/><circle r="4" fill="var(--s-visit)" stroke="var(--blue)" stroke-width="2"/><circle r="4" fill="var(--s-read)" stroke="var(--blue)" stroke-width="2"/></g>`;
-    svg += `<rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent" id="dailyHit"/>`;
-    svg += '</svg><div class="tip"></div>';
-    el.innerHTML = svg;
-
-    const s = el.querySelector('svg'), hit = el.querySelector('#dailyHit'), hov = el.querySelector('#dailyHover'), tip = el.querySelector('.tip');
-    const [ln, cv, cr] = hov.children;
-    const move = e => {
-      const r = s.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width * W;
-      const i = Math.max(0, Math.min(n - 1, Math.round(n === 1 ? 0 : (px - L) / iw * (n - 1))));
-      const p = daily[i];
-      hov.style.display = '';
-      ln.setAttribute('x1', x(i)); ln.setAttribute('x2', x(i));
-      cv.setAttribute('cx', x(i)); cv.setAttribute('cy', y(p.visits));
-      cr.setAttribute('cx', x(i)); cr.setAttribute('cy', y(p.readings));
-      tip.innerHTML = tipHtml(p.date, [['var(--s-visit)', `访问（${p.visitors} 人）`, p.visits], ['var(--s-read)', `起卦（${p.readers} 人）`, p.readings]]);
-      tip.style.display = 'block';
-      tip.style.left = Math.min(Math.max(x(i) / W * r.width, 80), r.width - 80) + 'px';
-      tip.style.top = Math.min(y(p.visits), y(p.readings)) / H * r.height + 'px';
-    };
-    hit.addEventListener('pointermove', move);
-    hit.addEventListener('pointerdown', move);
-    hit.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.style.display = 'none'; });
-
-    $('#dailyTable').innerHTML = '<table><thead><tr><th>日期</th><th class="n">访问</th><th class="n">访客</th><th class="n">起卦</th><th class="n">起卦人数</th></tr></thead><tbody>' +
-      daily.slice().reverse().map(p => `<tr><td class="num">${p.date}</td><td class="n">${fmt(p.visits)}</td><td class="n">${fmt(p.visitors)}</td><td class="n">${fmt(p.readings)}</td><td class="n">${fmt(p.readers)}</td></tr>`).join('') +
-      '</tbody></table>';
+    let prev = d.prev, cmp = `前 ${n} 天`, cur = t;
+    if (!prev) {
+      // 云函数还没更新、没给上一段的数：拿这段的后一半和前一半比
+      const h = Math.floor(n / 2), sum = (arr, k) => arr.reduce((a, x) => a + (x[k] || 0), 0);
+      const keys = ['visits', 'visitors', 'readings', 'readers'];
+      const a = daily.slice(n - 2 * h, n - h), b = daily.slice(n - h);
+      prev = {}; cur = {};
+      keys.forEach(k => { prev[k] = sum(a, k); cur[k] = sum(b, k); });
+      cmp = `前 ${h} 天`;
+      d._half = h;
+    }
+    const rate = o => o.visitors ? o.readers / o.visitors : 0;
+    const per = o => o.readers ? o.readings / o.readers : 0;
+    const defs = [
+      { name: '访问', unit: '次', total: t.visits, cur: cur.visits, prev: prev.visits, day: x => x.visits, show: fmt },
+      { name: '来的人', unit: '人', total: t.visitors, cur: cur.visitors, prev: prev.visitors, day: x => x.visitors, show: fmt },
+      { name: '起卦', unit: '卦', total: t.readings, cur: cur.readings, prev: prev.readings, day: x => x.readings, show: fmt },
+      { name: '起卦的人', unit: '人', total: t.readers, cur: cur.readers, prev: prev.readers, day: x => x.readers, show: fmt },
+      { name: '来了就起卦的', unit: '', total: rate(t), cur: rate(cur), prev: rate(prev), day: rate, show: v => Math.round(v * 100) + '%', ratio: true },
+      { name: '每人起几卦', unit: '卦', total: per(t), cur: per(cur), prev: per(prev), day: per, show: v => (Math.round(v * 10) / 10).toFixed(1), ratio: true }
+    ];
+    defs.forEach((y, i) => {
+      y.total = y.total || 0; y.cur = y.cur || 0; y.prev = y.prev || 0;
+      y.yang = y.cur > 0 && y.cur >= y.prev;
+      // 上一段是零就没得比，不算动爻
+      const ch = y.prev > 0 ? (y.cur - y.prev) / y.prev : 0;
+      y.moving = Math.abs(ch) >= .5;
+      y.pos = (i === 0 ? '初' : i === 5 ? '上' : '') + (i === 0 || i === 5 ? (y.yang ? '九' : '六') : (y.yang ? '九' : '六') + '二三四五'[i - 1]);
+      const head = d._half ? `后 ${d._half} 天 ${y.show(y.cur)}，` : '';
+      if (!y.prev && !y.cur) y.delta = `${cmp}和现在都还没有`;
+      else if (!y.prev) y.delta = `${head}${cmp}还没有`;
+      else {
+        const p = Math.round(Math.abs(ch) * 100);
+        const word = y.ratio ? (ch > 0 ? '高了' : '低了') : (ch > 0 ? '多了' : '少了');
+        y.delta = `${head}${cmp} ${y.show(y.prev)}` + (p === 0 ? '，差不多' : `，${word} ${p >= 1000 ? '很多' : p + '%'}`);
+      }
+      y.series = daily.map(y.day);
+    });
+    return defs;
   }
 
-  function renderHours(hours) {
-    const el = $('#hourChart');
-    const W = Math.max(280, el.clientWidth || 520), H = 200, L = 32, R = 8, T = 10, B = 24;
-    const iw = W - L - R, ih = H - T - B;
-    const max = niceMax(Math.max(1, ...hours.map(h => h.visits)));
-    const bw = iw / 24, gap = 2;
-    const y = v => T + ih - v / max * ih;
-    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="各小时访问次数柱状图"><g class="axis">`;
-    svg += [0, .5, 1].map(f => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(f * max)}" y2="${y(f * max)}"/><text x="${L - 6}" y="${y(f * max) + 4}" text-anchor="end">${fmt(f * max)}</text>`).join('');
-    svg += [0, 6, 12, 18, 23].map(h => `<text x="${L + h * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${h}时</text>`).join('') + '</g>';
-    svg += hours.map((h, i) => {
-      const bh = Math.max(h.visits ? 2 : 0, ih - (y(h.visits) - T));
-      const x0 = L + i * bw + gap / 2, w = bw - gap, y0 = T + ih - bh, r = Math.min(4, w / 2, bh);
-      const d = bh ? `M${x0} ${T + ih} V${y0 + r} Q${x0} ${y0} ${x0 + r} ${y0} H${x0 + w - r} Q${x0 + w} ${y0} ${x0 + w} ${y0 + r} V${T + ih} Z` : '';
-      return `<path d="${d}" fill="var(--s-visit)"/><rect x="${L + i * bw}" y="${T}" width="${bw}" height="${ih}" fill="transparent" data-i="${i}"/>`;
-    }).join('');
-    svg += `<line class="base-line" x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}"/></svg><div class="tip"></div>`;
-    el.innerHTML = svg;
-    const s = el.querySelector('svg'), tip = el.querySelector('.tip');
-    s.querySelectorAll('rect[data-i]').forEach(rc => {
-      const show = () => {
-        const i = +rc.dataset.i, h = hours[i], r = s.getBoundingClientRect();
-        tip.innerHTML = tipHtml(`${i}:00–${i}:59`, [['var(--s-visit)', '访问', h.visits], ['var(--s-read)', '起卦', h.readings]]);
-        tip.style.display = 'block';
-        tip.style.left = Math.min(Math.max((L + i * bw + bw / 2) / W * r.width, 70), r.width - 70) + 'px';
-        tip.style.top = y(h.visits) / H * r.height + 'px';
-        rc.previousElementSibling.style.opacity = '.75';
-      };
-      rc.addEventListener('pointerenter', show);
-      rc.addEventListener('pointerdown', show);
-      rc.addEventListener('pointerleave', () => { tip.style.display = 'none'; rc.previousElementSibling.style.opacity = ''; });
+  function barSvg(y, i) {
+    const W = 1000, H = 100, s = y.series, n = s.length, max = Math.max(...s, 0);
+    const gap = y.yang ? 0 : 76, gx = (W - gap) / 2;
+    const px = k => n > 1 ? k / (n - 1) * W : W / 2;
+    const py = v => max > 0 ? 84 - v / max * 66 : 84;
+    const pts = s.map((v, k) => `${px(k).toFixed(1)},${py(v).toFixed(1)}`);
+    const line = n > 1 ? 'M' + pts.join('L') : `M0,${py(s[0] || 0)}L${W},${py(s[0] || 0)}`;
+    const area = line + `L${W},${H}L0,${H}Z`;
+    const body = y.yang ? `<rect width="${W}" height="${H}"/>` : `<rect width="${gx}" height="${H}"/><rect x="${gx + gap}" width="${gx}" height="${H}"/>`;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <defs><clipPath id="in${i}">${body}</clipPath><clipPath id="out${i}"><rect x="${gx}" width="${gap}" height="${H}"/></clipPath></defs>
+      <g class="draw" style="--i:${i}">
+        <g fill="currentColor">${body}</g>
+        <g clip-path="url(#in${i})"><path d="${area}" fill="#EDF0F3" opacity=".07"/><path d="${line}" fill="none" stroke="#EDF0F3" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
+        ${gap ? `<g clip-path="url(#out${i})"><path d="${line}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>` : ''}
+      </g></svg>`;
+  }
+
+  const WEEK = '日一二三四五六';
+  function dayLabel(iso, isLast) {
+    const [y, m, dd] = String(iso).slice(0, 10).split('-').map(Number);
+    const w = WEEK[new Date(y, m - 1, dd).getDay()];
+    return `${m} 月 ${dd} 日 周${w}` + (isLast ? '，今天' : '');
+  }
+  const shortDay = iso => { const p = String(iso).slice(0, 10).split('-'); return Number(p[1]) + '/' + Number(p[2]); };
+
+  let yaoDefs = [], scrubAt = -1;
+  function renderYaos(d, cast) {
+    const el = $('#yaos'), daily = d.daily || [], n = daily.length;
+    yaoDefs = buildYaos(d);
+    const rows = yaoDefs.map((y, i) => `
+      <div class="yao${y.moving ? ' moving' : ''}">
+        <div class="yao-label">
+          <span class="yao-pos">${y.pos}</span><span class="yao-name">${y.name}</span>
+          <span class="yao-total num">${y.show(y.total)}<small>${y.unit}</small></span>
+          <span class="yao-delta">${y.delta}</span>
+        </div>
+        <div class="yao-bar">${barSvg(y, i)}<i class="yao-cur"></i><span class="yao-day num" data-i="${i}"></span></div>
+      </div>`).reverse().join('');
+    const ticks = [];
+    if (n) {
+      const want = Math.min(n, innerWidth < 720 ? 4 : 7);
+      for (let k = 0; k < want; k++) {
+        const idx = want > 1 ? Math.round(k * (n - 1) / (want - 1)) : 0;
+        ticks.push(`<span style="left:${n > 1 ? idx / (n - 1) * 100 : 50}%">${shortDay(daily[idx].date)}</span>`);
+      }
+    }
+    el.innerHTML = `<div class="yaos-head"><span>上爻在上，初爻在下</span><span class="yaos-date">在卦上划一下看别的日子<b id="scrubDate"></b></span></div>${rows}<div class="yaos-axis">${ticks.join('')}</div>`;
+    el.classList.remove('casting');
+    if (cast && !calm) { void el.offsetWidth; el.classList.add('casting'); }
+    setScrub(n - 1);
+  }
+  function setScrub(idx) {
+    const el = $('#yaos'), daily = data.daily || [], n = daily.length;
+    if (!n) return;
+    idx = Math.max(0, Math.min(n - 1, idx));
+    scrubAt = idx;
+    const x = n > 1 ? idx / (n - 1) : .5;
+    el.style.setProperty('--x', (x * 100) + '%');
+    el.classList.toggle('flip-tag', x > .5);
+    $('#scrubDate').textContent = dayLabel(daily[idx].date, idx === n - 1);
+    el.querySelectorAll('.yao-day').forEach(tag => {
+      const y = yaoDefs[Number(tag.dataset.i)];
+      tag.textContent = y.show(y.series[idx]);
     });
   }
+  function scrubFromEvent(e) {
+    const bar = $('#yaos .yao-bar');
+    if (!bar || !data) return;
+    const r = bar.getBoundingClientRect(), n = (data.daily || []).length;
+    setScrub(Math.round((e.clientX - r.left) / r.width * (n - 1)));
+  }
+  $('#yaos').addEventListener('pointermove', scrubFromEvent);
+  $('#yaos').addEventListener('pointerdown', scrubFromEvent);
+  $('#yaos').addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && data) setScrub((data.daily || []).length - 1); });
 
+  function renderReading(d) {
+    const bin = yaoDefs.map(y => y.yang ? '1' : '0').reverse().join('');
+    const g = GUA_LOOKUP[bin];
+    const n = (d.daily || []).length;
+    const moving = yaoDefs.filter(y => y.moving).length;
+    $('#lead').textContent = `这 ${n} 天的数，排出来是`;
+    $('#guaName').textContent = g[0];
+    $('#guaCi').textContent = g[1];
+    const cmp = d._half ? `后 ${d._half} 天比前 ${d._half} 天` : `比前 ${n} 天`;
+    $('#how').innerHTML = `不是算出来的，是数出来的：六项数各占一爻，${cmp}不少就是阳爻，少了是阴爻。` +
+      (moving ? `涨跌过半的算动爻，<i>标朱</i>，这回有 ${moving} 根。` : '涨跌过半的算动爻，这回一根也没有。') + '爻身上那条线是每天的数。';
+    const t = d.today || {};
+    $('#today').innerHTML = `<h2>今天到现在</h2>
+      <p><span class="num">${fmt(t.visitors)}</span>个人来过，开了 ${fmt(t.visits)} 次</p>
+      <p><span class="num">${fmt(t.readings)}</span>卦，${fmt(t.readers)} 个人起的</p>`;
+  }
+
+  // ---------- 方图 ----------
+  let countOf = {}, totalReadings = 0, rankOf = {}, picked = '';
+  function renderSquare(d) {
+    const list = d.hexagrams || [];
+    countOf = {}; rankOf = {};
+    list.forEach((h, i) => { countOf[h.gua] = h.count; rankOf[h.gua] = i + 1; });
+    totalReadings = (d.total && d.total.readings) || 0;
+    const max = Math.max(1, ...list.map(h => h.count));
+    const seen = list.filter(h => h.count > 0).length;
+    const partial = !d.prev && list.length >= 12 && list.reduce((a, h) => a + h.count, 0) < totalReadings;
+    $('#guaNote').textContent = !totalReadings ? '这段时间还没人起卦。等有了，起到哪一卦，哪一格就染上颜色。'
+      : (partial ? `横着是上卦，竖着是下卦，颜色越深起到的次数越多。现在只拿得到最多的 ${list.length} 卦，更新云函数后六十四卦都会有。`
+        : `横着是上卦，竖着是下卦，颜色越深起到的次数越多。六十四卦里已经出过 ${seen} 卦` + (seen < 64 ? `，还有 ${64 - seen} 卦没人起到。` : '，一卦不落。'));
+    let html = '<span class="sq-corner"></span>' + TRI.map(t => `<span class="sq-h">${t[0]}</span>`).join('');
+    TRI.forEach(low => {
+      html += `<span class="sq-h side">${low[0]}</span>`;
+      TRI.forEach(up => {
+        const bin = up[1] + low[1], name = GUA_LOOKUP[bin][0], c = countOf[name] || 0;
+        const a = c ? .1 + .9 * Math.pow(c / max, .75) : 0;
+        html += `<button type="button" class="cell${a > .5 ? ' dark' : ''}${c ? '' : ' zero'}" style="--a:${a.toFixed(3)}" data-gua="${name}" aria-label="${name}，${c} 次">${glyph(bin)}</button>`;
+      });
+    });
+    $('#square').innerHTML = html;
+    pick(list.length && list[0].count ? list[0].gua : '乾为天', true);
+  }
+  function pick(name, quiet) {
+    picked = name;
+    const bin = BIN_OF[name]; if (!bin) return;
+    const c = countOf[name] || 0, g = GUA_LOOKUP[bin];
+    document.querySelectorAll('#square .cell').forEach(el => el.classList.toggle('on', !quiet && el.dataset.gua === name));
+    $('#pick').innerHTML = `${glyph(bin)}<div><p class="pick-name">${name}<span>${c ? `起到 <span class="num">${fmt(c)}</span> 次，占 ${(c / Math.max(1, totalReadings) * 100).toFixed(1)}%` + (rankOf[name] === 1 ? '，最多' : `，排第 ${rankOf[name]}`) : '这段时间没人起到'}</span></p><p class="pick-ci">${esc(g[1])}</p></div>`;
+  }
+  $('#square').addEventListener('pointerover', e => { const c = e.target.closest('.cell'); if (c && e.pointerType === 'mouse') pick(c.dataset.gua); });
+  $('#square').addEventListener('click', e => { const c = e.target.closest('.cell'); if (c) pick(c.dataset.gua); });
+
+  // 最近起的卦：指到哪一条，方图上就把本卦和之卦连起来
+  const METHOD = { coin: '铜钱', bazi: '生辰' };
+  const KNOWN = { xiaoheihe: '小黑盒', bilibili: 'B 站', weibo: '微博', tieba: '贴吧', zhihu: '知乎', wechat: '微信', qq: 'QQ', douyin: '抖音', xhs: '小红书' };
   function sourceName(s) {
-    if (!s) return '直接访问';
-    if (s.startsWith('ref:')) return '来自 ' + s.slice(4);
-    if (s === 'xiaoheihe') return '小黑盒（xiaoheihe）';
-    return s;
+    if (!s) return { name: '直接打开' };
+    if (s.startsWith('ref:')) return { name: s.slice(4), note: '点过来的' };
+    return KNOWN[s] ? { name: KNOWN[s], note: s } : { name: s };
+  }
+  function renderRecent(d) {
+    const list = d.recent || [];
+    if (!list.length) { $('#recent').innerHTML = '<li class="empty" style="display:block;border:0">还没有。</li>'; return; }
+    $('#recent').innerHTML = list.map((r, i) => {
+      const a = BIN_OF[r.gua], b = BIN_OF[r.changeGua], [date, time] = String(r.at).split(' ');
+      const src = sourceName(r.source);
+      const to = r.changeGua && b
+        ? `<span class="pair"><span class="to">变</span>${glyph(b, diffLines(a, b))}<span>${esc(r.changeGua)}</span></span>`
+        : '<span class="still">没有动爻</span>';
+      return `<li data-i="${i}" tabindex="0"><span class="r-at"><b>${esc(time || '')}</b>${esc((date || '').replace('-', '/'))}</span>
+        <span class="r-gua"><span class="pair">${a ? glyph(a) : ''}<span>${esc(r.gua)}</span></span>${to}</span>
+        <span class="r-meta">${METHOD[r.method] || esc(r.method)}${r.changing ? `　<span class="zhu">${r.changing} 爻动</span>` : ''}<br>${esc(src.name)}</span></li>`;
+    }).join('');
+  }
+  function linkRecent(i) {
+    const svg = $('#sqLink'); svg.innerHTML = '';
+    document.querySelectorAll('#square .cell.from, #square .cell.to').forEach(el => el.classList.remove('from', 'to'));
+    document.querySelectorAll('#recent li.on').forEach(el => el.classList.remove('on'));
+    const r = i >= 0 && data && data.recent && data.recent[i];
+    if (!r) return;
+    const li = document.querySelector(`#recent li[data-i="${i}"]`); li && li.classList.add('on');
+    const cell = name => name && document.querySelector(`#square .cell[data-gua="${name}"]`);
+    const A = cell(r.gua), B = cell(r.changeGua);
+    if (A) A.classList.add('from');
+    if (!A || !B) return;
+    B.classList.add('to');
+    const box = svg.getBoundingClientRect(), ra = A.getBoundingClientRect(), rb = B.getBoundingClientRect();
+    const ax = ra.left + ra.width / 2 - box.left, ay = ra.top + ra.height / 2 - box.top;
+    const bx = rb.left + rb.width / 2 - box.left, by = rb.top + rb.height / 2 - box.top;
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+    const cx = (ax + bx) / 2 - dy / len * len * .22, cy = (ay + by) / 2 + dx / len * len * .22;
+    svg.innerHTML = `<path pathLength="1" d="M${ax},${ay}Q${cx},${cy} ${bx},${by}"/><circle cx="${ax}" cy="${ay}" r="3.5"/>`;
+  }
+  const recentEl = $('#recent');
+  recentEl.addEventListener('pointerover', e => { const li = e.target.closest('li[data-i]'); if (li) linkRecent(Number(li.dataset.i)); });
+  recentEl.addEventListener('focusin', e => { const li = e.target.closest('li[data-i]'); if (li) linkRecent(Number(li.dataset.i)); });
+  recentEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') linkRecent(-1); });
+  recentEl.addEventListener('focusout', () => linkRecent(-1));
+
+  // ---------- 来源、时段、方式 ----------
+  function renderSources(d) {
+    const list = (d.sources || []).slice(0, 10);
+    if (!list.length) { $('#sources').innerHTML = '<li class="empty" style="border:0">这段时间还没人来。</li>'; return; }
+    const max = Math.max(1, ...list.map(s => s.visits));
+    $('#sources').innerHTML = list.map(s => {
+      const n = sourceName(s.source), tagged = s.source && !s.source.startsWith('ref:');
+      return `<li><div class="src-row"><span class="src-name">${esc(n.name)}${n.note ? `<small>${esc(n.note)}</small>` : ''}</span><span class="src-n num">${fmt(s.visits)}<small>次</small></span></div>
+        <div class="src-bar" style="--w:${(s.visits / max * 100).toFixed(1)}%"></div>
+        <p class="src-sub">${fmt(s.visitors)} 个人${tagged ? `，起了 ${fmt(s.readings)} 卦` : ''}</p></li>`;
+    }).join('');
   }
 
-  function renderSources(list) {
-    if (!list.length) { $('#sources').innerHTML = '<div class="empty">还没有访问记录</div>'; return; }
-    $('#sources').innerHTML = '<table><thead><tr><th>来源</th><th class="n">访问</th><th class="n">访客</th><th class="n">起卦</th></tr></thead><tbody>' +
-      list.slice(0, 12).map(s => `<tr><td>${esc(sourceName(s.source))}</td><td class="n">${fmt(s.visits)}</td><td class="n">${fmt(s.visitors)}</td><td class="n">${s.source && !s.source.startsWith('ref:') ? fmt(s.readings) : '<span class="muted">—</span>'}</td></tr>`).join('') +
-      '</tbody></table>';
+  const SHICHEN = '子丑寅卯辰巳午未申酉戌亥';
+  function renderHours(d) {
+    const hrs = Array.from({ length: 24 }, (_, h) => (d.hours || []).find(x => x.hour === h) || { hour: h, visits: 0, readings: 0 });
+    const max = Math.max(1, ...hrs.map(h => Math.max(h.visits, h.readings)));
+    $('#hours').innerHTML = hrs.map(h => `<div class="hr" data-h="${h.hour}"><i style="--v:${(Math.max(h.visits, h.readings) / max * 100).toFixed(1)}%;--r:${h.visits || h.readings ? (h.readings / Math.max(h.visits, h.readings) * 100).toFixed(1) : 0}%"></i></div>`).join('');
+    const total = hrs.reduce((a, h) => a + h.visits, 0);
+    const peak = hrs.reduce((a, h) => h.visits > a.visits ? h : a, hrs[0]);
+    const night = hrs.filter(h => h.hour >= 23 || h.hour < 5).reduce((a, h) => a + h.visits, 0);
+    const rest = total ? `最热闹的是 ${peak.hour} 点，${SHICHEN[Math.floor((peak.hour + 1) % 24 / 2)]}时。夜里十一点到早上五点来的占 ${pct(night, total)}。` : '这段时间还没人来。';
+    const read = h => { $('#hoursRead').textContent = h ? `${h.hour} 点到 ${h.hour + 1} 点：访问 ${fmt(h.visits)} 次，起了 ${fmt(h.readings)} 卦。` : rest; };
+    read(null);
+    const el = $('#hours');
+    el.onpointerover = e => { const c = e.target.closest('.hr'); if (c) read(hrs[Number(c.dataset.h)]); };
+    el.onpointerleave = () => read(null);
   }
 
-  function renderHexagrams(list) {
-    if (!list.length) { $('#hexagrams').innerHTML = '<div class="empty">还没有人起卦</div>'; return; }
-    const max = list[0].count;
-    $('#hexagrams').innerHTML = list.map(g =>
-      `<div class="bar-row" title="${esc(g.gua)}：${g.count} 次"><span class="name">${esc(g.gua)}</span><span class="track"><span class="fill" style="width:${g.count / max * 100}%"></span></span><span class="val">${fmt(g.count)}</span></div>`).join('');
-  }
-
-  // 占比条：同一组里颜色固定按顺序给，不按大小重新排色
-  // 用中性的明暗档，免得和「访问 / 起卦」的蓝、琥珀混成一个意思；每段都直接标了名字和占比
-  const SPLIT_COLORS = ['#EEF2F7', '#9DB0CE', '#6A84AE', '#40608F'];
-  function splitBlock(title, items) {
-    const total = items.reduce((a, b) => a + b.count, 0);
-    if (!total) return `<div class="split-block"><div class="split-title">${title}</div><div class="empty">暂无数据</div></div>`;
-    return `<div class="split-block"><div class="split-title">${title}</div><div class="split">` +
-      items.filter(i => i.count).map(i => `<span style="flex:${i.count};background:${i.color}" title="${esc(i.name)}：${i.count}"></span>`).join('') +
-      '</div><div class="split-legend">' +
-      items.map(i => `<span><i style="background:${i.color}"></i>${esc(i.name)}<b>${Math.round(i.count / total * 100)}%</b> <span class="muted num">(${fmt(i.count)})</span></span>`).join('') +
-      '</div></div>';
-  }
   function renderSplits(d) {
-    const get = (arr, key, val) => (arr.find(x => x[key] === val) || {}).count || 0;
-    const methods = [
-      { name: '铜钱', count: get(d.methods, 'method', 'coin') },
-      { name: '生辰', count: get(d.methods, 'method', 'bazi') }
-    ];
-    const ch = n => get(d.changing, 'n', n);
-    const changing = [
-      { name: '无动爻', count: ch(0) },
-      { name: '一爻动', count: ch(1) },
-      { name: '两爻动', count: ch(2) },
-      { name: '三爻及以上', count: [3, 4, 5, 6].reduce((a, n) => a + ch(n), 0) }
-    ];
-    const devices = [
-      { name: '手机', count: get(d.devices, 'device', 'mobile') },
-      { name: '电脑', count: get(d.devices, 'device', 'desktop') }
-    ];
-    const paint = arr => arr.map((x, i) => ({ ...x, color: SPLIT_COLORS[i] }));
-    $('#splits').innerHTML = splitBlock('起卦方式', paint(methods)) + splitBlock('动爻数', paint(changing)) + splitBlock('设备', paint(devices));
+    const get = (arr, key, val) => ((arr || []).find(x => x[key] === val) || {}).count || 0;
+    const split = (title, a, b) => {
+      const sum = a[1] + b[1];
+      if (!sum) return `<div class="split"><h3>${title}</h3><p class="src-sub">还没有数</p></div>`;
+      return `<div class="split"><h3>${title}</h3><div class="split-bar"><i style="flex:${a[1]}"></i><i style="flex:${b[1]}"></i></div>
+        <div class="split-key"><span>${a[0]}<span class="num">${pct(a[1], sum)}</span></span><span>${b[0]}<span class="num">${pct(b[1], sum)}</span></span></div></div>`;
+    };
+    const ch = Array.from({ length: 7 }, (_, n) => get(d.changing, 'n', n));
+    const chMax = Math.max(1, ...ch), chSum = ch.reduce((a, b) => a + b, 0);
+    const marks = n => [0, 1, 2, 3, 4, 5].slice(0, n);
+    $('#splits').innerHTML =
+      split('起卦方式', ['铜钱', get(d.methods, 'method', 'coin')], ['生辰', get(d.methods, 'method', 'bazi')]) +
+      split('设备', ['手机', get(d.devices, 'device', 'mobile')], ['电脑', get(d.devices, 'device', 'desktop')]) +
+      `<div class="moves"><h3>一卦里动了几爻</h3>` + (chSum ? `<div class="moves-row">${ch.map((c, n) => `<div class="mv"><div class="mv-col"><i style="--v:${(c / chMax * 100).toFixed(1)}%"></i></div>${glyph('111111', marks(n))}<span class="num">${fmt(c)}</span></div>`).join('')}</div>
+        <p class="moves-cap">从一爻不动到六爻全动，底下是卦数。</p>` : '<p class="src-sub">还没有数</p>') + '</div>';
   }
 
-  function renderRecent(list) {
-    if (!list.length) { $('#recent').innerHTML = '<div class="empty">还没有人起卦</div>'; return; }
-    $('#recent').innerHTML = '<table><thead><tr><th>时间</th><th>本卦</th><th>之卦</th><th>方式</th><th>来源</th></tr></thead><tbody>' +
-      list.map(r => `<tr><td class="num">${esc(r.at)}</td><td>${esc(r.gua)}</td><td>${r.changeGua ? '<span class="zhu">' + esc(r.changeGua) + '</span> <span class="muted">' + r.changing + '爻动</span>' : '<span class="muted">无动爻</span>'}</td><td>${r.method === 'bazi' ? '生辰' : '铜钱'}</td><td>${esc(r.source ? sourceName(r.source) : '—')}</td></tr>`).join('') +
-      '</tbody></table>';
+  function render(cast) {
+    if (!data) return;
+    const d = data; delete d._half;
+    markRange();
+    renderYaos(d, cast);
+    renderReading(d);
+    renderSquare(d);
+    renderRecent(d);
+    renderSources(d);
+    renderHours(d);
+    renderSplits(d);
+    const at = d.generatedAt ? new Date(d.generatedAt) : new Date();
+    const hm = at.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' });
+    $('#stamp').textContent = `${hm} 的数`;
+    const all = d.allTime || {};
+    $('#foot').innerHTML = `<span>从有记录起，一共访问 <span class="num">${fmt(all.visits)}</span> 次，起了 <span class="num">${fmt(all.readings)}</span> 卦。</span><span>只记访问和起卦，不记问了什么。</span>`;
   }
 
-  // 窗口宽度变了重画一下提示框位置用的尺寸（SVG 自己会缩放）
   let rz;
-  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => last && render(last), 150); });
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (data && !back.hidden) { renderYaos(data, false); linkRecent(-1); } }, 200); });
 
-  // ---------- 假数据（只在本地 ?mock 时用） ----------
-  function mockData(d) {
-    let seed = 7;
-    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    const today = new Date();
-    const daily = Array.from({ length: d }, (_, i) => {
-      const dt = new Date(today); dt.setDate(today.getDate() - (d - 1 - i));
-      const boost = i > d - 6 ? 3 : 1;
-      const visits = Math.round((8 + rnd() * 20) * boost);
-      const readings = Math.round(visits * (.45 + rnd() * .3));
-      return { date: dt.toISOString().slice(0, 10), visits, visitors: Math.round(visits * .7), readings, readers: Math.round(readings * .6) };
-    });
-    const sum = k => daily.reduce((a, b) => a + b[k], 0);
-    const names = ['乾为天', '坤为地', '水雷屯', '山水蒙', '地天泰', '天地否', '火泽睽', '风雷益', '泽火革', '雷风恒', '山风蛊', '水火既济'];
-    return Promise.resolve({
-      generatedAt: new Date().toISOString(), days: d,
-      today: daily[d - 1], total: { visits: sum('visits'), visitors: Math.round(sum('visitors') * .5), readings: sum('readings'), readers: Math.round(sum('readers') * .5) },
-      allTime: { visits: sum('visits') + 40, readings: sum('readings') + 20 },
-      daily,
-      hexagrams: names.map((g, i) => ({ gua: g, count: 30 - i * 2 - Math.round(rnd() * 2) })),
-      methods: [{ method: 'coin', count: 210 }, { method: 'bazi', count: 64 }],
-      changing: [{ n: 0, count: 40 }, { n: 1, count: 92 }, { n: 2, count: 80 }, { n: 3, count: 45 }, { n: 4, count: 12 }],
-      devices: [{ device: 'mobile', count: 300 }, { device: 'desktop', count: 180 }],
-      sources: [{ source: 'xiaoheihe', visits: 260, visitors: 190, readings: 150 }, { source: '', visits: 120, visitors: 90, readings: 0 }, { source: 'ref:www.baidu.com', visits: 14, visitors: 12, readings: 0 }],
-      hours: Array.from({ length: 24 }, (_, h) => ({ hour: h, visits: Math.round((h > 8 ? 10 : 2) + (h >= 20 ? 25 : 0) + rnd() * 10), readings: Math.round(rnd() * 10) })),
-      recent: Array.from({ length: 15 }, (_, i) => ({ at: `11-16 ${String(23 - i).padStart(2, '0')}:${String(Math.round(rnd() * 59)).padStart(2, '0')}`, gua: names[i % 12], changeGua: i % 3 ? names[(i + 5) % 12] : '', changing: i % 3 ? 1 + (i % 3) : 0, method: i % 4 ? 'coin' : 'bazi', source: i % 2 ? 'xiaoheihe' : '' }))
-    });
-  }
+  // 正面那圈刻度：六十四格
+  $('#ringTicks').innerHTML = Array.from({ length: 64 }, (_, i) => `<line x1="100" y1="2.5" x2="100" y2="${i % 8 ? 6 : 8.5}" transform="rotate(${i * 5.625} 100 100)"/>`).join('');
 
-  // 本次会话里登录过就直接进
-  if (password || MOCK) {
-    fetchStats(password, days).then(showApp).catch(() => { store.del(PW_KEY); $('#pw').focus(); });
+  // ---------- 开场 ----------
+  markRange();
+  if (password) {
+    setGateBusy(true);
+    $('#gateForm').querySelector('input').hidden = true;
+    fetchStats(password, days).then(d => { data = d; turnToBack(); })
+      .catch(err => {
+        $('#gateForm').querySelector('input').hidden = false; setGateBusy(false);
+        if (err.auth) { store.del(PW_KEY); password = ''; $('#gateErr').textContent = '密码不对，重新输一次'; }
+        else { $('#gateErr').textContent = errText(err); $('#pw').value = password; }
+        $('#pw').focus();
+      })
+      .finally(() => { $('#gateForm').querySelector('input').hidden = false; });
   } else {
     $('#pw').focus();
+  }
+
+  // ---------- 假数据（只在本地 ?mock 时用） ----------
+  function mockData(d, mode) {
+    let seed = 20261116;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const pad = n => String(n).padStart(2, '0');
+    const ymd = dt => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+    const now = new Date();
+    const dayFrac = Math.max(.15, (now.getHours() + now.getMinutes() / 60) / 24);
+    const empty = mode === 'empty';
+    // 造 180 天，这样 7 / 30 / 90 天切来切去是同一段历史，「前一段」也有数
+    const all = Array.from({ length: 180 }, (_, i) => {
+      const ago = 179 - i;
+      const dt = new Date(now); dt.setDate(now.getDate() - ago);
+      const wd = dt.getDay();
+      let v = 5 + Math.max(0, i - 90) * .2 + rnd() * 9;
+      if (wd === 0 || wd === 6) v *= 1.35;
+      if (ago <= 12) v += 150 * Math.exp(-Math.abs(ago - 9) * (ago > 9 ? 2 : .42));   // 9 天前在小黑盒发了帖
+      if (ago >= 36 && ago <= 50) v += 95 * Math.exp(-Math.abs(ago - 44) * .45);
+      if (ago === 0) v *= dayFrac;
+      if (empty) v = ago > 4 ? 0 : [3, 1, 0, 2, 1][ago];
+      const visits = Math.round(v);
+      const visitors = Math.max(visits ? 1 : 0, Math.round(visits * (.72 + rnd() * .1)));
+      const readings = empty ? Math.min(visits, ago === 0 ? 2 : ago === 3 ? 1 : 0) : Math.round(visits * (.5 + rnd() * .24 - (ago <= 12 ? .16 : 0) + (ago > 120 ? .12 : 0)));
+      const readers = Math.min(visitors, empty ? Math.min(readings, 1) : Math.round(readings * (.6 + rnd() * .12)));
+      return { date: ymd(dt), visits, visitors, readings, readers };
+    });
+    const daily = all.slice(180 - d), before = all.slice(180 - 2 * d, 180 - d);
+    const sum = (arr, k) => arr.reduce((a, b) => a + b[k], 0);
+    const tot = arr => ({ visits: sum(arr, 'visits'), visitors: Math.round(sum(arr, 'visitors') * .82), readings: sum(arr, 'readings'), readers: Math.round(sum(arr, 'readers') * .8) });
+    const total = tot(daily), prev = tot(before);
+    const cut = (n, shares) => { let left = n; return shares.map((s, i) => { const c = i === shares.length - 1 ? left : Math.min(left, Math.round(n * s)); left -= c; return c; }); };
+
+    const names = Object.keys(BIN_OF);
+    const w = names.map(() => Math.pow(rnd(), 2.2) + (rnd() < .12 ? 0 : .08));
+    const wsum = w.reduce((a, b) => a + b, 0);
+    let hexagrams = names.map((gua, i) => ({ gua, count: Math.floor(total.readings * w[i] / wsum * (rnd() < (empty ? .97 : d === 7 ? .3 : .06) ? 0 : 1)) }))
+      .filter(h => h.count > 0).sort((a, b) => b.count - a.count);
+    if (empty) hexagrams = [{ gua: '水雷屯', count: 2 }, { gua: '火地晋', count: 1 }].slice(0, total.readings ? 2 : 0);
+    if (mode === 'old') hexagrams = hexagrams.slice(0, 12);
+
+    const v = total.visits, r = total.readings;
+    const sv = cut(v, [.52, .27, .08, .06, .04, .03]), sr = cut(r, [.6, 0, 0, .07, 0, 0]);
+    const sources = empty ? [{ source: '', visits: v, visitors: total.visitors, readings: 0 }]
+      : ['xiaoheihe', '', 'ref:www.baidu.com', 'bilibili', 'ref:tieba.baidu.com', 'ref:cn.bing.com'].map((source, i) => ({ source, visits: sv[i], visitors: Math.round(sv[i] * .78), readings: sr[i] })).filter(s => s.visits);
+    const shape = [3, 2, 1, 1, 0, 1, 2, 3, 5, 6, 6, 7, 9, 8, 6, 6, 7, 8, 9, 11, 14, 16, 13, 8];
+    const ssum = shape.reduce((a, b) => a + b, 0);
+    const hours = shape.map((s, hour) => ({ hour, visits: Math.round(v * s / ssum), readings: Math.round(r * s / ssum * (.85 + rnd() * .3)) }));
+    const rc = cut(r, [.19, .35, .28, .12, .04, .015, .005]);
+    const flip = (bin, n) => { const a = bin.split(''); const pool = [0, 1, 2, 3, 4, 5].sort(() => rnd() - .5).slice(0, n); pool.forEach(i => { a[i] = a[i] === '1' ? '0' : '1'; }); return a.join(''); };
+    const recent = Array.from({ length: empty ? Math.min(3, r) : 15 }, (_, i) => {
+      const t = new Date(now.getTime() - (i * 37 + rnd() * 30) * 60000 * (empty ? 40 : 1));
+      const gua = names[Math.floor(rnd() * 64)], n = [0, 1, 1, 1, 2, 2, 3][Math.floor(rnd() * 7)];
+      return { at: `${pad(t.getMonth() + 1)}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`, gua, changeGua: n ? GUA_LOOKUP[flip(BIN_OF[gua], n)][0] : '', changing: n,
+        method: rnd() < .74 ? 'coin' : 'bazi', source: empty ? '' : ['xiaoheihe', 'xiaoheihe', '', 'bilibili', ''][Math.floor(rnd() * 5)] };
+    });
+    const out = {
+      generatedAt: now.toISOString(), days: d,
+      today: daily[daily.length - 1], total, prev,
+      allTime: { visits: tot(all).visits + (empty ? 0 : 400), readings: tot(all).readings + (empty ? 0 : 230) },
+      daily, hexagrams,
+      methods: [{ method: 'coin', count: Math.round(r * .74) }, { method: 'bazi', count: r - Math.round(r * .74) }].filter(m => m.count),
+      changing: rc.map((count, n) => ({ n, count })).filter(c => c.count),
+      sources, hours,
+      devices: [{ device: 'mobile', count: Math.round(v * .68) }, { device: 'desktop', count: v - Math.round(v * .68) }].filter(x => x.count),
+      recent
+    };
+    if (mode === 'old') delete out.prev;
+    return out;
   }
 })();
 </script>

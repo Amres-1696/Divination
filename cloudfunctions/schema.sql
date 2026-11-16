@@ -36,6 +36,7 @@ alter table public.readings enable row level security;
 alter table public.visits enable row level security;
 
 -- 后台页用的汇总。按北京时间分天；days 是往前看几天（含今天）
+-- prev 是紧挨着的上一段：同样长、同样截到这个钟点，后台拿它和这一段比（多了是阳爻，少了是阴爻）
 create or replace function public.admin_stats(days int default 30)
 returns jsonb
 language sql
@@ -46,7 +47,16 @@ as $$
 with
   bounds as (
     select (date_trunc('day', now() at time zone 'Asia/Shanghai') - make_interval(days => greatest(least(days, 365), 1) - 1)) as start_local,
-           date_trunc('day', now() at time zone 'Asia/Shanghai') as today_local
+           date_trunc('day', now() at time zone 'Asia/Shanghai') as today_local,
+           make_interval(days => greatest(least(days, 365), 1)) as span
+  ),
+  pv as (
+    select uid from visits, bounds
+    where created_at >= ((bounds.start_local - bounds.span) at time zone 'Asia/Shanghai') and created_at < now() - bounds.span
+  ),
+  pr as (
+    select uid from readings, bounds
+    where created_at >= ((bounds.start_local - bounds.span) at time zone 'Asia/Shanghai') and created_at < now() - bounds.span
   ),
   v as (
     select created_at at time zone 'Asia/Shanghai' as t, uid, source, ref, ua
@@ -77,13 +87,18 @@ select jsonb_build_object(
       'visitors', (select count(distinct uid) from v),
       'readings', (select count(*) from r),
       'readers', (select count(distinct uid) from r)),
+  'prev', jsonb_build_object(
+      'visits', (select count(*) from pv),
+      'visitors', (select count(distinct uid) from pv),
+      'readings', (select count(*) from pr),
+      'readers', (select count(distinct uid) from pr)),
   'allTime', jsonb_build_object(
       'visits', (select count(*) from visits),
       'readings', (select count(*) from readings)),
   'daily', (select coalesce(jsonb_agg(jsonb_build_object('date', d, 'visits', visits, 'visitors', visitors,
             'readings', readings, 'readers', readers) order by d), '[]') from daily),
   'hexagrams', (select coalesce(jsonb_agg(x order by (x->>'count')::int desc, x->>'gua'), '[]') from
-            (select jsonb_build_object('gua', gua, 'count', count(*)) x from r group by gua order by count(*) desc limit 12) s),
+            (select jsonb_build_object('gua', gua, 'count', count(*)) x from r group by gua) s),
   'methods', (select coalesce(jsonb_agg(jsonb_build_object('method', method, 'count', c) order by c desc), '[]') from
             (select method, count(*) c from r group by method) s),
   'changing', (select coalesce(jsonb_agg(jsonb_build_object('n', n, 'count', c) order by n), '[]') from
