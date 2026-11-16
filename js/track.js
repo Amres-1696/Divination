@@ -2,7 +2,9 @@
 // 两边都是尽力而为：被拦截、断网、存储不可用都静默跳过，绝不影响起卦本身。
 
 const TRACK_ENDPOINT = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudbase.com/api/reading';
-const BAIDU_TONGJI_ID = '';   // 百度统计的站点 ID（hm.js? 后面那串），注册后填进来，留空就不加载
+// 百度统计的站点 ID（hm.js? 后面那串）。这个 ID 是按 CloudBase 的域名注册的，只在那边加载，留空就不加载
+const BAIDU_TONGJI_ID = '1719b0115cee10434967e3c35045e844';
+const BAIDU_TONGJI_SITE = 'disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com';
 
 // 只在正式部署的地址上统计，本地调试、file:// 打开都不发
 const TRACK_SITES = [
@@ -24,7 +26,7 @@ function trackSource() {
 
 if (_trackOn) {
     trackSource();
-    if (BAIDU_TONGJI_ID) {
+    if (BAIDU_TONGJI_ID && location.hostname === BAIDU_TONGJI_SITE) {
         window._hmt = window._hmt || [];
         const s = document.createElement('script');
         s.async = true;
