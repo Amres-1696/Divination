@@ -1,10 +1,8 @@
-// track —— 访问统计：百度统计看整体流量，起卦记录发到 CloudBase 云函数存库
-// 两边都是尽力而为：被拦截、断网、存储不可用都静默跳过，绝不影响起卦本身。
+// track —— 访问统计：打开页面记一次访问，起完一卦记一次起卦，都发到 CloudBase 云函数存库
+// 尽力而为：被拦截、断网、存储不可用都静默跳过，绝不影响起卦本身。
+// 不发所问的问题、生辰、设置和密钥。数据在后台页 admin.html 看。
 
 const TRACK_ENDPOINT = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudbase.com/api/reading';
-// 百度统计的站点 ID（hm.js? 后面那串）。这个 ID 是按 CloudBase 的域名注册的，只在那边加载，留空就不加载
-const BAIDU_TONGJI_ID = '1719b0115cee10434967e3c35045e844';
-const BAIDU_TONGJI_SITE = 'disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com';
 
 // 只在正式部署的地址上统计，本地调试、file:// 打开都不发
 const TRACK_SITES = [
@@ -24,37 +22,40 @@ function trackSource() {
     }
 }
 
-if (_trackOn) {
-    trackSource();
-    if (BAIDU_TONGJI_ID && location.hostname === BAIDU_TONGJI_SITE) {
-        window._hmt = window._hmt || [];
-        const s = document.createElement('script');
-        s.async = true;
-        s.src = 'https://hm.baidu.com/hm.js?' + BAIDU_TONGJI_ID;
-        document.head.appendChild(s);
-    }
-}
-
-// 起完一卦调一次
-function reportReading({ method, gua, fullBin, change }) {
-    if (!_trackOn) return;
+function _trackSend(data) {
     try {
-        if (window._hmt) window._hmt.push(['_trackEvent', 'divination', method || 'coin', gua && gua[0]]);
-
-        const payload = JSON.stringify({
-            method,
-            bin: fullBin,
-            gua: gua && gua[0],
-            changing: (change && change.changingYaos) || [],
-            changeBin: change && change.hasChange ? change.changeBinary : null,
-            changeGua: change && change.hasChange && change.changeGua ? change.changeGua[0] : '',
-            from: trackSource(),
-            uid: typeof getUserSeed === 'function' ? getUserSeed() : ''
-        });
+        data.from = trackSource();
+        data.uid = typeof getUserSeed === 'function' ? getUserSeed() : '';
+        const payload = JSON.stringify(data);
         // text/plain 不触发预检；sendBeacon 页面关掉也会发出去
         const blob = new Blob([payload], { type: 'text/plain' });
         if (!(navigator.sendBeacon && navigator.sendBeacon(TRACK_ENDPOINT, blob))) {
             fetch(TRACK_ENDPOINT, { method: 'POST', body: payload, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(() => {});
         }
     } catch (e) { /* 统计失败不打扰用户 */ }
+}
+
+// 打开页面记一次访问。只留来路的域名，不留完整地址
+if (_trackOn) {
+    let ref = '';
+    try {
+        const r = document.referrer ? new URL(document.referrer).hostname : '';
+        if (r && r !== location.hostname) ref = r;
+    } catch (e) { /* 来路解析不了就当直接访问 */ }
+    // getUserSeed 在 daily.js 里，等脚本都加载完再发
+    window.addEventListener('load', () => _trackSend({ kind: 'visit', ref }), { once: true });
+}
+
+// 起完一卦调一次
+function reportReading({ method, gua, fullBin, change }) {
+    if (!_trackOn) return;
+    _trackSend({
+        kind: 'reading',
+        method,
+        bin: fullBin,
+        gua: gua && gua[0],
+        changing: (change && change.changingYaos) || [],
+        changeBin: change && change.hasChange ? change.changeBinary : null,
+        changeGua: change && change.hasChange && change.changeGua ? change.changeGua[0] : ''
+    });
 }

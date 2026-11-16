@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#17396E">
+<title>天衍 · 后台</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
+<style>
+@font-face {
+  font-family: "ZCOOL XiaoWei";
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2") format("woff2");
+  font-display: swap;
+}
+:root {
+  --blue: #17396E;
+  --blue-deep: #102B55;
+  --panel: rgba(16, 43, 85, .55);
+  --ink: #EEF2F7;
+  --ink-2: #C5D1E2;
+  --ink-3: #A7B8D3;
+  --rule: rgba(238, 242, 247, .26);
+  --rule-soft: rgba(238, 242, 247, .12);
+  --zhu: #FF8A5C;
+  /* 数据色：访问 / 起卦。在 --blue 底上验过对比度和色盲区分 */
+  --s-visit: #4C95E8;
+  --s-read: #C9832A;
+  --display: "ZCOOL XiaoWei", "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --text: "Noto Serif SC", "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", "STSong", serif;
+  --num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(var(--rule-soft) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--blue);
+  color: var(--ink);
+  font: 15px/1.6 var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+.num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+
+/* ---------- 登录 ---------- */
+.gate {
+  min-height: 100vh; display: grid; place-items: center; padding: 24px;
+}
+.gate form {
+  width: min(360px, 100%); padding: 32px 28px;
+  border: 1px solid var(--rule); background: var(--panel);
+}
+.gate h1 { font: 32px/1.2 var(--display); margin: 0 0 4px; letter-spacing: .08em; }
+.gate p { margin: 0 0 24px; color: var(--ink-3); font-size: 13px; }
+.gate label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+.gate input {
+  width: 100%; padding: 10px 12px; background: transparent;
+  border: 1px solid var(--rule); outline: none;
+}
+.gate input:focus { border-color: var(--ink-2); }
+.gate .err { color: var(--zhu); font-size: 13px; min-height: 20px; margin: 8px 0 0; }
+.btn {
+  border: 1px solid var(--rule); background: transparent; padding: 6px 14px; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.btn:hover { background: var(--rule-soft); border-color: var(--ink-3); }
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--blue); border-color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: default; }
+.gate .btn { width: 100%; margin-top: 12px; padding: 10px; }
+
+/* ---------- 主体 ---------- */
+.app { max-width: 1120px; margin: 0 auto; padding: 24px clamp(16px, 4vw, 40px) 64px; }
+.top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--rule); margin-bottom: 24px;
+}
+.top h1 { font: 26px/1 var(--display); margin: 0; letter-spacing: .08em; }
+.top h1 small { font: 13px var(--text); color: var(--ink-3); margin-left: 10px; letter-spacing: 0; }
+.top .spacer { flex: 1; }
+.seg { display: inline-flex; }
+.seg .btn + .btn { border-left: 0; }
+.stamp { color: var(--ink-3); font-size: 12px; width: 100%; }
+
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+.card {
+  grid-column: span 12; border: 1px solid var(--rule); background: var(--panel);
+  padding: 18px 20px; min-width: 0;
+}
+.card h2 {
+  font: 17px/1.3 var(--display); margin: 0 0 2px; letter-spacing: .06em;
+}
+.card .sub { color: var(--ink-3); font-size: 12px; margin: 0 0 14px; }
+.card-head { display: flex; align-items: flex-start; gap: 12px; }
+.card-head > div { flex: 1; }
+.half { grid-column: span 6; }
+.third { grid-column: span 4; }
+@media (max-width: 860px) { .half, .third { grid-column: span 12; } }
+
+/* KPI */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; grid-column: span 12; }
+@media (max-width: 760px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { border: 1px solid var(--rule); background: var(--panel); padding: 14px 16px; }
+.kpi .label { font-size: 13px; color: var(--ink-2); }
+.kpi .value { font: 600 30px/1.2 var(--num); font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+.kpi .note { font-size: 12px; color: var(--ink-3); }
+
+/* 图例 */
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+
+/* 图 */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.axis text { fill: var(--ink-3); font-size: 11px; font-family: var(--num); }
+.grid-line { stroke: var(--rule-soft); stroke-width: 1; }
+.base-line { stroke: var(--rule); stroke-width: 1; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 2;
+  background: var(--blue-deep); border: 1px solid var(--rule);
+  padding: 8px 10px; font-size: 12px; line-height: 1.6; white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 12px)); display: none;
+}
+.tip b { font-weight: 600; display: block; color: var(--ink); }
+.tip .row { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
+.tip .row i { width: 8px; height: 8px; border-radius: 2px; }
+.tip .row span:last-child { margin-left: auto; padding-left: 12px; color: var(--ink); font-family: var(--num); }
+
+/* 横向条 */
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 5.5em 1fr 3em; align-items: center; gap: 10px; font-size: 13px; }
+.bar-row .name { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-row .track { height: 14px; position: relative; }
+.bar-row .fill { position: absolute; inset: 0 auto 0 0; background: var(--s-read); border-radius: 0 4px 4px 0; min-width: 2px; }
+.bar-row .val { text-align: right; font-family: var(--num); }
+
+/* 占比条 */
+.split { display: flex; height: 14px; gap: 2px; margin: 6px 0 8px; }
+.split span { border-radius: 2px; }
+.split-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); }
+.split-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.split-legend b { color: var(--ink); font-family: var(--num); font-weight: 600; margin-left: 4px; }
+.split-block + .split-block { margin-top: 18px; }
+.split-title { font-size: 13px; color: var(--ink-3); }
+
+/* 表 */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule-soft); }
+th { color: var(--ink-3); font-weight: 400; }
+td.n, th.n { text-align: right; font-family: var(--num); font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+#recent td, #recent th, #sources td { white-space: nowrap; }
+.muted { color: var(--ink-3); }
+.empty { color: var(--ink-3); font-size: 13px; padding: 20px 0; text-align: center; }
+.zhu { color: var(--zhu); }
+.toast { color: var(--zhu); font-size: 13px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<section class="gate" id="gate">
+  <form id="gateForm" autocomplete="on">
+    <h1>天衍</h1>
+    <p>后台 · 访问与起卦统计</p>
+    <label for="pw">密码</label>
+    <input id="pw" name="password" type="password" autocomplete="current-password" required>
+    <p class="err" id="gateErr" role="alert"></p>
+    <button class="btn" type="submit" id="gateBtn">进入</button>
+  </form>
+</section>
+
+<main class="app" id="app" hidden>
+  <header class="top">
+    <h1>天衍<small>访问与起卦统计</small></h1>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="时间范围">
+      <button class="btn" data-days="7">近 7 天</button>
+      <button class="btn" data-days="30">近 30 天</button>
+      <button class="btn" data-days="90">近 90 天</button>
+    </div>
+    <button class="btn" id="refreshBtn">刷新</button>
+    <button class="btn" id="logoutBtn">退出</button>
+    <div class="stamp" id="stamp"></div>
+  </header>
+
+  <div class="grid">
+    <div class="kpis" id="kpis"></div>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2>每天的访问和起卦</h2>
+          <p class="sub">访问 = 打开一次页面；起卦 = 起出一卦。同一个人一天里可以算多次</p>
+        </div>
+        <button class="btn" id="dailyTableBtn" aria-pressed="false">表格</button>
+      </div>
+      <div class="legend"><span><i style="background:var(--s-visit)"></i>访问</span><span><i style="background:var(--s-read)"></i>起卦</span></div>
+      <div class="chart" id="dailyChart"></div>
+      <div class="table-wrap" id="dailyTable" hidden></div>
+    </section>
+
+    <section class="card half">
+      <h2>从哪儿来</h2>
+      <p class="sub">带 <span class="num">?from=</span> 的按参数算，其余看来路网站，都没有就是直接访问</p>
+      <div class="table-wrap" id="sources"></div>
+    </section>
+
+    <section class="card half">
+      <h2>起得最多的卦</h2>
+      <p class="sub">本卦，前 12 名</p>
+      <div class="bars" id="hexagrams"></div>
+    </section>
+
+    <section class="card half">
+      <h2>一天里什么时候人多</h2>
+      <p class="sub">按北京时间，访问次数</p>
+      <div class="chart" id="hourChart"></div>
+    </section>
+
+    <section class="card half">
+      <h2>怎么起、用什么看</h2>
+      <p class="sub">起卦方式和动爻数按起卦算，设备按访问算</p>
+      <div id="splits"></div>
+    </section>
+
+    <section class="card">
+      <h2>最近起的卦</h2>
+      <p class="sub">最新 15 条</p>
+      <div class="table-wrap" id="recent"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  const API = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudbase.com/api/admin-stats';
+  const PW_KEY = 'tianyan_admin_pw';
+  const DAYS_KEY = 'tianyan_admin_days';
+  // 本地打开 admin.html?mock 可以用假数据看排版
+  const MOCK = /^(localhost|127\.0\.0\.1|)$/.test(location.hostname) && new URLSearchParams(location.search).has('mock');
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = n => Number(n || 0).toLocaleString('zh-CN');
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+
+  let days = Number(store.get(DAYS_KEY)) || 30;
+  let password = store.get(PW_KEY) || '';
+  let last = null;
+
+  async function fetchStats(pw, d) {
+    if (MOCK) return mockData(d);
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ password: pw, days: d })
+    });
+    if (res.status === 401) throw Object.assign(new Error('密码不对'), { auth: true });
+    if (!res.ok) throw new Error('数据没取到（' + res.status + '），过会儿再试');
+    return res.json();
+  }
+
+  // ---------- 登录 ----------
+  $('#gateForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw = $('#pw').value;
+    $('#gateBtn').disabled = true;
+    $('#gateErr').textContent = '';
+    try {
+      const data = await fetchStats(pw, days);
+      password = pw;
+      store.set(PW_KEY, pw);
+      showApp(data);
+    } catch (err) {
+      $('#gateErr').textContent = err.auth ? '密码不对' : (err.message || '连不上，过会儿再试');
+    } finally {
+      $('#gateBtn').disabled = false;
+    }
+  });
+
+  $('#logoutBtn').addEventListener('click', () => {
+    store.del(PW_KEY);
+    password = '';
+    $('#app').hidden = true;
+    $('#gate').hidden = false;
+    $('#pw').value = '';
+    $('#pw').focus();
+  });
+
+  document.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => {
+    days = Number(b.dataset.days);
+    store.set(DAYS_KEY, days);
+    reload();
+  }));
+  $('#refreshBtn').addEventListener('click', reload);
+  $('#dailyTableBtn').addEventListener('click', e => {
+    const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', on);
+    $('#dailyTable').hidden = !on;
+    $('#dailyChart').hidden = on;
+  });
+
+  async function reload() {
+    const btn = $('#refreshBtn');
+    btn.disabled = true; btn.textContent = '读取中';
+    try {
+      showApp(await fetchStats(password, days));
+    } catch (err) {
+      if (err.auth) { $('#logoutBtn').click(); $('#gateErr').textContent = '密码已失效，重新输一次'; }
+      else $('#stamp').innerHTML = '<span class="toast">' + esc(err.message) + '</span>';
+    } finally {
+      btn.disabled = false; btn.textContent = '刷新';
+    }
+  }
+
+  function showApp(data) {
+    last = data;
+    $('#gate').hidden = true;
+    $('#app').hidden = false;
+    document.querySelectorAll('[data-days]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.days) === days));
+    render(data);
+  }
+
+  // ---------- 渲染 ----------
+  function render(d) {
+    const t = new Date(d.generatedAt);
+    $('#stamp').textContent = '更新于 ' + t.toLocaleString('zh-CN', { hour12: false }) +
+      ' · 有记录以来共 ' + fmt(d.allTime.visits) + ' 次访问、' + fmt(d.allTime.readings) + ' 次起卦';
+    renderKpis(d);
+    renderDaily(d.daily);
+    renderSources(d.sources);
+    renderHexagrams(d.hexagrams);
+    renderHours(d.hours);
+    renderSplits(d);
+    renderRecent(d.recent);
+  }
+
+  function renderKpis(d) {
+    const rate = d.total.visitors ? Math.round(d.total.readers / d.total.visitors * 100) : null;
+    const tiles = [
+      ['今天访问', fmt(d.today.visits), fmt(d.today.visitors) + ' 人'],
+      ['今天起卦', fmt(d.today.readings), fmt(d.today.readers) + ' 人'],
+      [`近 ${d.days} 天访问`, fmt(d.total.visits), fmt(d.total.visitors) + ' 人'],
+      [`近 ${d.days} 天起卦`, fmt(d.total.readings), fmt(d.total.readers) + ' 人' + (rate === null ? '' : ` · 来的人里 ${rate}% 起了卦`)]
+    ];
+    $('#kpis').innerHTML = tiles.map(([l, v, n]) =>
+      `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="note">${n}</div></div>`).join('');
+  }
+
+  // 刻度：取 0 到不小于最大值的整齐数
+  function niceMax(v) {
+    if (v <= 4) return 4;
+    const p = Math.pow(10, Math.floor(Math.log10(v)));
+    for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
+    return 10 * p;
+  }
+
+  function tipHtml(title, rows) {
+    return `<b>${esc(title)}</b>` + rows.map(([c, name, v]) =>
+      `<div class="row"><i style="background:${c}"></i><span>${esc(name)}</span><span>${fmt(v)}</span></div>`).join('');
+  }
+
+  function renderDaily(daily) {
+    const el = $('#dailyChart');
+    // 按容器实际宽度画，手机上字不会被缩小
+    const W = Math.max(300, el.clientWidth || 1000), H = W < 600 ? 220 : 260, L = 40, R = 40, T = 12, B = 28;
+    const iw = W - L - R, ih = H - T - B;
+    const max = niceMax(Math.max(1, ...daily.map(x => Math.max(x.visits, x.readings))));
+    const n = daily.length;
+    const x = i => L + (n === 1 ? iw / 2 : i * iw / (n - 1));
+    const y = v => T + ih - v / max * ih;
+    const ticks = [0, .25, .5, .75, 1].map(f => f * max);
+    const path = key => daily.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[key]).toFixed(1)).join(' ');
+    const every = Math.ceil(n / (W < 600 ? 4 : 8));
+    const md = s => s.slice(5).replace('-', '/');
+    const lastP = daily[n - 1];
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每天访问和起卦次数折线图">`;
+    svg += '<g class="axis">' + ticks.map(v => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(Math.round(v))}</text>`).join('');
+    svg += daily.map((p, i) => (i % every === 0 || i === n - 1) && !(i !== n - 1 && n - 1 - i < every / 2) ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${md(p.date)}</text>` : '').join('') + '</g>';
+    svg += `<line class="base-line" x1="${L}" x2="${W - R}" y1="${y(0)}" y2="${y(0)}"/>`;
+    svg += `<path d="${path('visits')}" fill="none" stroke="var(--s-visit)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    svg += `<path d="${path('readings')}" fill="none" stroke="var(--s-read)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    // 末端直接标数，两条线挨太近就错开
+    let yv = y(lastP.visits), yr = y(lastP.readings);
+    if (Math.abs(yv - yr) < 14) { if (yv <= yr) { yv -= 7; yr += 7; } else { yv += 7; yr -= 7; } }
+    svg += `<text x="${x(n - 1) + 8}" y="${yv + 4}" fill="var(--ink-2)" font-size="12" font-family="var(--num)">${fmt(lastP.visits)}</text>`;
+    svg += `<text x="${x(n - 1) + 8}" y="${yr + 4}" fill="var(--ink-2)" font-size="12" font-family="var(--num)">${fmt(lastP.readings)}</text>`;
+    svg += `<g id="dailyHover" style="display:none"><line class="base-line" y1="${T}" y2="${T + ih}"/><circle r="4" fill="var(--s-visit)" stroke="var(--blue)" stroke-width="2"/><circle r="4" fill="var(--s-read)" stroke="var(--blue)" stroke-width="2"/></g>`;
+    svg += `<rect x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent" id="dailyHit"/>`;
+    svg += '</svg><div class="tip"></div>';
+    el.innerHTML = svg;
+
+    const s = el.querySelector('svg'), hit = el.querySelector('#dailyHit'), hov = el.querySelector('#dailyHover'), tip = el.querySelector('.tip');
+    const [ln, cv, cr] = hov.children;
+    const move = e => {
+      const r = s.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width * W;
+      const i = Math.max(0, Math.min(n - 1, Math.round(n === 1 ? 0 : (px - L) / iw * (n - 1))));
+      const p = daily[i];
+      hov.style.display = '';
+      ln.setAttribute('x1', x(i)); ln.setAttribute('x2', x(i));
+      cv.setAttribute('cx', x(i)); cv.setAttribute('cy', y(p.visits));
+      cr.setAttribute('cx', x(i)); cr.setAttribute('cy', y(p.readings));
+      tip.innerHTML = tipHtml(p.date, [['var(--s-visit)', `访问（${p.visitors} 人）`, p.visits], ['var(--s-read)', `起卦（${p.readers} 人）`, p.readings]]);
+      tip.style.display = 'block';
+      tip.style.left = Math.min(Math.max(x(i) / W * r.width, 80), r.width - 80) + 'px';
+      tip.style.top = Math.min(y(p.visits), y(p.readings)) / H * r.height + 'px';
+    };
+    hit.addEventListener('pointermove', move);
+    hit.addEventListener('pointerdown', move);
+    hit.addEventListener('pointerleave', () => { hov.style.display = 'none'; tip.style.display = 'none'; });
+
+    $('#dailyTable').innerHTML = '<table><thead><tr><th>日期</th><th class="n">访问</th><th class="n">访客</th><th class="n">起卦</th><th class="n">起卦人数</th></tr></thead><tbody>' +
+      daily.slice().reverse().map(p => `<tr><td class="num">${p.date}</td><td class="n">${fmt(p.visits)}</td><td class="n">${fmt(p.visitors)}</td><td class="n">${fmt(p.readings)}</td><td class="n">${fmt(p.readers)}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  function renderHours(hours) {
+    const el = $('#hourChart');
+    const W = Math.max(280, el.clientWidth || 520), H = 200, L = 32, R = 8, T = 10, B = 24;
+    const iw = W - L - R, ih = H - T - B;
+    const max = niceMax(Math.max(1, ...hours.map(h => h.visits)));
+    const bw = iw / 24, gap = 2;
+    const y = v => T + ih - v / max * ih;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="各小时访问次数柱状图"><g class="axis">`;
+    svg += [0, .5, 1].map(f => `<line class="grid-line" x1="${L}" x2="${W - R}" y1="${y(f * max)}" y2="${y(f * max)}"/><text x="${L - 6}" y="${y(f * max) + 4}" text-anchor="end">${fmt(f * max)}</text>`).join('');
+    svg += [0, 6, 12, 18, 23].map(h => `<text x="${L + h * bw + bw / 2}" y="${H - 6}" text-anchor="middle">${h}时</text>`).join('') + '</g>';
+    svg += hours.map((h, i) => {
+      const bh = Math.max(h.visits ? 2 : 0, ih - (y(h.visits) - T));
+      const x0 = L + i * bw + gap / 2, w = bw - gap, y0 = T + ih - bh, r = Math.min(4, w / 2, bh);
+      const d = bh ? `M${x0} ${T + ih} V${y0 + r} Q${x0} ${y0} ${x0 + r} ${y0} H${x0 + w - r} Q${x0 + w} ${y0} ${x0 + w} ${y0 + r} V${T + ih} Z` : '';
+      return `<path d="${d}" fill="var(--s-visit)"/><rect x="${L + i * bw}" y="${T}" width="${bw}" height="${ih}" fill="transparent" data-i="${i}"/>`;
+    }).join('');
+    svg += `<line class="base-line" x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}"/></svg><div class="tip"></div>`;
+    el.innerHTML = svg;
+    const s = el.querySelector('svg'), tip = el.querySelector('.tip');
+    s.querySelectorAll('rect[data-i]').forEach(rc => {
+      const show = () => {
+        const i = +rc.dataset.i, h = hours[i], r = s.getBoundingClientRect();
+        tip.innerHTML = tipHtml(`${i}:00–${i}:59`, [['var(--s-visit)', '访问', h.visits], ['var(--s-read)', '起卦', h.readings]]);
+        tip.style.display = 'block';
+        tip.style.left = Math.min(Math.max((L + i * bw + bw / 2) / W * r.width, 70), r.width - 70) + 'px';
+        tip.style.top = y(h.visits) / H * r.height + 'px';
+        rc.previousElementSibling.style.opacity = '.75';
+      };
+      rc.addEventListener('pointerenter', show);
+      rc.addEventListener('pointerdown', show);
+      rc.addEventListener('pointerleave', () => { tip.style.display = 'none'; rc.previousElementSibling.style.opacity = ''; });
+    });
+  }
+
+  function sourceName(s) {
+    if (!s) return '直接访问';
+    if (s.startsWith('ref:')) return '来自 ' + s.slice(4);
+    if (s === 'xiaoheihe') return '小黑盒（xiaoheihe）';
+    return s;
+  }
+
+  function renderSources(list) {
+    if (!list.length) { $('#sources').innerHTML = '<div class="empty">还没有访问记录</div>'; return; }
+    $('#sources').innerHTML = '<table><thead><tr><th>来源</th><th class="n">访问</th><th class="n">访客</th><th class="n">起卦</th></tr></thead><tbody>' +
+      list.slice(0, 12).map(s => `<tr><td>${esc(sourceName(s.source))}</td><td class="n">${fmt(s.visits)}</td><td class="n">${fmt(s.visitors)}</td><td class="n">${s.source && !s.source.startsWith('ref:') ? fmt(s.readings) : '<span class="muted">—</span>'}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  function renderHexagrams(list) {
+    if (!list.length) { $('#hexagrams').innerHTML = '<div class="empty">还没有人起卦</div>'; return; }
+    const max = list[0].count;
+    $('#hexagrams').innerHTML = list.map(g =>
+      `<div class="bar-row" title="${esc(g.gua)}：${g.count} 次"><span class="name">${esc(g.gua)}</span><span class="track"><span class="fill" style="width:${g.count / max * 100}%"></span></span><span class="val">${fmt(g.count)}</span></div>`).join('');
+  }
+
+  // 占比条：同一组里颜色固定按顺序给，不按大小重新排色
+  // 用中性的明暗档，免得和「访问 / 起卦」的蓝、琥珀混成一个意思；每段都直接标了名字和占比
+  const SPLIT_COLORS = ['#EEF2F7', '#9DB0CE', '#6A84AE', '#40608F'];
+  function splitBlock(title, items) {
+    const total = items.reduce((a, b) => a + b.count, 0);
+    if (!total) return `<div class="split-block"><div class="split-title">${title}</div><div class="empty">暂无数据</div></div>`;
+    return `<div class="split-block"><div class="split-title">${title}</div><div class="split">` +
+      items.filter(i => i.count).map(i => `<span style="flex:${i.count};background:${i.color}" title="${esc(i.name)}：${i.count}"></span>`).join('') +
+      '</div><div class="split-legend">' +
+      items.map(i => `<span><i style="background:${i.color}"></i>${esc(i.name)}<b>${Math.round(i.count / total * 100)}%</b> <span class="muted num">(${fmt(i.count)})</span></span>`).join('') +
+      '</div></div>';
+  }
+  function renderSplits(d) {
+    const get = (arr, key, val) => (arr.find(x => x[key] === val) || {}).count || 0;
+    const methods = [
+      { name: '铜钱', count: get(d.methods, 'method', 'coin') },
+      { name: '生辰', count: get(d.methods, 'method', 'bazi') }
+    ];
+    const ch = n => get(d.changing, 'n', n);
+    const changing = [
+      { name: '无动爻', count: ch(0) },
+      { name: '一爻动', count: ch(1) },
+      { name: '两爻动', count: ch(2) },
+      { name: '三爻及以上', count: [3, 4, 5, 6].reduce((a, n) => a + ch(n), 0) }
+    ];
+    const devices = [
+      { name: '手机', count: get(d.devices, 'device', 'mobile') },
+      { name: '电脑', count: get(d.devices, 'device', 'desktop') }
+    ];
+    const paint = arr => arr.map((x, i) => ({ ...x, color: SPLIT_COLORS[i] }));
+    $('#splits').innerHTML = splitBlock('起卦方式', paint(methods)) + splitBlock('动爻数', paint(changing)) + splitBlock('设备', paint(devices));
+  }
+
+  function renderRecent(list) {
+    if (!list.length) { $('#recent').innerHTML = '<div class="empty">还没有人起卦</div>'; return; }
+    $('#recent').innerHTML = '<table><thead><tr><th>时间</th><th>本卦</th><th>之卦</th><th>方式</th><th>来源</th></tr></thead><tbody>' +
+      list.map(r => `<tr><td class="num">${esc(r.at)}</td><td>${esc(r.gua)}</td><td>${r.changeGua ? '<span class="zhu">' + esc(r.changeGua) + '</span> <span class="muted">' + r.changing + '爻动</span>' : '<span class="muted">无动爻</span>'}</td><td>${r.method === 'bazi' ? '生辰' : '铜钱'}</td><td>${esc(r.source ? sourceName(r.source) : '—')}</td></tr>`).join('') +
+      '</tbody></table>';
+  }
+
+  // 窗口宽度变了重画一下提示框位置用的尺寸（SVG 自己会缩放）
+  let rz;
+  window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => last && render(last), 150); });
+
+  // ---------- 假数据（只在本地 ?mock 时用） ----------
+  function mockData(d) {
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const today = new Date();
+    const daily = Array.from({ length: d }, (_, i) => {
+      const dt = new Date(today); dt.setDate(today.getDate() - (d - 1 - i));
+      const boost = i > d - 6 ? 3 : 1;
+      const visits = Math.round((8 + rnd() * 20) * boost);
+      const readings = Math.round(visits * (.45 + rnd() * .3));
+      return { date: dt.toISOString().slice(0, 10), visits, visitors: Math.round(visits * .7), readings, readers: Math.round(readings * .6) };
+    });
+    const sum = k => daily.reduce((a, b) => a + b[k], 0);
+    const names = ['乾为天', '坤为地', '水雷屯', '山水蒙', '地天泰', '天地否', '火泽睽', '风雷益', '泽火革', '雷风恒', '山风蛊', '水火既济'];
+    return Promise.resolve({
+      generatedAt: new Date().toISOString(), days: d,
+      today: daily[d - 1], total: { visits: sum('visits'), visitors: Math.round(sum('visitors') * .5), readings: sum('readings'), readers: Math.round(sum('readers') * .5) },
+      allTime: { visits: sum('visits') + 40, readings: sum('readings') + 20 },
+      daily,
+      hexagrams: names.map((g, i) => ({ gua: g, count: 30 - i * 2 - Math.round(rnd() * 2) })),
+      methods: [{ method: 'coin', count: 210 }, { method: 'bazi', count: 64 }],
+      changing: [{ n: 0, count: 40 }, { n: 1, count: 92 }, { n: 2, count: 80 }, { n: 3, count: 45 }, { n: 4, count: 12 }],
+      devices: [{ device: 'mobile', count: 300 }, { device: 'desktop', count: 180 }],
+      sources: [{ source: 'xiaoheihe', visits: 260, visitors: 190, readings: 150 }, { source: '', visits: 120, visitors: 90, readings: 0 }, { source: 'ref:www.baidu.com', visits: 14, visitors: 12, readings: 0 }],
+      hours: Array.from({ length: 24 }, (_, h) => ({ hour: h, visits: Math.round((h > 8 ? 10 : 2) + (h >= 20 ? 25 : 0) + rnd() * 10), readings: Math.round(rnd() * 10) })),
+      recent: Array.from({ length: 15 }, (_, i) => ({ at: `11-16 ${String(23 - i).padStart(2, '0')}:${String(Math.round(rnd() * 59)).padStart(2, '0')}`, gua: names[i % 12], changeGua: i % 3 ? names[(i + 5) % 12] : '', changing: i % 3 ? 1 + (i % 3) : 0, method: i % 4 ? 'coin' : 'bazi', source: i % 2 ? 'xiaoheihe' : '' }))
+    });
+  }
+
+  // 本次会话里登录过就直接进
+  if (password || MOCK) {
+    fetchStats(password, days).then(showApp).catch(() => { store.del(PW_KEY); $('#pw').focus(); });
+  } else {
+    $('#pw').focus();
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-// logReading —— 收一条起卦记录，存进 PostgreSQL 的 public.readings 表
+// logReading —— 收访问和起卦记录，分别存进 PostgreSQL 的 public.visits 和 public.readings
 // 前端起完卦用 sendBeacon 发过来（text/plain 的 JSON），这里只做校验和入库，不回任何数据。
-// 表开着 RLS 且没有策略，网页端拿匿名身份读写不了，只有这个函数能写。
+// 两张表都开着 RLS 且没有策略，网页端拿匿名身份读写不了，只有这个函数能写。
 const cloudbase = require('@cloudbase/node-sdk');
 
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
@@ -40,28 +40,41 @@ exports.main = async (event) => {
         return reply(400, origin);
     }
 
-    // 卦用六位二进制表示（自下而上读完后反转，和前端 fullBin 一致）
-    const bin = str(data.bin, 6);
-    if (!/^[01]{6}$/.test(bin)) return reply(400, origin);
-    const changeBin = /^[01]{6}$/.test(data.changeBin || '') ? data.changeBin : null;
-    const changing = Array.isArray(data.changing)
-        ? data.changing.filter(n => Number.isInteger(n) && n >= 0 && n <= 5).slice(0, 6)
-        : [];
-
-    const { error } = await app.rdb().from('readings').insert({
-        bin,
-        gua: str(data.gua, 8),
-        changing,
-        change_bin: changeBin,
-        change_gua: str(data.changeGua, 8),
-        method: data.method === 'bazi' ? 'bazi' : 'coin',
+    const common = {
         source: str(data.from, 32),      // 推广来源，网址里的 ?from=
         uid: str(data.uid, 40),          // 浏览器里随机生成的匿名 ID，用来数大概有多少人
         site: origin,
         ua: str(h['user-agent'] || h['User-Agent'], 200)
-    });
+    };
+
+    let table, row;
+    if (data.kind === 'visit') {
+        // 打开页面：只记来路域名
+        table = 'visits';
+        row = { ...common, ref: str(data.ref, 100) };
+    } else {
+        // 起卦：卦用六位二进制表示（自下而上读完后反转，和前端 fullBin 一致）
+        const bin = str(data.bin, 6);
+        if (!/^[01]{6}$/.test(bin)) return reply(400, origin);
+        const changeBin = /^[01]{6}$/.test(data.changeBin || '') ? data.changeBin : null;
+        const changing = Array.isArray(data.changing)
+            ? data.changing.filter(n => Number.isInteger(n) && n >= 0 && n <= 5).slice(0, 6)
+            : [];
+        table = 'readings';
+        row = {
+            ...common,
+            bin,
+            gua: str(data.gua, 8),
+            changing,
+            change_bin: changeBin,
+            change_gua: str(data.changeGua, 8),
+            method: data.method === 'bazi' ? 'bazi' : 'coin'
+        };
+    }
+
+    const { error } = await app.rdb().from(table).insert(row);
     if (error) {
-        console.error('insert failed', error);
+        console.error('insert failed', table, error);
         return reply(500, origin);
     }
     return reply(204, origin);
