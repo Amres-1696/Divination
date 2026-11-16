@@ -6,7 +6,7 @@
 
 六爻其实是六次二选一。首页环绕的伏羲六十四卦圆图本来就是按二进制排的，所以起卦时它不用变成别的东西：每掷一爻，圆上不符合的那一半暗下去，剩下的正好是连续的一段弧，圆图把这段弧转到正上方，用两条线夹住。半圈、四分之一圈、八分之一圈，掷完六次只剩一卦。想慢慢掷就看完，赶时间也可以直接跳过。
 
-整个网页用 HTML、CSS 和原生 JavaScript 写成，没有后端、账号系统或数据库，也没有构建步骤。不配置 AI 也能正常起卦、查看卦辞和生成分享图。
+整个网页用 HTML、CSS 和原生 JavaScript 写成，没有账号系统，也没有构建步骤。唯一的后端是一个记录起卦的云函数（见下面「数据存在哪里」），连不上也不影响使用。不配置 AI 也能正常起卦、查看卦辞和生成分享图。
 
 ## 可以怎么玩
 
@@ -42,7 +42,11 @@
 
 密钥存在浏览器里，不等于它不会离开本机：请求 AI 时，密钥会作为认证信息发给你配置的接口，问题和卦象也一起发过去。只填自己信任的服务地址，不要把真实密钥写进源码或提交到仓库。
 
-标题用的站酷小薇裁成了只含本站用到的字，放在仓库的 `fonts/` 里，不依赖外网。正文用的思源宋体从 Google Fonts 异步加载，连不上时用系统自带的宋体，不影响使用，只是样子会有些不同。除此之外页面不请求任何第三方资源，分享图用的 `html2canvas` 也放在仓库里。
+在正式部署的地址上（CloudBase 和 GitHub Pages），每起一卦会往 CloudBase 云函数 `logReading` 发一条记录，存进 CloudBase PostgreSQL 的 `readings` 表（开着 RLS、没有策略，网页端读写不了，只有这个函数能写）：所问的问题、本卦和之卦、变爻位置、起卦方式、网址里的 `?from=` 来源参数、浏览器里那个随机生成的匿名 ID（每日一卦也用它）、浏览器的 User-Agent。不记 IP，也不带生辰、设置、牌册和接口密钥。本地打开不会发。被广告拦截插件拦掉或者网络不通时直接跳过，不影响起卦。
+
+另外 `js/track.js` 里填了百度统计的站点 ID 的话，页面会加载百度统计的脚本，用来看访问量和来源；留空就不加载。
+
+标题用的站酷小薇裁成了只含本站用到的字，放在仓库的 `fonts/` 里，不依赖外网。正文用的思源宋体从 Google Fonts 异步加载，连不上时用系统自带的宋体，不影响使用，只是样子会有些不同。除此之外，页面只会请求上面说的起卦记录接口和百度统计（填了 ID 时），分享图用的 `html2canvas` 也放在仓库里。
 
 ## 本地打开和部署
 
@@ -54,7 +58,9 @@ python -m http.server 8000 --bind 127.0.0.1
 
 然后访问 <http://localhost:8000>。
 
-部署到任何静态托管都一样：保持 `index.html`、`style.css`、`data.js`、`html2canvas.min.js` 和 `js/`、`fonts/` 目录的相对位置即可。
+部署到任何静态托管都一样：保持 `index.html`、`style.css`、`data.js`、`html2canvas.min.js` 和 `js/`、`fonts/` 目录的相对位置即可。`tests/`、`tools/`、`cloudfunctions/` 不用传。
+
+起卦记录的云函数在 `cloudfunctions/logReading/`，配置在 `cloudbaserc.json`。改了以后用 CloudBase CLI 部署：先在函数目录里 `npm i --omit=dev`，再在项目根目录运行 `tcb fn deploy logReading --install-dependency false --force`。换了部署地址的话，记得同时改 `js/track.js` 里的 `TRACK_SITES` 和函数里的 `ALLOWED_ORIGINS`。
 
 `index.html` 里每个脚本和样式的地址后面带着 `?v=` 版本号，用来让浏览器丢掉旧缓存。版本号是文件内容的哈希，改完代码运行 `python tools/stamp-versions.py` 自动更新，不用手改；忘了运行的话回归测试会提醒。
 
@@ -84,7 +90,9 @@ python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 | `js/instruments.js` | 生辰输入（年份刻度尺、农历月历、十二时辰钟）和 AI 配置页签 |
 | `js/ai.js` / `js/share.js` | AI 请求与配置档案、分享图 |
 | `js/theme.js` | 首页、仪式、结果页之间的转场 |
+| `js/track.js` | 访问统计：百度统计、起卦记录上报 |
 | `js/main.js` | 初始化和事件绑定 |
+| `cloudfunctions/logReading/` | 收起卦记录的 CloudBase 云函数 |
 | `fonts/` | 站酷小薇子集（SIL OFL 授权，附 `OFL.txt`）和它包含的字表 |
 | `tools/subset-font.py` | 重新生成字体子集的脚本 |
 | `tools/stamp-versions.py` | 按文件内容更新 `?v=` 版本号 |

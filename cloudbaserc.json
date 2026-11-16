@@ -1,0 +1,15 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "disturbing-spoonbill-d7a2d8575e1",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "logReading",
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "timeout": 5,
+      "memorySize": 128,
+      "description": "收起卦记录，存进 PostgreSQL readings 表"
+    }
+  ]
+}
