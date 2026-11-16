@@ -863,14 +863,25 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 
 .result-actions { margin-top: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 /* 分享链接：一行链接 + 复制 / 发送，下面是「附上所问」和说明 */
-.link-panel { margin-top: 18px; max-width: 600px; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+/* 像图纸上的一行注记：虚线隔开，链接写在一道细线上，复制 / 发送是带下划线的字，不再是一组方框 */
+.link-panel { margin-top: 22px; max-width: 600px; padding-top: 16px; border-top: 1px dashed var(--rule); }
 .link-panel[hidden] { display: none; }
-.link-url { min-width: 0; width: 100%; padding: 9px 12px; font: 13.5px/1.5 var(--text); color: var(--ink); background: rgba(238, 242, 247, .06); border: 1px solid var(--rule-soft); border-radius: 0; }
-.link-url:focus { outline: none; border-color: var(--rule); }
-.link-q, .link-hint { grid-column: 1 / -1; margin: 0; font-size: 13.5px; color: var(--ink-2); }
-.link-q { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; justify-self: start; }
-.link-q input { width: 15px; height: 15px; margin: 0; accent-color: var(--ink); }
-.link-hint { color: var(--ink-3); }
+.link-row { display: flex; align-items: baseline; gap: 16px; }
+.link-label { flex: none; font-size: 12.5px; letter-spacing: .3em; color: var(--ink-3); }
+.link-url { flex: 1; min-width: 0; padding: 3px 0 6px; font: 14px/1.5 var(--text); color: var(--ink-2); background: none; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; text-overflow: ellipsis; cursor: text; }
+.link-url:focus { outline: none; color: var(--ink); border-bottom-color: var(--ink-3); }
+.link-url::selection { background: rgba(238, 242, 247, .22); color: var(--ink); }
+.link-act { flex: none; padding: 3px 0; font-size: 14.5px; color: var(--ink); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease, text-decoration-color .2s ease; }
+.link-act:hover { text-decoration-color: var(--ink); }
+.link-act.done { color: var(--ink-3); text-decoration-color: transparent; }
+.link-foot { margin: 14px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 13px; color: var(--ink-3); }
+.link-q { position: relative; display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); cursor: pointer; }
+.link-q input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; }
+.link-box { position: relative; width: 13px; height: 13px; border: 1px solid var(--ink-3); transition: background-color .15s ease, border-color .15s ease; }
+.link-box::after { content: ""; position: absolute; left: 3.5px; top: .5px; width: 4px; height: 8px; border: solid var(--blue-deep); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); opacity: 0; transition: opacity .15s ease; }
+.link-q input:checked + .link-box { background: var(--ink); border-color: var(--ink); }
+.link-q input:checked + .link-box::after { opacity: 1; }
+.link-q input:focus-visible + .link-box { outline: 1px solid var(--ink); outline-offset: 3px; }
 .shared-note { margin-left: 14px; padding-left: 14px; border-left: 1px solid var(--rule-soft); font-size: 13.5px; color: var(--ink-3); }
 .btn {
   --c: var(--ink);

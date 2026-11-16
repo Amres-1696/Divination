@@ -342,11 +342,13 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         <button class="btn btn-quiet" id="viewHistoryBtn">翻阅牌册</button>
       </div>
       <div class="link-panel" id="linkPanel" hidden>
-        <input class="link-url" id="linkUrl" readonly aria-label="这一卦的链接">
-        <button type="button" class="btn btn-small" id="linkCopy">复制</button>
-        ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="btn btn-small" id="linkSend">发送</button>' : ''}
-        ${question ? '<label class="link-q"><input type="checkbox" id="linkWithQ">链接里附上所问</label>' : ''}
-        <p class="link-hint">打开链接的人会看到同一卦。${question ? '所问默认不放进链接。' : ''}</p>
+        <div class="link-row">
+          <span class="link-label">链接</span>
+          <input class="link-url" id="linkUrl" readonly aria-label="这一卦的链接">
+          <button type="button" class="link-act" id="linkCopy">复制</button>
+          ${typeof navigator !== 'undefined' && navigator.share ? '<button type="button" class="link-act" id="linkSend">发送</button>' : ''}
+        </div>
+        <p class="link-foot">${question ? '<label class="link-q"><input type="checkbox" id="linkWithQ"><span class="link-box" aria-hidden="true"></span>附上所问</label>' : ''}<span>打开链接的人会看到同一卦${question ? '，所问默认不放进去' : ''}。</span></p>
       </div>
       <p class="result-warning" style="--d:7">卦只作参考，主意还得自己拿。</p>
     </article>
