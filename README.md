@@ -6,7 +6,7 @@
 
 六爻其实是六次二选一。首页环绕的伏羲六十四卦圆图本来就是按二进制排的，所以起卦时它不用变成别的东西：每掷一爻，圆上不符合的那一半暗下去，剩下的正好是连续的一段弧，圆图把这段弧转到正上方，用两条线夹住。半圈、四分之一圈、八分之一圈，掷完六次只剩一卦。想慢慢掷就看完，赶时间也可以直接跳过。
 
-整个网页用 HTML、CSS 和原生 JavaScript 写成，没有后端、账号系统或数据库，也没有构建步骤。不配置 AI 也能正常起卦、查看卦辞和生成分享图。
+整个网页用 HTML、CSS 和原生 JavaScript 写成，没有账号系统，也没有构建步骤。唯一的后端是一个记录起卦的云函数（见下面「数据存在哪里」），连不上也不影响使用。不配置 AI 也能正常起卦、查看卦辞和生成分享图。
 
 ## 可以怎么玩
 
@@ -42,7 +42,11 @@
 
 密钥存在浏览器里，不等于它不会离开本机：请求 AI 时，密钥会作为认证信息发给你配置的接口，问题和卦象也一起发过去。只填自己信任的服务地址，不要把真实密钥写进源码或提交到仓库。
 
-标题用的站酷小薇裁成了只含本站用到的字，放在仓库的 `fonts/` 里，不依赖外网。正文用的思源宋体从 Google Fonts 异步加载，连不上时用系统自带的宋体，不影响使用，只是样子会有些不同。除此之外页面不请求任何第三方资源，分享图用的 `html2canvas` 也放在仓库里。
+在正式部署的地址上（CloudBase 和 GitHub Pages），页面会往 CloudBase 云函数 `logReading` 发两种记录，存进 CloudBase PostgreSQL：每打开一次页面记一条访问（`visits` 表，只留来路网站的域名），每起一卦记一条起卦（`readings` 表：本卦和之卦、变爻位置、起卦方式）。两种记录都带网址里的 `?from=` 来源参数、浏览器里那个随机生成的匿名 ID（每日一卦也用它）和浏览器的 User-Agent。不记所问的问题和 IP，也不带生辰、设置、牌册和接口密钥。两张表都开着 RLS、没有策略，网页端读写不了，只有云函数能碰。本地打开不会发。被广告拦截插件拦掉或者网络不通时直接跳过，不影响起卦。
+
+这些数据在 `admin.html` 看：输密码后显示每天的访问和起卦、来源、热门卦、时段分布等。数据由云函数 `adminStats` 查出来，密码不对什么都不返回，所以页面地址公开也没关系。本地用 `admin.html?mock` 打开可以拿假数据看排版（`?mock=empty` 是刚上线没什么数的样子；假数据模式下密码随便输，输「错」会按密码不对处理）。后台页的展示字是单独一份子集 `fonts/ZCOOLXiaoWei-admin.woff2`，改了 `admin.html` 的文案后用 `tools/subset-admin-font.py` 重新生成。
+
+标题用的站酷小薇裁成了只含本站用到的字，放在仓库的 `fonts/` 里，不依赖外网。正文用的思源宋体从 Google Fonts 异步加载，连不上时用系统自带的宋体，不影响使用，只是样子会有些不同。除此之外，页面只会请求上面说的统计接口，分享图用的 `html2canvas` 也放在仓库里。
 
 ## 本地打开和部署
 
@@ -54,7 +58,19 @@ python -m http.server 8000 --bind 127.0.0.1
 
 然后访问 <http://localhost:8000>。
 
-部署到任何静态托管都一样：保持 `index.html`、`style.css`、`data.js`、`html2canvas.min.js` 和 `js/`、`fonts/` 目录的相对位置即可。
+部署到任何静态托管都一样：保持 `index.html`、`admin.html`、`style.css`、`data.js`、`html2canvas.min.js` 和 `js/`、`fonts/` 目录的相对位置即可。`tests/`、`tools/`、`cloudfunctions/` 不用传。
+
+统计用的东西都在 `cloudfunctions/` 里，函数配置在 `cloudbaserc.json`。用 CloudBase CLI 部署：
+
+```sh
+tcb db execute --sql "$(cat cloudfunctions/schema.sql)"         # 建表和汇总函数，可以重复跑
+(cd cloudfunctions/logReading && npm i --omit=dev)
+(cd cloudfunctions/adminStats && npm i --omit=dev)
+tcb fn deploy logReading --path /api/reading --install-dependency false --force
+tcb fn deploy adminStats --path /api/admin-stats --install-dependency false --force
+```
+
+后台密码在控制台给 `adminStats` 函数加环境变量 `ADMIN_PASSWORD`，不要写进仓库。换了部署地址的话，记得同时改 `js/track.js` 里的 `TRACK_SITES`、两个函数里的 `ALLOWED_ORIGINS`。
 
 `index.html` 里每个脚本和样式的地址后面带着 `?v=` 版本号，用来让浏览器丢掉旧缓存。版本号是文件内容的哈希，改完代码运行 `python tools/stamp-versions.py` 自动更新，不用手改；忘了运行的话回归测试会提醒。
 
@@ -84,7 +100,10 @@ python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 | `js/instruments.js` | 生辰输入（年份刻度尺、农历月历、十二时辰钟）和 AI 配置页签 |
 | `js/ai.js` / `js/share.js` | AI 请求与配置档案、分享图 |
 | `js/theme.js` | 首页、仪式、结果页之间的转场 |
+| `js/track.js` | 访问统计：打开页面和起卦时上报 |
 | `js/main.js` | 初始化和事件绑定 |
+| `admin.html` | 后台统计页（要密码） |
+| `cloudfunctions/` | CloudBase 云函数（`logReading` 收记录、`adminStats` 给后台出数）和建表脚本 `schema.sql` |
 | `fonts/` | 站酷小薇子集（SIL OFL 授权，附 `OFL.txt`）和它包含的字表 |
 | `tools/subset-font.py` | 重新生成字体子集的脚本 |
 | `tools/stamp-versions.py` | 按文件内容更新 `?v=` 版本号 |

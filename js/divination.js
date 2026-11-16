@@ -69,6 +69,7 @@ async function divine() {
         // 先落库拿到唯一 ID，自动 AI 解读和重试都绑定本条记录。
         readingContext.historyId = saveToHistory(question, gua, fullBin, hexLines, change, readingContext);
         readingContext.fresh = !!readingContext.historyId;   // 刚收进牌册：结果页的卦落定后，牌册挂签盖上新的数
+        if (typeof reportReading === 'function') reportReading({ method: settings.method, gua, fullBin, change });
         renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
     } catch (error) {
         if (typeof dropQuestionCarry === 'function') dropQuestionCarry();

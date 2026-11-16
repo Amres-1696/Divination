@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
+  "envId": "disturbing-spoonbill-d7a2d8575e1",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "logReading",
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "timeout": 5,
+      "memorySize": 128,
+      "description": "收访问和起卦记录，写入 PostgreSQL visits / readings 表"
+    },
+    {
+      "name": "adminStats",
+      "runtime": "Nodejs20.19",
+      "handler": "index.main",
+      "timeout": 10,
+      "memorySize": 128,
+      "description": "后台页数据接口，密码在环境变量 ADMIN_PASSWORD"
+    }
+  ]
+}
