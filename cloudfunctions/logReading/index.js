@@ -49,7 +49,6 @@ exports.main = async (event) => {
         : [];
 
     const { error } = await app.rdb().from('readings').insert({
-        question: str(data.question, 80),
         bin,
         gua: str(data.gua, 8),
         changing,

@@ -34,13 +34,12 @@ if (_trackOn) {
 }
 
 // 起完一卦调一次
-function reportReading({ question, method, gua, fullBin, change }) {
+function reportReading({ method, gua, fullBin, change }) {
     if (!_trackOn) return;
     try {
         if (window._hmt) window._hmt.push(['_trackEvent', 'divination', method || 'coin', gua && gua[0]]);
 
         const payload = JSON.stringify({
-            question: question || '',
             method,
             bin: fullBin,
             gua: gua && gua[0],
