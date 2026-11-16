@@ -623,14 +623,21 @@ function initShareLinkPanel(root) {
         const open = panel.hidden;
         panel.hidden = !open;
         btn.setAttribute('aria-expanded', String(open));
-        if (open) { refresh(); urlEl.focus({ preventScroll: true }); urlEl.select(); }
+        // 展开时不全选链接：一整条反白很刺眼。点进链接框才选中，方便手动复制
+        if (open) refresh();
     });
     if (withQ) withQ.addEventListener('change', refresh);
-    urlEl.addEventListener('focus', () => urlEl.select());
-    panel.querySelector('#linkCopy').addEventListener('click', async () => {
+    urlEl.addEventListener('click', () => urlEl.select());
+    const copyBtn = panel.querySelector('#linkCopy');
+    copyBtn.addEventListener('click', async () => {
         refresh();
-        if (await copyText(urlEl.value)) showToast('链接已复制', 'success');
-        else { urlEl.select(); showToast('没能自动复制，链接已选中，可以手动复制'); }
+        if (await copyText(urlEl.value)) {
+            // 复制成功就在按钮上原地回一句，不另外弹提示
+            copyBtn.textContent = '已复制';
+            copyBtn.classList.add('done');
+            clearTimeout(copyBtn._t);
+            copyBtn._t = setTimeout(() => { copyBtn.textContent = '复制'; copyBtn.classList.remove('done'); }, 1600);
+        } else { urlEl.select(); showToast('没能自动复制，链接已选中，可以手动复制'); }
     });
     const send = panel.querySelector('#linkSend');
     if (send) send.addEventListener('click', () => {
