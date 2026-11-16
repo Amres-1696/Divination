@@ -8,6 +8,7 @@ const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
 
 const ALLOWED_ORIGINS = [
     'https://disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com',
+    'https://divination-disturbing-spoonbill-d7a2d8575e1.webapps.tcloudbase.com',
     'https://amres-1696.github.io'
 ];
 

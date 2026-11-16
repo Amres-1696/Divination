@@ -7,6 +7,7 @@ const TRACK_ENDPOINT = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudb
 // 只在正式部署的地址上统计，本地调试、file:// 打开都不发
 const TRACK_SITES = [
     'disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com',
+    'divination-disturbing-spoonbill-d7a2d8575e1.webapps.tcloudbase.com',
     'amres-1696.github.io'
 ];
 const _trackOn = typeof location !== 'undefined' && TRACK_SITES.includes(location.hostname);
