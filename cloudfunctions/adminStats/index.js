@@ -1,14 +1,36 @@
 // adminStats —— 后台页 admin.html 的数据接口
 // 密码放在函数的环境变量 ADMIN_PASSWORD 里，不进代码仓库。密码不对一律 401，什么都不返回。
-// 汇总在数据库里算（public.admin_stats，见 ../schema.sql），这里只管验密码和转发。
+// 从文档数据库取出这段时间的记录，交给 stats.js 汇总。
 const crypto = require('crypto');
 const cloudbase = require('@cloudbase/node-sdk');
 
+const { buildStats, windowOf } = require('./stats');
+
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
+const db = app.database();
+const _ = db.command;
+
+// 取 created_at 不早于 since 的全部记录。服务端单次最多 1000 条，按页往下翻
+async function since(name, from, fields) {
+    const rows = [];
+    for (let skip = 0; ; skip += 1000) {
+        const { data } = await db.collection(name)
+            .where({ created_at: _.gte(new Date(from)) })
+            .orderBy('created_at', 'asc')
+            .field(fields)
+            .skip(skip)
+            .limit(1000)
+            .get();
+        rows.push(...data);
+        if (data.length < 1000) return rows;
+    }
+}
 
 const ALLOWED_ORIGINS = [
-    'https://disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com',
-    'https://divination-disturbing-spoonbill-d7a2d8575e1.webapps.tcloudbase.com',
+    'https://guashen.xyz',
+    'https://www.guashen.xyz',
+    'https://divination-ty-169609-d6g6rgkbq099d5815.webapps.tcloudbase.com',
+    'https://ty-169609-d6g6rgkbq099d5815-1327988716.tcloudbaseapp.com',
     'https://amres-1696.github.io'
 ];
 
@@ -54,10 +76,19 @@ exports.main = async (event) => {
     }
 
     const days = [7, 30, 90].includes(data.days) ? data.days : 30;
-    const { data: stats, error } = await app.rdb().rpc('admin_stats', { days });
-    if (error) {
+    try {
+        const now = Date.now();
+        const { prevStart } = windowOf(days, now);
+        const [visits, readings, vc, rc] = await Promise.all([
+            since('visits', prevStart, { created_at: true, uid: true, source: true, ref: true, ua: true }),
+            since('readings', prevStart, { created_at: true, uid: true, source: true, gua: true, change_gua: true, changing: true, method: true }),
+            db.collection('visits').count(),
+            db.collection('readings').count()
+        ]);
+        const stats = buildStats({ visits, readings, days, now, allTime: { visits: vc.total, readings: rc.total } });
+        return reply(200, origin, stats);
+    } catch (error) {
         console.error('admin_stats failed', error);
         return reply(500, origin, { error: 'query' });
     }
-    return reply(200, origin, stats);
 };

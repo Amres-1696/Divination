@@ -697,3 +697,35 @@ test('the paper share card keeps only the question, the hexagram and the main re
     assert.match(blank, /sc-ask-q blank">心中所念/);
     assert.match(blank, /没有动爻/);
 });
+
+test('admin stats bucket by Beijing day and hour, and compare against the matching previous span', () => {
+    const { buildStats } = require(path.join(ROOT, 'cloudfunctions/adminStats/stats.js'));
+    const at = s => new Date(s);
+    const visits = [
+        { created_at: at('2026-03-09T08:30:00+08:00'), uid: 'a', source: '', ref: '', ua: 'Mozilla/5.0 (iPhone)' },     // 上一段（截到同一钟点 09:00 之前）
+        { created_at: at('2026-03-09T23:30:00+08:00'), uid: 'c', source: '', ref: '', ua: 'Mozilla/5.0 (iPhone)' },     // 过了同一钟点，不算进上一段
+        { created_at: at('2026-03-10T00:10:00+08:00'), uid: 'a', source: 'bilibili', ref: '', ua: 'Mozilla/5.0 (Windows NT 10.0)' },
+        { created_at: { $date: '2026-03-10T15:59:00.000Z' }, uid: 'b', source: '', ref: 'www.baidu.com', ua: 'Mozilla/5.0 (Linux; Android 14)' }, // 北京时间 3-10 23:59
+        { created_at: '2026-03-10T16:00:00.000Z', uid: 'b', source: '', ref: '', ua: 'Mozilla/5.0 (Windows NT 10.0)' }        // 北京时间 3-11 00:00
+    ];
+    const readings = [
+        { created_at: at('2026-03-10T00:20:00+08:00'), uid: 'a', source: 'bilibili', gua: '乾为天', change_gua: '天风姤', changing: [0], method: 'coin' },
+        { created_at: at('2026-03-11T08:05:00+08:00'), uid: 'b', source: '', gua: '坤为地', change_gua: '', changing: [], method: 'bazi' }
+    ];
+    const s = buildStats({ visits, readings, days: 2, now: Date.parse('2026-03-11T09:00:00+08:00'), allTime: { visits: 40, readings: 9 } });
+    assert.deepEqual(s.daily.map(d => [d.date, d.visits, d.visitors, d.readings]), [['2026-03-10', 2, 2, 1], ['2026-03-11', 1, 1, 1]]);
+    assert.deepEqual(s.total, { visits: 3, visitors: 2, readings: 2, readers: 2 });
+    assert.deepEqual(s.prev, { visits: 1, visitors: 1, readings: 0, readers: 0 });
+    assert.deepEqual(s.allTime, { visits: 40, readings: 9 });
+    assert.deepEqual(s.sources, [
+        { source: 'bilibili', visits: 1, visitors: 1, readings: 1 },
+        { source: '', visits: 1, visitors: 1, readings: 0 },
+        { source: 'ref:www.baidu.com', visits: 1, visitors: 1, readings: 0 }
+    ]);
+    assert.deepEqual(s.devices, [{ device: 'desktop', count: 2 }, { device: 'mobile', count: 1 }]);
+    assert.equal(s.hours[23].visits, 1);
+    assert.equal(s.hours[0].visits, 2);
+    assert.deepEqual(s.changing, [{ n: 0, count: 1 }, { n: 1, count: 1 }]);
+    assert.deepEqual(s.recent.map(r => r.at), ['03-11 08:05', '03-10 00:20']);
+    assert.equal(s.today.visits, 1);
+});
