@@ -237,11 +237,36 @@ function renderArchiveList(history) {
         el.addEventListener('mouseenter', () => { const c = mapCell(el.dataset.v); if (c) c.classList.add('hover'); });
         el.addEventListener('mouseleave', () => { const c = mapCell(el.dataset.v); if (c) c.classList.remove('hover'); });
     });
+    // 删除要点两下：第一下整行染上淡朱、× 换成带框的「删除」，再点才删；移开、点别处或 3 秒不动就复原。
+    // 手机上 × 常显、又挨着整行的点按区，一点就删太容易误删。删掉之后底栏还能撤销
+    const disarm = btn => {
+        clearTimeout(btn._t);
+        if (!btn.classList.contains('arm')) return;
+        btn.classList.remove('arm');
+        btn.textContent = '';
+        btn.setAttribute('aria-label', '删除这条记录');
+        const row = btn.closest('.history-item');
+        if (row) row.classList.remove('arming');
+    };
     list.querySelectorAll('.history-del').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (!btn.classList.contains('arm')) {
+                list.querySelectorAll('.history-del.arm').forEach(disarm);
+                btn.classList.add('arm');
+                btn.textContent = '删除';
+                const row = btn.closest('.history-item');
+                if (row) row.classList.add('arming');
+                btn.setAttribute('aria-label', '再点一次，删除这条记录');
+                btn._t = setTimeout(() => disarm(btn), 3000);
+                return;
+            }
+            disarm(btn);
             deleteHistoryItem(btn.dataset.id);
         });
+        btn.addEventListener('blur', () => disarm(btn));
+        const row = btn.closest('.history-item');
+        if (row) row.addEventListener('mouseleave', () => disarm(btn));
     });
 }
 
@@ -319,8 +344,9 @@ function deleteHistoryItem(id) {
     const history = readHistorySafe();
     const idx = history.findIndex(h => h.id === id);
     if (idx !== -1) {
-        history.splice(idx, 1);
+        const removed = history.splice(idx, 1)[0];
         try { localStorage.setItem('divinationHistory', JSON.stringify(history)); } catch (e) {}
+        offerUndoDelete(removed, idx);
     }
     if (!el) { loadHistory(); return; }
 
@@ -360,6 +386,35 @@ function deleteHistoryItem(id) {
     el.addEventListener('animationend', onEnd);
     // 兜底：transitionend 未触发（如系统开启减少动态效果）时也能收尾
     setTimeout(() => { if (el.isConnected) finish(); }, 900);
+}
+
+// 删掉一条之后，牌册底栏右边留一句「已删除 · 撤销」，6 秒内点撤销就放回原来的位置
+function offerUndoDelete(item, idx) {
+    const foot = document.querySelector('#historyPanel .panel-foot');
+    if (!foot) return;
+    let note = foot.querySelector('.undo-note');
+    if (!note) {
+        note = document.createElement('span');
+        note.className = 'undo-note';
+        note.setAttribute('role', 'status');
+        foot.appendChild(note);
+    }
+    const q = item.question && item.question !== '心中所念' ? `「${item.question.length > 8 ? item.question.slice(0, 8) + '…' : item.question}」` : '一条记录';
+    note.innerHTML = `已删除${escHtml(q)}<button type="button" class="undo-btn">撤销</button>`;
+    note.classList.add('on');
+    clearTimeout(offerUndoDelete._t);
+    const hide = () => { note.classList.remove('on'); };
+    offerUndoDelete._t = setTimeout(hide, 6000);
+    note.querySelector('.undo-btn').addEventListener('click', () => {
+        clearTimeout(offerUndoDelete._t);
+        hide();
+        const history = readHistorySafe();
+        if (history.some(h => h.id === item.id)) return;
+        history.splice(Math.min(idx, history.length), 0, item);
+        try { localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX))); } catch (e) { return; }
+        updateHistoryCount(history.length);
+        loadHistory({ quiet: true });
+    });
 }
 
 async function clearHistory() {

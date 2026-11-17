@@ -402,6 +402,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         if (savedAi) {
             aiBody.innerHTML = '<div class="ai-reading-text"></div>';
             aiBody.querySelector('.ai-reading-text').textContent = savedAi;
+        } else if (typeof aiReady === 'function' && !aiReady()) {
+            // 开了 AI 解卦但还没配好：不放解读按钮，直接说缺什么、带去设置
+            aiNotReady(gua, change, question, aiBody, readingContext);
         } else if (aiSettings.autoRun || (readingContext.historyId && _aiByRecord.has(readingContext.historyId))) {
             // 自动解读；或者这条记录这次已经请过（正在请 / 请到了没存进牌册），接着用那一次的
             runAiReading(gua, change, question, aiBody, readingContext);

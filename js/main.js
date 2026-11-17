@@ -86,6 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetPromptBtn) resetPromptBtn.addEventListener('click', function() {
         const el = document.getElementById('aiPrompt');
         if (el) el.value = DEFAULT_AI_PROMPT;
+        updateAiSaveState();
+    });
+    // AI 配置的表单一改，保存按钮就提示「保存改动」
+    ['aiProfileName', 'aiBaseUrl', 'aiApiKey', 'aiModel', 'aiPrompt'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateAiSaveState);
     });
 
     // Esc 关闭当前打开的弹层（按层级优先级，从最上层往下）
