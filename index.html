@@ -26,7 +26,7 @@
     <!-- 正文字体（思源宋体）样式表异步加载：Google 字体连不上时不挡首屏，先用系统宋体，字体到了再换上 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap"></noscript>
-    <link rel="stylesheet" href="style.css?v=7b4ceb4b">
+    <link rel="stylesheet" href="style.css?v=4f2b18ae">
 </head>
 <body class="view-home intro">
 <div class="cosmos" id="cosmos" aria-hidden="true"></div>
@@ -192,7 +192,7 @@
   <div class="panel-foot"><button class="btn-clear" id="clearHistoryBtn">清空牌册</button></div>
 </div>
 <div class="share-overlay" id="shareImageContainer">
-        <div class="share-box" role="dialog" aria-modal="true" aria-label="分享图">
+        <div class="share-box" role="dialog" aria-modal="true" aria-label="起卦签">
             <p class="share-caption">起卦签</p>
             <div class="share-preview" id="shareImagePreview"></div>
             <div class="share-actions">
@@ -200,7 +200,7 @@
                 <button class="share-act" id="shareCopyBtn"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="7" width="9.5" height="9.5"/><path d="M13 7V3.5H3.5V13H7"/></svg>复制图片</button>
             </div>
         </div>
-        <button class="btn-close share-close" id="closeShareBtn" aria-label="关闭分享图"></button>
+        <button class="btn-close share-close" id="closeShareBtn" aria-label="关闭起卦签"></button>
     </div>
 
     <!-- 回到顶部 -->
@@ -209,7 +209,7 @@
     </button>
 
     <!-- Toast 提示 -->
-    <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer" role="status" aria-live="polite"></div>
     <!-- Confirm 弹窗 -->
     <div class="confirm-overlay" id="confirmOverlay">
         <div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmMsg">
@@ -223,20 +223,20 @@
 
     <script src="data.js?v=4c76cb89"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
-    <script src="js/core.js?v=7ad1f402"></script>
+    <script src="js/core.js?v=b32355e4"></script>
     <script src="js/lunar.js?v=3444442d"></script>
     <script src="js/glyphs.js?v=fb175be5"></script>
     <script src="js/cosmos.js?v=3381c55a"></script>
     <script src="js/ritual.js?v=6e4440a4"></script>
-    <script src="js/ai.js?v=0072098d"></script>
-    <script src="js/settings.js?v=08426829"></script>
-    <script src="js/share.js?v=a80e3891"></script>
-    <script src="js/history.js?v=5548eb99"></script>
+    <script src="js/ai.js?v=e7044131"></script>
+    <script src="js/settings.js?v=9fee2134"></script>
+    <script src="js/share.js?v=0093bb68"></script>
+    <script src="js/history.js?v=cbebd969"></script>
     <script src="js/daily.js?v=2183e14a"></script>
     <script src="js/track.js?v=c01c1e42"></script>
-    <script src="js/divination.js?v=60cf3d9f"></script>
-    <script src="js/instruments.js?v=9b2c617b"></script>
-    <script src="js/theme.js?v=69e00acb"></script>
-    <script src="js/main.js?v=e4a51377"></script>
+    <script src="js/divination.js?v=2bab686e"></script>
+    <script src="js/instruments.js?v=b8203437"></script>
+    <script src="js/theme.js?v=6cc429d7"></script>
+    <script src="js/main.js?v=0855fd5f"></script>
 </body>
 </html>

@@ -356,7 +356,7 @@ function deleteAiProfile() {
     if (ai.profiles.length <= 1) { setAiStatus('至少要留一套配置', 'error'); return; }
     const idx = ai.activeProfile;
     const removed = ai.profiles[idx];
-    showConfirm('确定删除配置「' + (removed.name || ('配置 ' + (idx + 1))) + '」？').then(ok => {
+    showConfirm('删除配置「' + (removed.name || ('配置 ' + (idx + 1))) + '」？它的接口地址、Key 和提示词会一起删掉。', '删除').then(ok => {
         if (!ok) return;
         const fresh = loadSettings();
         const fAi = fresh.ai;

@@ -210,7 +210,7 @@ function softPunct(s) {
 }
 
 function buildCallouts(hexLines, changingYaos) {
-    // 卦画右侧的标注：每一爻一条引线，动爻用橙色并注明变后的爻
+    // 卦画右侧的标注：每一爻一条引线，动爻用朱色并注明变后的爻
     const rows = [];
     for (let i = 5; i >= 0; i--) {
         const line = hexLines[i];
@@ -336,9 +336,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       </section>
       </div>
       <div class="result-actions" style="--d:7">
-        <button class="btn btn-primary" id="shareBtn">生成分享图</button>
+        <button class="btn btn-primary" id="shareBtn">生成起卦签</button>
         <button class="btn" id="linkBtn" aria-expanded="false" aria-controls="linkPanel">分享链接</button>
-        <button class="btn" id="newDivineBtn">${shared ? '我也问一卦' : '再问一卦'}</button>
+        ${shared ? '' : '<button class="btn" id="newDivineBtn">再问一卦</button>'}
         <button class="btn btn-quiet" id="viewHistoryBtn">翻阅牌册</button>
       </div>
       <div class="link-panel" id="linkPanel" hidden>
@@ -355,7 +355,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
   </div>
 </div>`;
     const backBtn = resultArea.querySelector('#backHomeBtn');
-    if (backBtn) backBtn.addEventListener('click', () => { if (typeof returnToInquiry === 'function') returnToInquiry(); });
+    // 朋友分享的一卦：左上「我也问一卦」是唯一的入口（底部不再重复一个），回首页时输入框是空的
+    if (backBtn) backBtn.addEventListener('click', () => { if (typeof returnToInquiry === 'function') returnToInquiry(shared ? { clear: true } : undefined); });
 
 
     const shareBtn = resultArea.querySelector('#shareBtn');
