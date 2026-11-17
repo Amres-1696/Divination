@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.cloudbase.net/cli/cloudbaserc.schema.json",
-  "envId": "disturbing-spoonbill-d7a2d8575e1",
+  "envId": "ty-169609-d6g6rgkbq099d5815",
   "functionRoot": "cloudfunctions",
   "functions": [
     {
@@ -9,7 +9,7 @@
       "handler": "index.main",
       "timeout": 5,
       "memorySize": 128,
-      "description": "收访问和起卦记录，写入 PostgreSQL visits / readings 表"
+      "description": "收访问和起卦记录，写入文档数据库 visits / readings 集合"
     },
     {
       "name": "adminStats",

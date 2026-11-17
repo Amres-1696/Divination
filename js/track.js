@@ -2,12 +2,14 @@
 // 尽力而为：被拦截、断网、存储不可用都静默跳过，绝不影响起卦本身。
 // 不发所问的问题、生辰、设置和密钥。数据在后台页 admin.html 看。
 
-const TRACK_ENDPOINT = 'https://disturbing-spoonbill-d7a2d8575e1.service.tcloudbase.com/api/reading';
+const TRACK_ENDPOINT = 'https://ty-169609-d6g6rgkbq099d5815.service.tcloudbase.com/api/reading';
 
 // 只在正式部署的地址上统计，本地调试、file:// 打开都不发
 const TRACK_SITES = [
-    'disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com',
-    'divination-disturbing-spoonbill-d7a2d8575e1.webapps.tcloudbase.com',
+    'guashen.xyz',
+    'www.guashen.xyz',
+    'divination-ty-169609-d6g6rgkbq099d5815.webapps.tcloudbase.com',
+    'ty-169609-d6g6rgkbq099d5815-1327988716.tcloudbaseapp.com',
     'amres-1696.github.io'
 ];
 const _trackOn = typeof location !== 'undefined' && TRACK_SITES.includes(location.hostname);

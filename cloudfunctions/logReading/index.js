@@ -1,14 +1,17 @@
-// logReading —— 收访问和起卦记录，分别存进 PostgreSQL 的 public.visits 和 public.readings
+// logReading —— 收访问和起卦记录，分别存进文档数据库的 visits 和 readings 集合
 // 前端起完卦用 sendBeacon 发过来（text/plain 的 JSON），这里只做校验和入库，不回任何数据。
-// 两张表都开着 RLS 且没有策略，网页端拿匿名身份读写不了，只有这个函数能写。
+// 两个集合的权限都是「仅管理端可读写」，网页端读写不了，只有云函数能碰。
 const cloudbase = require('@cloudbase/node-sdk');
 
 const app = cloudbase.init({ env: cloudbase.SYMBOL_CURRENT_ENV });
+const db = app.database();
 
 // 只认这几个来源的请求，别的站点拿去刷数据就直接丢掉
 const ALLOWED_ORIGINS = [
-    'https://disturbing-spoonbill-d7a2d8575e1-1327988716.tcloudbaseapp.com',
-    'https://divination-disturbing-spoonbill-d7a2d8575e1.webapps.tcloudbase.com',
+    'https://guashen.xyz',
+    'https://www.guashen.xyz',
+    'https://divination-ty-169609-d6g6rgkbq099d5815.webapps.tcloudbase.com',
+    'https://ty-169609-d6g6rgkbq099d5815-1327988716.tcloudbaseapp.com',
     'https://amres-1696.github.io'
 ];
 
@@ -73,8 +76,9 @@ exports.main = async (event) => {
         };
     }
 
-    const { error } = await app.rdb().from(table).insert(row);
-    if (error) {
+    try {
+        await db.collection(table).add({ ...row, created_at: db.serverDate() });
+    } catch (error) {
         console.error('insert failed', table, error);
         return reply(500, origin);
     }
