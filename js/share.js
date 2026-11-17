@@ -351,7 +351,8 @@ function pressShareButton() {
         { duration: 420, easing: 'ease-out' });
 }
 
-// 版框画出来：底色和网格淡入，外框四条边顺着一圈画出，四角裁切线最后落下。只动 transform / opacity
+// 版框画出来：白纸从上往下铺开，外框四条边顺着一圈画出，四角裁切线最后落下。
+// 白纸不淡入：半透明的白压在深色遮罩上是一层灰，满了又突然亮成白，像闪了一下
 function drawSharePlate(plate) {
     if (!plate.animate) return Promise.resolve();
     const k = plate.clientWidth / 500;
@@ -359,7 +360,8 @@ function drawSharePlate(plate) {
     const ease = 'cubic-bezier(.65, 0, .25, 1)';
     const run = (sel, frames, o) => Array.from(plate.querySelectorAll(sel)).map((el, i) => el.animate(frames, { fill: 'backwards', easing: ease, ...o(i) }));
     const all = [
-        ...run('.sp-base', [{ opacity: 0 }, { opacity: 1 }], () => ({ duration: 420 })),
+        // 左、上、右三边留出投影的位置，只把下边从顶上拉下来
+        ...run('.sp-base', [{ clipPath: 'inset(-60px -60px 100% -60px)' }, { clipPath: 'inset(-60px -60px -60px -60px)' }], () => ({ duration: 520 })),
         ...run('.sp-grid', [{ opacity: 0 }, { opacity: 1 }], () => ({ duration: 520, delay: 120 })),
         ...run('.sp-line.t, .sp-line.b', [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], i => ({ duration: 340, delay: 60 + i * 170 })),
         ...run('.sp-line.r, .sp-line.l', [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], i => ({ duration: 340, delay: 145 + i * 170 })),
@@ -368,7 +370,7 @@ function drawSharePlate(plate) {
     return Promise.all(all.map(a => a.finished.catch(() => {})));
 }
 
-// 拼版：结果页上看得见的卦画、卦名、所问、主断，各自飞到版上对应的位置。看不见的不飞，换图时直接出现
+// 拼版：结果页上看得见的卦画、卦名，各自飞到版上对应的位置。看不见的不飞，换图时直接出现
 function assembleShareCard(plate, card) {
     const p = plate.getBoundingClientRect(), c = card.getBoundingClientRect();
     if (!p.width || !c.width) return Promise.resolve();
@@ -405,16 +407,8 @@ function assembleShareCard(plate, card) {
             flights.push({ kind: 'text', text: node.textContent[i], from, to: onPlate(textRect(slot)), src: cs, dst: ts, k, delay: 70 + i * 55 });
         });
     }
-    // 所问、主断：按卡上的宽度折行，落地时和卡上一行对一行
-    const pairs = [[result.querySelector('.result-question h1'), card.querySelector('.sc-ask-q'), 160]];
-    const quotes = result.querySelectorAll('.mr-quote'), cardQuotes = card.querySelectorAll('.sc-quote');
-    quotes.forEach((q, i) => { if (cardQuotes[i]) pairs.push([q, cardQuotes[i], 230 + i * 70]); });
-    pairs.forEach(([src, dst, delay]) => {
-        if (!src || !dst) return;
-        const to = textRect(dst), from = textRect(src);
-        if (!visible(from) || !to.width) return;
-        flights.push({ kind: 'text', text: dst.textContent.trim(), from, to: onPlate(to), src: getComputedStyle(src), dst: getComputedStyle(dst), k, delay, wrap: onPlate(to).width });
-    });
+    // 所问、主断不飞：结果页上是一行，卡上按小句折成两三行，标点字体也不同，
+    // 飞过去落地时和卡上对不齐，换图那一下整段会跳。它们跟着图片一起显出来
 
     if (!flights.length) return Promise.resolve();
     const ease = 'cubic-bezier(.45, 0, .2, 1)';
