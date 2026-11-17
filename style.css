@@ -1519,18 +1519,14 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 }
 .share-plate > i { position: absolute; display: block; pointer-events: none; }
 .sp-base { inset: 0; box-shadow: 0 30px 60px -18px rgba(0, 0, 0, .8); }
-.sp-grid {
-  inset: 0;
-  background-image: linear-gradient(90deg, rgba(238, 242, 247, .05) 1px, transparent 1px), linear-gradient(rgba(238, 242, 247, .05) 1px, transparent 1px);
-  background-size: calc(24px * var(--k)) calc(24px * var(--k));
-  background-position: calc(24px * var(--k) - 1px) calc(24px * var(--k) - 1px);
-}
-.sp-line { background: rgba(238, 242, 247, .45); will-change: transform; }
+/* 分享卡是「图纸背面」的白纸：空版不画网格，外框和裁切线用蓝墨 */
+.sp-grid { display: none; }
+.sp-line { background: rgba(23, 57, 110, .4); will-change: transform; }
 .sp-line.t { left: 0; right: 0; top: 0; height: 1px; transform-origin: 0 50%; }
 .sp-line.r { top: 0; bottom: 0; right: 0; width: 1px; transform-origin: 50% 0; }
 .sp-line.b { left: 0; right: 0; bottom: 0; height: 1px; transform-origin: 100% 50%; }
 .sp-line.l { top: 0; bottom: 0; left: 0; width: 1px; transform-origin: 50% 100%; }
-.sp-crop { width: calc(22px * var(--k)); height: calc(22px * var(--k)); border: 0 solid rgba(238, 242, 247, .5); }
+.sp-crop { width: calc(22px * var(--k)); height: calc(22px * var(--k)); border: 0 solid rgba(23, 57, 110, .45); }
 .sp-crop.tl { left: calc(18px * var(--k)); top: calc(18px * var(--k)); border-width: 1.2px 0 0 1.2px; }
 .sp-crop.tr { right: calc(18px * var(--k)); top: calc(18px * var(--k)); border-width: 1.2px 1.2px 0 0; }
 .sp-crop.bl { left: calc(18px * var(--k)); bottom: calc(18px * var(--k)); border-width: 0 0 1.2px 1.2px; }
@@ -1573,6 +1569,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .share-close { position: absolute; top: calc(var(--frame) + 14px); right: calc(var(--frame) + 14px); }
 /* 从结果页飞到相纸上的那份卦画，显影时淡去 */
 .share-flyer { position: fixed; z-index: 72; pointer-events: none; transform-origin: 0 0; will-change: transform; }
+.share-flyer-glyph .bar::before, .share-flyer-glyph .bar::after { transition: background .35s ease; }
+.share-flyer-glyph.inked { --ink: #17396E; --zhu: #D63A16; }
 
 .confirm-box { width: min(360px, 100%); padding: 26px 24px 22px; }
 .confirm-msg { font-size: 18px; line-height: 1.7; }

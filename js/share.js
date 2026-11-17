@@ -26,53 +26,44 @@ function getCurrentGuaData() {
 }
 
 // 分享卡的样式随卡片一起走（作为 <style> 放进卡片里）：html2canvas 出图时会在隐藏框架里重新加载页面样式表，
-// 样式表加载失败或太慢（断网、服务停了）时，卡片也不会变成没排版的纯文字
+// 样式表加载失败或太慢（断网、服务停了）时，卡片也不会变成没排版的纯文字。
+// 卡面是「图纸背面」：白纸蓝墨，居中留白，只放所问、卦、主断三样。
+// 字色都压到够深：纸是浅色，浅蓝小字在手机上看不清
 const SHARE_CARD_CSS = `
     :where(#shareCard, #shareCard *) { box-sizing: border-box; margin: 0; }
-    .sc-card { position: relative; overflow: hidden; width: 500px; height: 888px; padding: 40px 36px 34px; display: flex; flex-direction: column; background: linear-gradient(165deg, #1B4482 0%, #143668 46%, #0D2547 100%); color: #EEF2F7; font-family: 'Noto Serif SC', serif; line-height: 1.8; }
+    .sc-card { position: relative; overflow: hidden; width: 500px; height: 888px; padding: 0 52px; display: flex; flex-direction: column; align-items: center; text-align: center;
+      background-color: #EDF0F3; background-image: linear-gradient(200deg, rgba(23, 57, 110, .07) 0%, rgba(23, 57, 110, 0) 45%);
+      color: #0F2A54; font-family: 'Noto Serif SC', serif; line-height: 1.6; }
     .sc-bg { position: absolute; left: 0; top: 0; }
-    .sc-head { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
-    .sc-brand { font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 26px; line-height: 1; letter-spacing: .16em; }
-    .sc-brand span { display: block; margin-top: 10px; font-family: 'Noto Serif SC', serif; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
-    .sc-when { text-align: right; line-height: 1.5; }
-    .sc-when b { display: block; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 17px; font-weight: 400; letter-spacing: .12em; color: #EEF2F7; }
-    .sc-when span { font-size: 12px; letter-spacing: .08em; color: #A7B8D3; }
-    .sc-stage { position: relative; margin: 34px -36px 0; width: 500px; height: 300px; flex: none; }
-    .sc-ring { position: absolute; left: 0; top: 0; }
-    .sc-bar { position: absolute; left: -10px; width: 290px; height: 28px; background: #EEF2F7; }
+    .sc-gap { flex: 1 1 0; min-height: 18px; }
+    .sc-lbl { display: block; font-size: 13px; letter-spacing: .6em; text-indent: .6em; color: rgba(15, 42, 84, .66); }
+    .sc-ask { position: relative; flex: none; width: 100%; margin-top: 84px; }
+    .sc-ask-q { display: block; margin-top: 10px; font-size: 23px; line-height: 1.5; color: #0F2A54; overflow-wrap: anywhere; text-wrap: balance; max-height: 104px; overflow: hidden; }
+    .sc-ask-q.long { font-size: 19px; max-height: 87px; }
+    .sc-ask-q.blank { color: rgba(15, 42, 84, .6); }
+    .sc-glyph { position: relative; flex: none; width: 184px; }
+    .sc-bar { position: relative; height: 13px; margin-top: 13px; background: #17396E; }
+    .sc-bar:first-child { margin-top: 0; }
     .sc-bar.yin { background: transparent; }
-    .sc-bar.yin i { position: absolute; top: 0; height: 28px; width: 122px; background: #EEF2F7; }
-    .sc-bar.yin i + i { left: 168px; }
-    .sc-bar.moving, .sc-bar.moving i { background: #FF8A5C; }
+    .sc-bar.yin i { position: absolute; left: 0; top: 0; height: 13px; width: 43%; background: #17396E; }
+    .sc-bar.yin i + i { left: auto; right: 0; }
+    .sc-bar.moving, .sc-bar.moving i { background: #D63A16; }
     .sc-bar.yin.moving { background: transparent; }
-    .sc-mark { position: absolute; left: 292px; width: 24px; text-align: center; font-size: 22px; line-height: 36px; color: #FF8A5C; }
-    .sc-name { position: absolute; left: 392px; top: 150px; width: 80px; margin: -96px 0 0 -40px; height: 192px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 54px; line-height: 1.08; }
-    .sc-name.long { font-size: 44px; }
-    .sc-name span { display: block; }
-    .sc-info { position: relative; display: flex; align-items: flex-start; gap: 18px; margin-top: 18px; }
-    .sc-info-text { flex: 1; min-width: 0; padding-top: 6px; }
-    .sc-seal-wrap { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; margin-right: 30px; }
-    .sc-seal { position: relative; width: 50px; height: 50px; padding: 3px; border: 2px solid; background: #11305C; transform: rotate(-6deg); }
-    .sc-seal span { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; border: 1px solid; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 22px; line-height: 1; }
-    .sc-ji { color: #C5D1E2; border-color: #C5D1E2; }
-    .sc-xiong { color: #C5D1E2; border-color: #C5D1E2; }
-    .sc-xiong span { background: #C5D1E2; color: #11305C; border-color: #C5D1E2; }
-    .sc-ping { color: #8EA2C2; border-color: #8EA2C2; }
-    .sc-seal-note { font-size: 12px; letter-spacing: .2em; color: #8EA2C2; }
-    .sc-meta { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #C5D1E2; }
-    .sc-meta em { font-style: normal; margin: 0 .6em; color: #A7B8D3; }
-    .sc-change { position: relative; font-size: 14px; line-height: 1.9; letter-spacing: .14em; color: #FF8A5C; }
-    .sc-change span { color: #C5D1E2; letter-spacing: .06em; }
-    .sc-ask { position: relative; flex: none; margin-top: 26px; padding-left: 16px; border-left: 3px solid #EEF2F7; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 27px; line-height: 1.4; overflow-wrap: anywhere; max-height: 140px; overflow: hidden; }
-    .sc-ask span { display: block; margin-bottom: 4px; font-family: 'Noto Serif SC', serif; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
-    .sc-main { position: relative; flex: none; margin-top: 20px; padding-left: 16px; border-left: 2px solid #EEF2F7; }
-    .sc-label { display: block; font-size: 12px; letter-spacing: .5em; color: #A7B8D3; }
-    .sc-quote { margin-top: 6px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 30px; line-height: 1.35; letter-spacing: .04em; color: #EEF2F7; }
-    .sc-quote.long { font-size: 23px; }
-    .sc-quote.xl { font-size: 17px; line-height: 1.65; font-family: 'Noto Serif SC', 'Songti SC', serif; }
-    .sc-from { margin-top: 4px; font-size: 13px; letter-spacing: .06em; color: #A7B8D3; }
-    .sc-reading { position: relative; flex: 0 1 auto; min-height: 0; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(238, 242, 247, .14); font-size: 15px; line-height: 1.9; color: #A7B8D3;  overflow: hidden; }
-    .sc-foot { position: relative; margin-top: auto; padding-top: 14px; display: flex; justify-content: space-between; border-top: 1px dashed rgba(238, 242, 247, .3); font-size: 12px; letter-spacing: .1em; color: #A7B8D3; }
+    .sc-name { position: relative; flex: none; margin-top: 34px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 58px; line-height: 1.1; letter-spacing: .14em; text-indent: .14em; color: #0F2A54; }
+    .sc-name.long { font-size: 48px; }
+    .sc-meta { position: relative; flex: none; margin-top: 14px; font-size: 15px; letter-spacing: .14em; color: rgba(15, 42, 84, .78); }
+    .sc-meta em { font-style: normal; color: #C2360F; }
+    .sc-sep { flex: none; width: 36px; margin-top: 40px; border-top: 1px solid rgba(23, 57, 110, .35); }
+    .sc-main { position: relative; flex: none; width: 100%; margin-top: 34px; }
+    .sc-quote { margin-top: 12px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 31px; line-height: 1.45; letter-spacing: .06em; color: #0F2A54; text-wrap: balance; }
+    .sc-quote.long { font-size: 25px; }
+    .sc-quote.xl { font-size: 19px; line-height: 1.7; letter-spacing: .02em; font-family: 'Noto Serif SC', 'Songti SC', serif; }
+    .sc-quote .pu { font-family: 'Noto Serif SC', 'Songti SC', serif; letter-spacing: 0; margin-right: -.3em; }
+    .sc-quote.xl .pu { margin-right: 0; }
+    .sc-quote .cl { display: inline-block; white-space: nowrap; }
+    .sc-from { margin-top: 8px; font-size: 14px; letter-spacing: .08em; color: rgba(15, 42, 84, .72); }
+    .sc-foot { position: relative; flex: none; margin-bottom: 50px; font-size: 14px; letter-spacing: .24em; color: rgba(15, 42, 84, .72); }
+    .sc-foot b { margin-right: 14px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 19px; font-weight: 400; letter-spacing: .2em; color: #0F2A54; }
 `;
 
 // 起卦时刻写成干支农历（乙巳年九月初十 午时）；旧记录没有精确时间时退回原日期字符串
@@ -88,108 +79,59 @@ function shareCardWhen(d) {
     };
 }
 
-// 背景：蓝晒纸的细网格、四角裁切线，和压在卦名后面的先天圆环（橙色刻度＝六十四取一）。
-// 每组线都合成一条 path：html2canvas 会给每个节点复制一遍计算样式，上百根 <line> 会让出图卡顿
+// 四角裁切线：和出图前的空版对得上（位置 18px、长 22px）
 function shareCardBackdrop() {
-    let grid = '';
-    for (let x = 24; x < 500; x += 24) grid += `M${x} 0V888`;
-    for (let y = 24; y < 888; y += 24) grid += `M0 ${y}H500`;
     const crop = [[18, 18, 1, 1], [482, 18, -1, 1], [18, 870, 1, -1], [482, 870, -1, -1]]
         .map(([x, y, sx, sy]) => `M${x} ${y + sy * 22}V${y}H${x + sx * 22}`).join('');
     return `<svg class="sc-bg" width="500" height="888" viewBox="0 0 500 888" aria-hidden="true">
-<path d="${grid}" stroke="#EEF2F7" stroke-opacity=".05" stroke-width="1"/>
-<path d="${crop}" stroke="#EEF2F7" stroke-opacity=".5" stroke-width="1.2" fill="none"/></svg>`;
+<path d="${crop}" stroke="#17396E" stroke-opacity=".45" stroke-width="1.2" fill="none"/></svg>`;
 }
-function shareCardRing() {
-    const cx = 392, cy = 150, pt = (r, a) => `${(cx + r * Math.sin(a)).toFixed(1)} ${(cy - r * Math.cos(a)).toFixed(1)}`;
-    let ticks = '';
-    for (let k = 1; k < 64; k++) {
-        const a = k * 5.625 * Math.PI / 180;
-        ticks += `M${pt(118, a)}L${pt(k % 8 === 0 ? 132 : 126, a)}`;
-    }
-    return `<svg class="sc-ring" width="500" height="300" viewBox="0 0 500 300" aria-hidden="true">
-<circle cx="${cx}" cy="${cy}" r="138" fill="none" stroke="#EEF2F7" stroke-opacity=".14"/>
-<circle cx="${cx}" cy="${cy}" r="104" fill="none" stroke="#EEF2F7" stroke-opacity=".22" stroke-dasharray="2 5"/>
-<path d="${ticks}" stroke="#EEF2F7" stroke-opacity=".32" stroke-width="1"/>
-<path d="M${pt(100, 0)}L${pt(146, 0)}" stroke="#EEF2F7" stroke-width="2.4"/></svg>`;
+
+// 主断用展示字，展示字的标点像西文的「, .」：标点换回正文字体（和结果页一致）。
+// 每一小句包成一块不折行：换行只落在标点后面，不会把「或承之羞」拆成「或 / 承之羞」
+function shareCardPunct(s) {
+    return (String(s).match(/[^，。；：、？！]+[，。；：、？！]*|[，。；：、？！]+/g) || [])
+        .map(c => `<span class="cl">${escHtml(c).replace(/[，。；：、？！「」『』]/g, m => `<span class="pu">${m}</span>`)}</span>`).join('');
 }
 
 function createShareCard(d) {
     if (!d || !d.gua) return '';
     const gua = d.gua, change = d.change, main = d.main;
-    const verdict = getVerdict(gua);
-    const verdictText = { ji: '吉', xiong: '凶', ping: '平' };
     const hexLines = d.hexagramLines;
-    const v = shaoValue(hexLines.map(n => (n === 7 || n === 9) ? '1' : '0').reverse().join(''));
     const when = shareCardWhen(d);
     const zhi = change.hasChange ? change.changeGua : null;
-    const movingText = change.changingYaos.length ? change.changingYaos.map(p => YAO_POS_CN[p]).join('、') + '爻动' : '';
-    // 大卦画：六根爻条从卡片左缘伸进来，动爻橙色，并按古法在末端标 ○（老阳）/ ×（老阴）
-    const bars = hexLines.map((line, i) => {
+    const n = change.changingYaos.length;
+    // 卦画自上而下画，动爻朱色
+    const bars = hexLines.map((line, i) => [line, i]).reverse().map(([line]) => {
         const yang = line === 7 || line === 9, moving = line === 9 || line === 6;
-        const top = 16 + (5 - i) * 48;
-        const cls = 'sc-bar' + (yang ? '' : ' yin') + (moving ? ' moving' : '');
-        return `<div class="${cls}" style="top:${top}px">${yang ? '' : '<i></i><i></i>'}</div>` +
-            (moving ? `<span class="sc-mark" style="top:${top - 4}px">${line === 9 ? '○' : '×'}</span>` : '');
+        return `<div class="sc-bar${yang ? '' : ' yin'}${moving ? ' moving' : ''}">${yang ? '' : '<i></i><i></i>'}</div>`;
     }).join('');
+    // 卦名每个字一个 span：拼版动画按字落位
     const chars = Array.from(gua[0]);
     const nameHtml = chars.map(ch => `<span>${escHtml(ch)}</span>`).join('');
-    // 主断和结果页一样：辞放大，下面一行小字写出处。辞长时字号跟着收
-    const quoteLen = main.lines.reduce((n, l) => n + l.text.length, 0);
+    const meta = zhi
+        ? `${guaOrdinal(gua)}　<em>${'一两三四五六'[n - 1]}爻动</em>　之卦 ${escHtml(zhi[0])}`
+        : `${guaOrdinal(gua)}　没有动爻`;
+    const q = d.question;
+    const quoteLen = main.lines.reduce((s, l) => s + l.text.length, 0);
     const quoteCls = quoteLen > 28 ? ' xl' : quoteLen > 14 ? ' long' : '';
-    const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${escHtml(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('');
+    const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${shareCardPunct(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('');
 
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
   ${shareCardBackdrop()}
-  <div class="sc-head">
-    <div class="sc-brand">天衍<span>起卦签</span></div>
-    <div class="sc-when">${when.lunar ? `<b>${escHtml(when.lunar)}</b>` : ''}<span>${escHtml(when.solar)}</span></div>
-  </div>
-  <div class="sc-stage">
-    ${shareCardRing()}
-    ${bars}
-    <div class="sc-name${chars.length > 3 ? ' long' : ''}">${nameHtml}</div>
-  </div>
-  <div class="sc-info">
-    <div class="sc-info-text">
-      <div class="sc-meta">${guaOrdinal(gua)}<em>·</em>上${TRIGRAM_BY_VALUE[v & 7]}下${TRIGRAM_BY_VALUE[v >> 3]}</div>
-      ${zhi ? `<div class="sc-change">之卦　${escHtml(zhi[0])}　<span>${escHtml(movingText)}</span></div>` : '<div class="sc-meta">没有动爻</div>'}
-    </div>
-    <div class="sc-seal-wrap"><div class="sc-seal sc-${verdict}"><span>${verdictText[verdict]}</span></div><div class="sc-seal-note">本卦吉凶</div></div>
-  </div>
-  ${d.question ? `<div class="sc-ask"><span>所问</span>${escHtml(d.question)}</div>` : ''}
-  <div class="sc-main"><span class="sc-label">主断</span>${mainHtml}</div>
-  <div class="sc-reading">${escHtml(gua[4])}</div>
-  <div class="sc-foot"><span>卦只作参考，主意还得自己拿。</span><span>六十四卦 · 取其一</span></div>
+  <div class="sc-ask"><span class="sc-lbl">所问</span><span class="sc-ask-q${q ? (q.length > 32 ? ' long' : '') : ' blank'}">${q ? escHtml(q) : '心中所念'}</span></div>
+  <i class="sc-gap"></i>
+  <div class="sc-glyph">${bars}</div>
+  <div class="sc-name${chars.length > 4 ? ' long' : ''}">${nameHtml}</div>
+  <div class="sc-meta">${meta}</div>
+  <i class="sc-sep"></i>
+  <div class="sc-main"><span class="sc-lbl">主断</span>${mainHtml}</div>
+  <i class="sc-gap"></i>
+  <div class="sc-foot"><b>天衍</b>${escHtml(String(when.solar).split(' ')[0])}</div>
 </div>`;
 }
 
-// 卡片高度固定，底下那段白话只能用剩下的空间：按整行截断，不留半行字
-function fitShareReading(card) {
-    const rd = card && card.querySelector('.sc-reading');
-    if (!rd) return;
-    const cs = getComputedStyle(rd);
-    const lh = parseFloat(cs.lineHeight), pad = parseFloat(cs.paddingTop) || 0;
-    if (!(lh > 0)) return;
-    const lines = Math.floor((rd.clientHeight - pad) / lh);
-    if (lines < 1) { rd.style.display = 'none'; return; }
-    const room = pad + lines * lh;
-    rd.style.flex = 'none';
-    rd.style.height = `${room}px`;
-    if (rd.scrollHeight <= room + 1) return;
-    // 放不下全文：只留能完整放下的整句，不在半句话处截断；一句都放不下就整段不显示
-    const sentences = rd.textContent.match(/[^。！？]+[。！？]?/g) || [];
-    let fit = '';
-    for (const s of sentences) {
-        rd.textContent = fit + s;
-        if (rd.scrollHeight > room + 1) break;
-        fit += s;
-    }
-    if (!fit) { rd.style.display = 'none'; return; }
-    rd.textContent = fit;
-    rd.style.height = '';
-}
 
 let _lastBlobUrl = null;
 let _lastBlob = null;
@@ -302,7 +244,10 @@ async function shareAsImage() {
 
     preview.innerHTML = `<div class="share-plate">${sharePlateFrame()}</div>`;
     const plate = preview.querySelector('.share-plate');
-    plate.querySelector('.sp-base').style.backgroundImage = getComputedStyle(card).backgroundImage;
+    // 空版的底和卡面同一张白纸：底色、渐变都从卡上取
+    const cardStyle = getComputedStyle(card), base = plate.querySelector('.sp-base');
+    base.style.backgroundColor = cardStyle.backgroundColor;
+    base.style.backgroundImage = cardStyle.backgroundImage;
     container.classList.add('show');
     pressShareButton();
     const framed = reduce ? Promise.resolve() : drawSharePlate(plate);
@@ -314,7 +259,6 @@ async function shareAsImage() {
         if (!(await loadHtml2canvas())) throw new Error('分享组件没加载出来，检查一下网络再试');
         if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
         if (!alive()) return;
-        fitShareReading(card);
         scrubShareCardExternalUrls(card, window);
         const canvas = await renderShareCanvas(card, isMobile() ? 1.5 : 2);
         assertCanvasExportable(canvas);
@@ -435,7 +379,7 @@ function assembleShareCard(plate, card) {
     const result = document.getElementById('resultArea');
     const flights = [];   // 先把要量的都量完，再一次性建飞行层，避免边读边写反复排版
 
-    // 卦画：落到卡上六根爻条占的那块（左边出血的部分不算）。正看着之卦时不飞，卡上画的是本卦
+    // 卦画：落到卡上六根爻条占的那块。正看着之卦时不飞，卡上画的是本卦
     const glyph = result.querySelector('#resultGlyph');
     const asZhi = result.querySelector('.result-header.as-zhi');
     const bars = Array.from(card.querySelectorAll('.sc-bar')).map(el => el.getBoundingClientRect());
@@ -447,7 +391,7 @@ function assembleShareCard(plate, card) {
             flights.push({ kind: 'glyph', html: glyph.innerHTML, from: s, to, delay: 0 });
         }
     }
-    // 卦名：横排的字一个个落成卡上竖排的字
+    // 卦名：一个字一个字落到卡上
     const name = result.querySelector('.hex-name');
     const slots = Array.from(card.querySelectorAll('.sc-name span'));
     const node = name && name.firstChild;
@@ -462,19 +406,14 @@ function assembleShareCard(plate, card) {
         });
     }
     // 所问、主断：按卡上的宽度折行，落地时和卡上一行对一行
-    const pairs = [[result.querySelector('.result-question h1'), card.querySelector('.sc-ask'), 160]];
+    const pairs = [[result.querySelector('.result-question h1'), card.querySelector('.sc-ask-q'), 160]];
     const quotes = result.querySelectorAll('.mr-quote'), cardQuotes = card.querySelectorAll('.sc-quote');
     quotes.forEach((q, i) => { if (cardQuotes[i]) pairs.push([q, cardQuotes[i], 230 + i * 70]); });
     pairs.forEach(([src, dst, delay]) => {
         if (!src || !dst) return;
-        // 卡上的「所问」块前面还有一个小标签，只取后面那段文字
-        const textNode = Array.from(dst.childNodes).reverse().find(n => n.nodeType === 3 && n.textContent.trim());
-        let to;
-        if (textNode) { const r = document.createRange(); r.selectNodeContents(textNode); to = r.getBoundingClientRect(); }
-        else to = textRect(dst);
-        const from = textRect(src);
+        const to = textRect(dst), from = textRect(src);
         if (!visible(from) || !to.width) return;
-        flights.push({ kind: 'text', text: (textNode || dst).textContent.trim(), from, to: onPlate(to), src: getComputedStyle(src), dst: getComputedStyle(dst), k, delay, wrap: onPlate(to).width });
+        flights.push({ kind: 'text', text: dst.textContent.trim(), from, to: onPlate(to), src: getComputedStyle(src), dst: getComputedStyle(dst), k, delay, wrap: onPlate(to).width });
     });
 
     if (!flights.length) return Promise.resolve();
@@ -502,17 +441,20 @@ function assembleShareCard(plate, card) {
         el.classList.add('share-flyer-text');
         el.textContent = f.text;
         el.style.cssText = `left:${f.from.left}px;top:${f.from.top}px;font-family:${f.dst.fontFamily};font-weight:${f.dst.fontWeight};` +
-            `font-size:${srcSize}px;line-height:${lh};letter-spacing:${em(f.dst.letterSpacing)}em;color:${f.src.color};` +
+            `font-size:${srcSize}px;line-height:${lh};letter-spacing:${em(f.dst.letterSpacing)}em;color:${f.src.color};text-align:${f.dst.textAlign};` +
             (f.wrap ? `width:${f.wrap / s + 2}px;` : 'white-space:nowrap;');
         const dx = f.to.left - f.from.left, dy = f.to.top - f.from.top;
         return { el, f, frames: [
-            { transform: 'none' },
+            // 起飞时是结果页的浅色字，落到白纸上变成卡上的蓝墨色
+            { transform: 'none', color: f.src.color },
             { transform: `translate(${dx * .5}px, ${dy * .5 - 40}px) scale(${((1 + s) / 2).toFixed(4)})`, offset: .5 },
-            { transform: `translate(${dx}px, ${dy}px) scale(${s.toFixed(4)})` }] };
+            { transform: `translate(${dx}px, ${dy}px) scale(${s.toFixed(4)})`, color: f.dst.color }] };
     });
     plans.forEach(pl => layer.appendChild(pl.el));
     document.body.appendChild(layer);
     const anims = plans.map(pl => pl.el.animate(pl.frames, { duration: pl.f.kind === 'glyph' ? 780 : 720, delay: pl.f.delay, easing: ease, fill: 'both' }));
+    // 卦画飞到一半换成纸上的蓝墨、深朱（颜色在 .bar 的伪元素上，靠 CSS 过渡）
+    plans.forEach(pl => { if (pl.f.kind === 'glyph') { pl.el.classList.add('share-flyer-glyph'); setTimeout(() => pl.el.classList.add('inked'), pl.f.delay + 390); } });
     return Promise.all(anims.map(a => a.finished.catch(() => {})));
 }
 
