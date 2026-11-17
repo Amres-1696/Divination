@@ -679,3 +679,21 @@ test('a share link reopens the same reading, and the question only travels when 
     assert.equal(f.run(`parseShareLink('?y=9778a7')`), null);
     assert.equal(JSON.parse(f.run(`JSON.stringify(parseShareLink('?y=777777&d=2026115'))`)).date, '');
 });
+
+test('the paper share card keeps only the question, the hexagram and the main reading', () => {
+    const f = fixture();
+    const card = f.run(`(() => { const lines = [9,6,7,6,9,9]; const bin = lines.map(n => (n === 7 || n === 9) ? '1' : '0').reverse().join('');
+        const gua = lookupGua(bin), change = calculateChangeGua(lines, bin);
+        return createShareCard({ gua, change, main: getMainReading(gua, change), hexagramLines: lines, question: '家里人总吵架', date: '2026/11/11', createdAt: '' }); })()`);
+    assert.match(card, /class="sc-ask-q">家里人总吵架</);
+    assert.match(card, /五爻动/);
+    assert.equal((card.match(/class="sc-bar yin/g) || []).length, 2);
+    assert.equal((card.match(/class="sc-bar[^"]*moving/g) || []).length, 5);
+    // 主断按小句包块，换行只落在标点后
+    assert.match(card, /<span class="cl">不恒其德<span class="pu">，<\/span><\/span><span class="cl">或承之羞/);
+    assert.doesNotMatch(card, /sc-reading|sc-seal|sc-ring/);
+    const blank = f.run(`(() => { const lines = [8,8,8,8,8,8]; const gua = lookupGua('000000'), change = calculateChangeGua(lines, '000000');
+        return createShareCard({ gua, change, main: getMainReading(gua, change), hexagramLines: lines, question: '', date: '', createdAt: '' }); })()`);
+    assert.match(blank, /sc-ask-q blank">心中所念/);
+    assert.match(blank, /没有动爻/);
+});
