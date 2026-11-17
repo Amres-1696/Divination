@@ -263,7 +263,7 @@ async function shareAsImage() {
         scrubShareCardExternalUrls(card, window);
         const canvas = await renderShareCanvas(card, isMobile() ? 1.5 : 2);
         assertCanvasExportable(canvas);
-        if (!canvas || !canvas.width || !canvas.height) throw new Error('分享图没生成出来');
+        if (!canvas || !canvas.width || !canvas.height) throw new Error('起卦签没生成出来');
         const blob = await canvasToBlob(canvas, 'image/png');
         if (!blob) throw new Error('toBlob returned null');
         if (!alive()) return;
@@ -275,7 +275,7 @@ async function shareAsImage() {
         const img = new Image();
         img.id = 'sharePreviewImg';
         img.className = 'share-plate-img';
-        img.alt = '分享图预览';
+        img.alt = '起卦签';
         img.src = objectUrl;
         try { if (img.decode) await img.decode(); } catch (e) {}
         await framed;
@@ -329,7 +329,7 @@ async function shareAsImage() {
         if (!alive()) return;
         document.querySelectorAll('.share-flyer').forEach(el => el.remove());
         const msg = (e && e.message) ? e.message : String(e);
-        preview.innerHTML = '<p class="share-error">分享图没有生成出来。<small>' + escHtml(msg) + '</small></p>';
+        preview.innerHTML = '<p class="share-error">起卦签没有生成出来。<small>' + escHtml(msg) + '</small></p>';
     } finally {
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }
@@ -472,7 +472,7 @@ function assembleShareCard(plate, card) {
     return Promise.all(anims.map(a => a.finished.catch(() => {})));
 }
 
-// 关闭：卡片缩小飘回「生成分享图」按钮
+// 关闭：卡片缩小飘回「生成起卦签」按钮
 function shareCloseMotion(container) {
     const box = container.querySelector('.share-box');
     const btn = document.getElementById('shareBtn');

@@ -62,7 +62,7 @@ function updateHistoryCount(n) {
     if (meta) meta.textContent = n ? `共 ${n} 卦` : '';
 }
 
-// 新的一卦收进牌册：挂签被往下一拽，签角的朱印抬起来换成新的数，再重新盖下去
+// 新的一卦收进牌册：挂签被往下一拽，签角的小印抬起来换成新的数，再重新盖下去
 function stampHistoryCount(n) {
     const badge = document.getElementById('historyCount');
     const tag = document.getElementById('historyBtn');
@@ -137,7 +137,13 @@ function renderArchiveMap(history) {
     const filtered = _archiveFilter != null
         ? guaOfShao(_archiveFilter)
         : null;
-    map.innerHTML = history.length ? `
+    // 没有记录时左栏照样是那张方图，只是格子全暗；说明文字放在右栏，版式和有记录时一样
+    map.innerHTML = !history.length ? `
+<div class="am-frame am-frame-empty">
+  <div class="am-cols" aria-hidden="true">${labels}</div>
+  <div class="am-rows" aria-hidden="true">${labels}</div>
+  <div class="am-grid" role="group" aria-label="先天方图：还没有抽到过的卦">${cells}</div>
+</div>` : `
 <div class="am-stats">
   <p class="am-big">起过 <b>${history.length}</b> 次卦，抽到过 <b>${lit}</b> 种卦</p>
   <div class="am-bar" aria-hidden="true"><i class="ji" style="flex:${tally.ji}"></i><i class="ping" style="flex:${tally.ping}"></i><i class="xiong" style="flex:${tally.xiong}"></i></div>
@@ -150,7 +156,7 @@ function renderArchiveMap(history) {
 </div>
 <p class="am-caption" id="amCaption">${filtered
         ? `只看 <b>${filtered[0]}</b> · ${counts[_archiveFilter]} 次 <button type="button" class="am-clear" id="amClear">显示全部</button>`
-        : archiveCaption()}</p>` : '';
+        : archiveCaption()}</p>`;
 
     map.querySelectorAll('.am-cell.lit').forEach(cell => {
         cell.addEventListener('click', () => {
@@ -175,10 +181,7 @@ function renderArchiveMap(history) {
 function renderArchiveList(history) {
     const list = document.getElementById('historyList');
     if (history.length === 0) {
-        let cells = '';
-        for (let k = 0; k < 64; k++) cells += '<i></i>';
         list.innerHTML = `<div class="history-empty">
-<span class="minimap big" aria-hidden="true">${cells}</span>
 <p>还没有起过卦</p>
 <p class="history-empty-hint">每起一卦，方图上就亮起一格，记录按日期列在这里，最多保留 ${HISTORY_MAX} 条。</p>
 </div>`;
@@ -278,6 +281,8 @@ function loadHistory(opts) {
     const history = readHistorySafe();
     if (_archiveFilter != null && !history.some(h => historyValue(h) === _archiveFilter)) _archiveFilter = null;
     updateHistoryCount(history.length);
+    const clearBtn = document.getElementById('clearHistoryBtn');
+    if (clearBtn) clearBtn.disabled = !history.length;
     const panel = document.getElementById('historyPanel');
     if (panel && panel.classList) panel.classList.toggle('quiet', !!opts.quiet);
     let raw = '';
@@ -418,7 +423,7 @@ function offerUndoDelete(item, idx) {
 }
 
 async function clearHistory() {
-    const yes = await showConfirm('所有记录都会删除，方图全部熄灭，删了就找不回来。确定清空牌册吗？');
+    const yes = await showConfirm('所有记录都会删除，方图全部熄灭，删了就找不回来。要清空牌册吗？', '清空');
     if (yes) {
         try { localStorage.removeItem('divinationHistory'); } catch (e) {}
         _archiveFilter = null;

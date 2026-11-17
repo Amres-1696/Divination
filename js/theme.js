@@ -55,7 +55,8 @@ async function returnToInquiry(opts) {
     const q = document.getElementById('question');
     if (q) {
         if (opts.clear) { q.value = ''; q.dispatchEvent(new Event('input')); }
-        q.focus({ preventScroll: true });
+        // 只在有鼠标的设备上自动聚焦：触屏上一聚焦就弹出键盘，把刚落回来的圆图挡住
+        if (window.matchMedia && window.matchMedia('(hover: hover)').matches) q.focus({ preventScroll: true });
     }
     _viewBusy = false;
 }
@@ -236,7 +237,7 @@ function unrollSettings(panel, tag, open) {
 // 留出空位，牌册开着时一直空着，关上后卦飞回原位才重新出现
 const RING_SPIN_DEG_PER_MS = 360 / 520000;   // 与 CSS cosmos-spin 的 520s 一圈一致
 // 挂签被往下一拽再弹回
-// 拉长的是签条的两层底（::before 描边、::after 签面，从顶边往下 scaleY），签角的朱印跟着往下走；
+// 拉长的是签条的两层底（::before 描边、::after 签面，从顶边往下 scaleY），签角的小印跟着往下走；
 // 签上的字不动。不改 height，免得每一帧都重新排版
 function tugTag(tag, px) {
     const opt = { duration: 520, easing: 'cubic-bezier(.3, 1.4, .5, 1)' };

@@ -50,34 +50,51 @@ function showToast(msg, type) {
     const el = document.createElement('div');
     el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'success' ? ' toast-success' : '');
     el.textContent = msg;
+    // 报错用 alert 立刻读出；普通、成功的提示由容器的 aria-live 排队读
+    if (type === 'error') el.setAttribute('role', 'alert');
     container.appendChild(el);
+    // 停留时间按字数算：短句 2.8 秒，长句每多一个字多留一点，最长 7 秒
+    const stay = Math.min(7000, Math.max(2800, 1200 + String(msg).length * 110));
     setTimeout(() => {
         el.classList.add('toast-out');
         el.addEventListener('animationend', () => el.remove());
-    }, 2800);
+    }, stay);
 }
 
-function showConfirm(msg) {
+// 确认框：yesLabel 写动作本身（「清空」「删除」），不写「确定」。
+// 打开时焦点落在「取消」上，Tab 只在两个按钮之间转；关掉后焦点回到原来的按钮
+function showConfirm(msg, yesLabel) {
     return new Promise(resolve => {
         const overlay = document.getElementById('confirmOverlay');
         const msgEl = document.getElementById('confirmMsg');
         const yesBtn = document.getElementById('confirmYes');
         const noBtn = document.getElementById('confirmNo');
+        const opener = document.activeElement;
         msgEl.textContent = msg;
+        yesBtn.textContent = yesLabel || '确定';
         overlay.classList.add('show');
+        setTimeout(() => noBtn.focus({ preventScroll: true }), 30);
         function cleanup(result) {
             overlay.classList.remove('show');
             yesBtn.removeEventListener('click', onYes);
             noBtn.removeEventListener('click', onNo);
             overlay.removeEventListener('click', onOverlay);
+            overlay.removeEventListener('keydown', onKey);
+            if (opener && opener.focus && document.contains(opener)) opener.focus({ preventScroll: true });
             resolve(result);
         }
         function onYes() { cleanup(true); }
         function onNo() { cleanup(false); }
         function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+        function onKey(e) {
+            if (e.key !== 'Tab') return;
+            e.preventDefault();
+            (document.activeElement === noBtn ? yesBtn : noBtn).focus();
+        }
         yesBtn.addEventListener('click', onYes);
         noBtn.addEventListener('click', onNo);
         overlay.addEventListener('click', onOverlay);
+        overlay.addEventListener('keydown', onKey);
     });
 }
 

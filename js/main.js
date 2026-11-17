@@ -124,7 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!scrollTicking) {
                 scrollTicking = true;
                 requestAnimationFrame(() => {
-                    bttBtn.classList.toggle('visible', window.scrollY > window.innerHeight);
+                    // 结果页底部的按钮区一进视野就收起：已经到底了，用不着它，免得盖住链接面板的「发送」
+                    const foot = document.querySelector('#resultArea .result-actions');
+                    const atFoot = !!foot && foot.getBoundingClientRect().top < window.innerHeight - 40;
+                    bttBtn.classList.toggle('visible', window.scrollY > window.innerHeight && !atFoot);
                     // 页面滚动之后页头垫上底色，内容不会和页头叠在一起
                     document.body.classList.toggle('scrolled', window.scrollY > 8);
                     scrollTicking = false;
