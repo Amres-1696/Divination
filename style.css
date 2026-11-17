@@ -858,7 +858,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .ai-error { color: var(--zhu); font-size: 16px; margin-bottom: 12px; }
 /* AI 还没配置：不是出错，用说明文字的颜色；「去设置」和首页「去设置里修改生辰」同一个虚线下划线 */
 .ai-unset { margin: 0; font-size: 15px; line-height: 1.8; color: var(--ink-3); }
-.ai-goset { margin-left: 8px; font-size: 15px; color: var(--ink); text-decoration: underline dotted; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: text-decoration-color .2s ease; }
+.ai-unset-dot { margin: 0 .6em; }
+.ai-goset { font-size: 15px; color: var(--ink); text-decoration: underline dotted; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: text-decoration-color .2s ease; }
 .ai-goset:hover { text-decoration-color: var(--ink); }
 .ai-loading { display: flex; align-items: center; gap: 5px; color: var(--ink-2); font-size: 16px; }
 .ai-loading-dot { width: 16px; height: 4px; background: var(--ink-2); animation: ai-pulse 1.2s ease-in-out infinite; }
@@ -1145,8 +1146,10 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .history-item:hover .history-del, .history-item:focus-within .history-del { opacity: 1; }
 .history-del:hover { background: rgba(255, 138, 92, .18); }
 .history-del:hover::before, .history-del:hover::after { background: var(--zhu); }
-/* 第一下点过：× 换成朱色的「删除」，等第二下 */
-.history-del.arm { width: auto; height: 32px; margin: 0; padding: 0 2px; justify-self: end; border-radius: 0; opacity: 1; background: none; font-size: 13.5px; letter-spacing: .12em; white-space: nowrap; color: var(--zhu); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: rgba(255, 138, 92, .5); }
+/* 第一下点过：整行染一层淡朱，× 换成带框的「删除」，等第二下 */
+.history-item.arming, .history-item.arming:hover { background: rgba(255, 138, 92, .1); box-shadow: inset 2px 0 0 var(--zhu); }
+.history-del.arm { width: auto; height: auto; margin: 0; padding: 4px 10px; justify-self: end; border-radius: 0; opacity: 1; background: none; box-shadow: inset 0 0 0 1px var(--zhu); font-size: 13.5px; line-height: 1.4; letter-spacing: .12em; text-indent: .12em; white-space: nowrap; color: var(--zhu); }
+.history-del.arm:hover { background: rgba(255, 138, 92, .18); }
 .history-del.arm::before, .history-del.arm::after { display: none; }
 .history-panel.show:not(.quiet) .tl-row { animation: fade-in .45s ease both; animation-delay: calc(160ms + var(--k, 0) * 30ms); }
 .history-item.deleting { animation: row-out .3s ease forwards !important; pointer-events: none; }
@@ -1155,7 +1158,12 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .history-empty p { margin-top: 18px; font-size: 17px; }
 .history-empty .history-empty-hint { margin-top: 4px; font-size: 14px; color: var(--ink-3); }
 .history-panel.show:not(.quiet) .history-empty { animation: fade-in .5s ease both; animation-delay: .15s; }
-.panel-foot { position: relative; flex: none; margin: 0 5px 5px; padding: 12px 23px; border-top: 1px solid var(--rule-soft); }
+.panel-foot { position: relative; flex: none; margin: 0 5px 5px; padding: 12px 23px; border-top: 1px solid var(--rule-soft); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+/* 删掉一条后底栏右边的「已删除 · 撤销」，几秒后自己淡出 */
+.undo-note { min-width: 0; font-size: 13.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; visibility: hidden; transition: opacity .25s ease, visibility 0s linear .25s; }
+.undo-note.on { opacity: 1; visibility: visible; transition: opacity .25s ease; }
+.undo-btn { margin-left: 12px; font-size: 14px; color: var(--ink); text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); }
+.undo-btn:hover { text-decoration-color: var(--ink); }
 .btn-clear { font-size: 14px; color: var(--ink-3); padding: 4px 0; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--rule); transition: color .2s ease; }
 .btn-clear:hover { color: var(--zhu); }
 
@@ -1581,9 +1589,9 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .share-act:hover, .share-act:focus-visible { color: var(--ink); outline: none; }
 .share-act:hover::after, .share-act:focus-visible::after { transform: scaleX(1); opacity: 1; }
 .share-act:hover svg { transform: translateY(2px); }
-/* 成图前不能点；点过之后按钮上原地回一句：成功是亮白，失败是朱色 */
-.share-act:disabled { opacity: .4; cursor: default; }
-.share-act:disabled::after { transform: scaleX(.25); opacity: .6; }
+/* 成图前两个按钮不出现，图显出来后淡入；点过之后按钮上原地回一句：成功是亮白，失败是朱色 */
+.share-actions { transition: opacity .35s ease .1s; }
+.share-actions.waiting { opacity: 0; visibility: hidden; transition: none; }
 .share-act.done { color: var(--ink); }
 .share-act.fail { color: var(--zhu); }
 #shareCopyBtn:hover svg { transform: translate(-1px, -1px); }
@@ -1803,9 +1811,9 @@ body:has(#shareImageContainer.show) .toast-container { bottom: auto; top: calc(v
   .detail-box { padding: 26px 20px 22px; }
   .gua-sheet { padding: 26px 18px 22px; }
   .gs-name-row h2 { font-size: 34px; }
-  /* 手机上爻辞放不进卦画旁的一行：卦画放在左上，爻辞改成右边一条条能折行的列表，不再截成省略号 */
-  .gs-figure { grid-template-columns: 72px minmax(0, 1fr); gap: 0 16px; align-items: start; }
-  .gs-glyph { width: 72px; height: 72px; margin-top: 4px; }
+  /* 手机上爻辞放不进卦画旁的一行：卦画居中放在上面，爻辞在下面占满整行，一条条能折行，不再截成省略号 */
+  .gs-figure { grid-template-columns: minmax(0, 1fr); gap: 20px 0; }
+  .gs-glyph { width: 96px; height: 96px; justify-self: center; }
   .gs-yao { height: auto; display: grid; gap: 8px; }
   .gs-yao li { position: static; transform: none; display: grid; grid-template-columns: 2.6em minmax(0, 1fr); align-items: baseline; gap: 0 6px; font-size: 14px; line-height: 1.55; white-space: normal; }
   .gs-yao li::before { display: none; }

@@ -335,13 +335,15 @@ async function shareAsImage() {
     }
 }
 
-// 弹层里的「保存图片」「复制图片」：成图前不能点；点过之后在按钮上原地回一句，
+// 弹层里的「保存图片」「复制图片」：成图前不出现，图显出来再淡入；点过之后在按钮上原地回一句，
 // 不弹 Toast（手机上 Toast 正好压在这两个按钮上）。按钮里是图标加一段文字，只换文字
 function setShareActsReady(on) {
     ['shareDownloadBtn', 'shareCopyBtn'].forEach(id => {
         const b = document.getElementById(id);
         if (b) b.disabled = !on;
     });
+    const bar = document.querySelector('#shareImageContainer .share-actions');
+    if (bar) bar.classList.toggle('waiting', !on);
 }
 function flashShareAct(btn, text, isError) {
     const node = Array.from(btn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());

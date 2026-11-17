@@ -86,7 +86,7 @@ function aiReady() {
 // 还没配好不是出错：不用朱色，写一行淡色说明，后面一个「去设置」直接带到 AI 那一组。
 // 在设置里存好之后，这里自动换成「请 AI 解读这一卦」
 function aiNotReady(gua, change, question, bodyEl, readingContext = {}) {
-    bodyEl.innerHTML = '<p class="ai-unset">AI 还没配置好，要先填上接口地址、API Key 和模型名称。<button type="button" class="ai-goset">去设置</button></p>';
+    bodyEl.innerHTML = '<p class="ai-unset">还没配置 AI 接口<span class="ai-unset-dot" aria-hidden="true">·</span><button type="button" class="ai-goset">去设置</button></p>';
     bodyEl.querySelector('.ai-goset').addEventListener('click', openAiSettings);
     const onSaved = () => {
         if (!bodyEl.isConnected) { document.removeEventListener('ai-config-saved', onSaved); return; }
