@@ -77,6 +77,41 @@ function runAiReading(gua, change, question, bodyEl, readingContext = {}) {
     if (id) _aiByRecord.set(id, pending);
     return pending;
 }
+// AI 配好了没有：接口地址、Key、模型三样都填了才算
+function aiReady() {
+    const ai = loadSettings().ai || {};
+    const p = (ai.profiles && getActiveAiProfile(ai)) || {};
+    return !!(p.baseUrl && p.apiKey && p.model);
+}
+// 还没配好不是出错：不用朱色，写一行淡色说明，后面一个「去设置」直接带到 AI 那一组。
+// 在设置里存好之后，这里自动换成「请 AI 解读这一卦」
+function aiNotReady(gua, change, question, bodyEl, readingContext = {}) {
+    bodyEl.innerHTML = '<p class="ai-unset">AI 还没配置好，要先填上接口地址、API Key 和模型名称。<button type="button" class="ai-goset">去设置</button></p>';
+    bodyEl.querySelector('.ai-goset').addEventListener('click', openAiSettings);
+    const onSaved = () => {
+        if (!bodyEl.isConnected) { document.removeEventListener('ai-config-saved', onSaved); return; }
+        if (!aiReady() || !bodyEl.querySelector('.ai-unset')) return;
+        document.removeEventListener('ai-config-saved', onSaved);
+        offerAiReading(gua, change, question, bodyEl, readingContext);
+    };
+    document.addEventListener('ai-config-saved', onSaved);
+}
+// 打开设置，滚到 AI 那一组，左边一道竖线引一下（和生辰组的引导同一个样子）
+function openAiSettings() {
+    toggleSettings(true);
+    const group = document.getElementById('aiConfig');
+    const box = group && group.closest('.settings-group');
+    if (!box) return;
+    const scroller = box.closest('.settings-content');
+    if (scroller) scroller.scrollTop = Math.max(0, box.offsetTop - 8);
+    box.classList.remove('beckon');
+    box.offsetWidth;
+    box.classList.add('beckon');
+    clearTimeout(openAiSettings._t);
+    openAiSettings._t = setTimeout(() => box.classList.remove('beckon'), 2400);
+    const first = ['aiBaseUrl', 'aiApiKey', 'aiModel'].map(id => document.getElementById(id)).find(el => el && !el.value.trim());
+    if (first && window.matchMedia && window.matchMedia('(hover: hover)').matches) setTimeout(() => first.focus({ preventScroll: true }), 600);
+}
 function offerAiReading(gua, change, question, bodyEl, readingContext = {}) {
     bodyEl.innerHTML = '<button class="btn" id="aiRunBtn">请 AI 解读这一卦</button>';
     bodyEl.querySelector('#aiRunBtn').addEventListener('click', () => runAiReading(gua, change, question, bodyEl, readingContext));
@@ -86,7 +121,7 @@ async function requestAiReading(gua, change, question, bodyEl, readingContext = 
     const ai = loadSettings().ai || {};
     const profile = getActiveAiProfile(ai);
     if (!profile.baseUrl || !profile.apiKey || !profile.model) {
-        bodyEl.innerHTML = '<div class="ai-error">AI 还没配置好。到「设置 → AI 解卦」里填上接口地址、API Key 和模型名称。</div>';
+        aiNotReady(gua, change, question, bodyEl, readingContext);
         return;
     }
 
@@ -226,6 +261,26 @@ function loadActiveProfileToForm(ai) {
     setVal('aiApiKey', p.apiKey || '');
     setVal('aiModel', p.model || '');
     setVal('aiPrompt', p.prompt || DEFAULT_AI_PROMPT);
+    updateAiSaveState();
+}
+
+// 「保存配置」和生辰的保存按钮一样：表单和存着的一致时显示「✓ 配置已保存」，
+// 改了没存就亮一个小点、写「保存改动」，免得关掉设置时改动悄悄丢了
+function updateAiSaveState() {
+    const btn = document.getElementById('saveAiBtn');
+    if (!btn || !btn.classList) return;
+    const ai = loadSettings().ai || {};
+    const p = (ai.profiles && getActiveAiProfile(ai)) || {};
+    const val = id => { const el = document.getElementById(id); return el ? String(el.value || '') : ''; };
+    const name = val('aiProfileName').trim();
+    const same = (!name || name === (p.name || '')) &&
+        val('aiBaseUrl').trim() === (p.baseUrl || '') &&
+        val('aiApiKey').trim() === (p.apiKey || '') &&
+        val('aiModel').trim() === (p.model || '') &&
+        (val('aiPrompt') || DEFAULT_AI_PROMPT) === (p.prompt || DEFAULT_AI_PROMPT);
+    btn.classList.toggle('is-saved', same);
+    btn.classList.toggle('is-dirty', !same);
+    btn.textContent = same ? '配置已保存' : '保存改动';
 }
 
 // 重建下拉、计数、按钮可用态
@@ -254,6 +309,9 @@ function saveAiConfig() {
     }
     renderAiProfileSelect(settings.ai);
     setAiStatus('已保存「' + (settings.ai.profiles[settings.ai.activeProfile].name) + '」', 'success');
+    updateAiSaveState();
+    // 结果页上「还没配置好」的说明等着这一下，配好了就换成解读按钮
+    if (typeof Event === 'function' && document.dispatchEvent) document.dispatchEvent(new Event('ai-config-saved'));
     return true;
 }
 

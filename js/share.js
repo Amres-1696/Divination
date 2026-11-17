@@ -234,6 +234,7 @@ async function shareAsImage() {
     if (box && box.getAnimations) box.getAnimations().forEach(a => a.cancel());   // 上次关闭时卡片停在按钮处，先复位
     if (_lastBlobUrl) { URL.revokeObjectURL(_lastBlobUrl); _lastBlobUrl = null; }
     _lastBlob = null;
+    setShareActsReady(false);
 
     // 出图用的卡片放在屏幕外：版框的底色、网格比例都从它取，飞行的落点也按它量
     const tmp = document.createElement('div');
@@ -294,7 +295,9 @@ async function shareAsImage() {
         };
 
         const fileName = '天衍_' + data.gua[0] + '_' + Date.now() + '.png';
-        document.getElementById('shareDownloadBtn').onclick = () => {
+        const downloadBtn = document.getElementById('shareDownloadBtn');
+        const copyBtn = document.getElementById('shareCopyBtn');
+        downloadBtn.onclick = () => {
             try {
                 const a = document.createElement('a');
                 a.href = objectUrl;
@@ -302,30 +305,26 @@ async function shareAsImage() {
                 document.body.appendChild(a); // Firefox 要求节点在文档中才能触发 click
                 a.click();
                 a.remove();
-                if (isIOS()) {
-                    // iOS Safari 对 <a download> 支持仍不稳定 —— 兜底引导
-                    setTimeout(() => showToast('如果没有自动保存，长按上面的图片，选「保存到相册」'), 300);
-                }
+                // iOS Safari 对 <a download> 支持仍不稳定：不说「已保存」，提示长按
+                flashShareAct(downloadBtn, isIOS() ? '请长按图片' : '已保存');
             } catch (e) {
-                showToast('没能下载，长按上面的图片保存到相册', 'error');
+                flashShareAct(downloadBtn, '没能保存', true);
             }
         };
-        document.getElementById('shareCopyBtn').onclick = async () => {
+        copyBtn.onclick = async () => {
             if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-                showToast('这个浏览器不支持复制图片，可以长按图片保存', 'error');
-                return;
-            }
-            if (!_lastBlob) {
-                showToast('图片还在生成，稍等一下');
+                flashShareAct(copyBtn, isMobile() ? '请长按图片' : '不支持复制', true);
                 return;
             }
             try {
                 await navigator.clipboard.write([new ClipboardItem({ 'image/png': Promise.resolve(_lastBlob) })]);
-                showToast('图片已复制', 'success');
+                flashShareAct(copyBtn, '已复制');
             } catch (e) {
-                showToast(isMobile() ? '没能复制，可以长按图片保存' : '没能复制，可以点「保存图片」', 'error');
+                flashShareAct(copyBtn, '没能复制', true);
             }
         };
+        // 图片显出来才能保存、复制
+        setShareActsReady(true);
     } catch (e) {
         if (!alive()) return;
         document.querySelectorAll('.share-flyer').forEach(el => el.remove());
@@ -334,6 +333,25 @@ async function shareAsImage() {
     } finally {
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }
+}
+
+// 弹层里的「保存图片」「复制图片」：成图前不能点；点过之后在按钮上原地回一句，
+// 不弹 Toast（手机上 Toast 正好压在这两个按钮上）。按钮里是图标加一段文字，只换文字
+function setShareActsReady(on) {
+    ['shareDownloadBtn', 'shareCopyBtn'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = !on;
+    });
+}
+function flashShareAct(btn, text, isError) {
+    const node = Array.from(btn.childNodes).find(n => n.nodeType === 3 && n.textContent.trim());
+    if (!node) return;
+    if (!btn._label) btn._label = node.textContent;
+    node.textContent = text;
+    btn.classList.toggle('done', !isError);
+    btn.classList.toggle('fail', !!isError);
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { node.textContent = btn._label; btn.classList.remove('done', 'fail'); }, isError ? 2600 : 1600);
 }
 
 const _reduceShareMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);

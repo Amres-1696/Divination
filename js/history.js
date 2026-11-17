@@ -237,11 +237,32 @@ function renderArchiveList(history) {
         el.addEventListener('mouseenter', () => { const c = mapCell(el.dataset.v); if (c) c.classList.add('hover'); });
         el.addEventListener('mouseleave', () => { const c = mapCell(el.dataset.v); if (c) c.classList.remove('hover'); });
     });
+    // 删除要点两下：第一下 × 换成朱色的「删除」，再点才删；移开、点别处或 3 秒不动就复原。
+    // 手机上 × 常显、又挨着整行的点按区，一点就删太容易误删
+    const disarm = btn => {
+        clearTimeout(btn._t);
+        if (!btn.classList.contains('arm')) return;
+        btn.classList.remove('arm');
+        btn.textContent = '';
+        btn.setAttribute('aria-label', '删除这条记录');
+    };
     list.querySelectorAll('.history-del').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (!btn.classList.contains('arm')) {
+                list.querySelectorAll('.history-del.arm').forEach(disarm);
+                btn.classList.add('arm');
+                btn.textContent = '删除';
+                btn.setAttribute('aria-label', '再点一次，删除这条记录');
+                btn._t = setTimeout(() => disarm(btn), 3000);
+                return;
+            }
+            disarm(btn);
             deleteHistoryItem(btn.dataset.id);
         });
+        btn.addEventListener('blur', () => disarm(btn));
+        const row = btn.closest('.history-item');
+        if (row) row.addEventListener('mouseleave', () => disarm(btn));
     });
 }
 
