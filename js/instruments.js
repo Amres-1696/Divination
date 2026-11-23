@@ -567,7 +567,7 @@ function initBirthSlip(year, month, day, hour) {
         if (x.okHour) {
             const z = x.h % 12, deg = x.h === 12 ? -7.5 : x.h === 0 ? 7.5 : x.h * 30, a = deg * Math.PI / 180;
             set(parts.dial, `${DI_ZHI[z]}时`, `${HOUR_RANGE[x.h]} 点`,
-                `<svg viewBox="-11 -11 22 22"><circle class="c-ring" r="9.5"/><line class="c-hand" x1="0" y1="0" x2="${(7 * Math.sin(a)).toFixed(2)}" y2="${(-7 * Math.cos(a)).toFixed(2)}"/><circle class="c-dot" r="1.6"/></svg>`);
+                `<svg viewBox="-11 -11 22 22"><circle class="c-ring" r="9.5"/>${[0, 90, 180, 270].map(t => `<line class="c-tick" x1="0" y1="-9.5" x2="0" y2="-7.5" transform="rotate(${t})"/>`).join('')}<line class="c-hand" x1="0" y1="0" x2="${(6.5 * Math.sin(a)).toFixed(2)}" y2="${(-6.5 * Math.cos(a)).toFixed(2)}"/><circle class="c-dot" r="1.5"/></svg>`);
         } else set(parts.dial, '', '');
         if (note) note.textContent = x.note;
     }
