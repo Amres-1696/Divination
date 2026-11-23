@@ -47,7 +47,7 @@
 
 这些数据在 `admin.html` 看：输密码后显示每天的访问和起卦、来源、热门卦、时段分布等。数据由云函数 `adminStats` 查出来，密码不对什么都不返回，所以页面地址公开也没关系。本地用 `admin.html?mock` 打开可以拿假数据看排版（`?mock=empty` 是刚上线没什么数的样子；假数据模式下密码随便输，输「错」会按密码不对处理）。后台页的展示字是单独一份子集 `fonts/ZCOOLXiaoWei-admin.woff2`，改了 `admin.html` 的文案后用 `tools/subset-admin-font.py` 重新生成。
 
-标题用的站酷小薇和正文用的思源宋体都裁成了子集，放在仓库的 `fonts/` 里，不依赖外网（以前思源宋体从 Google Fonts 取，国内基本连不上）。思源宋体分两份：本站源码里出现过的字一份，每次都加载；其余 GB2312 一级常用字另一份，在 `fonts/NotoSerifSC-ext.css` 里按 `unicode-range` 声明，只有页面上出现这些字（自己写的问题、AI 解读）时浏览器才去下载。除此之外，页面只会请求上面说的统计接口，分享图用的 `html2canvas` 也放在仓库里。
+标题用的站酷小薇和正文用的思源宋体都裁成了子集，放在仓库的 `fonts/` 里，不依赖外网（以前思源宋体从 Google Fonts 取，国内基本连不上）。思源宋体分两份：本站源码里出现过的字一份，每次都加载；其余 GB2312 一级常用字另一份，在 `fonts/NotoSerifSC-ext.css` 里按 `unicode-range` 声明，只有页面上出现这些字（自己写的问题、AI 解读）时浏览器才去下载。生辰签上的十二生肖图案取自 [OpenMoji](https://openmoji.org) 的黑白线稿，按 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 授权使用；只改了颜色和裁切范围，放在 `js/zodiac.js`，这个文件按同样的协议提供。除此之外，页面只会请求上面说的统计接口，分享图用的 `html2canvas` 也放在仓库里。
 
 ## 本地打开和部署
 
@@ -92,6 +92,7 @@ python tools/subset-text-font.py "/path/to/NotoSerifSC[wght].ttf"
 | `data.js` | 六十四卦、爻辞、卦象解读、吉凶标注和箴言 |
 | `js/core.js` | 铜钱起卦、变卦计算、卦序、提示框和小工具 |
 | `js/lunar.js` | 公历转农历（1900–2100）、干支纪年 |
+| `js/zodiac.js` | 十二生肖线稿（来自 OpenMoji，CC BY-SA 4.0），生辰签上用 |
 | `js/glyphs.js` | 卦画（SVG 与可动画的爻条）、先天序数、铜钱 |
 | `js/cosmos.js` | 六十四卦图层：首页圆图、起卦时的刻度盘（转动、标线、逐爻去半）、飞入结果页、飞回圆图。动画全部交给浏览器合成线程（Web Animations），主线程忙时也不掉帧 |
 | `js/ritual.js` | 起卦仪式：掷钱、逐爻揭出卦象 |

@@ -127,35 +127,37 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
 .today .num { font-size: clamp(34px, 3.8vw, 50px); line-height: 1.15; margin-right: 3px; }
 .today small { display: block; margin-top: 10px; font-size: 13px; color: var(--ink-3); }
 
-.yaos { position: relative; z-index: 1; --x: 100%; --bar-h: clamp(46px, 4.6vw, 64px); touch-action: pan-y; }
-.yaos-head { display: grid; grid-template-columns: 236px 1fr; align-items: end; padding-bottom: 8px; }
+.yaos { position: relative; z-index: 1; --x: 100%; --bar-h: clamp(40px, 3.8vw, 52px); --label: 210px; --day: 76px; touch-action: pan-y; }
+/* 每一爻三栏：左边名目和总数，中间爻身（浅色的爻，里面是每天的数），右边是划到的那天的数 */
+.yao { display: grid; grid-template-columns: var(--label) minmax(0, 1fr) var(--day); column-gap: 20px; }
+.yaos-head { display: flex; align-items: baseline; gap: 6px 20px; padding-bottom: 10px; }
 .yaos-head span { font-size: 13px; color: var(--ink-3); }
+.yaos-note { flex: 1; }
 .yaos-date { text-align: right; }
 .yaos-date b { font-weight: 400; color: var(--ink); font-size: 15px; margin-left: 12px; }
-.yao { display: grid; grid-template-columns: 236px 1fr; align-items: center; margin-bottom: clamp(10px, 1vw, 14px); }
-.yao-label { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: baseline; padding-right: 18px; }
-.yao-pos { font-family: var(--display); font-size: 15px; color: var(--ink-3); grid-row: 1 / 3; align-self: center; writing-mode: vertical-rl; letter-spacing: .12em; }
-.yao-name { font-size: 14px; color: var(--ink-2); line-height: 1.25; }
-.yao-total { grid-column: 2; font-size: clamp(26px, 2.3vw, 31px); line-height: 1.1; }
-.yao-total small { font-family: var(--text); font-size: 13px; color: var(--ink-2); margin-left: 3px; }
-.yao-delta { grid-column: 2; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
+.yaos-day-h { flex: none; width: var(--day); text-align: right; }
+.yao { align-items: center; margin-bottom: clamp(12px, 1.2vw, 16px); }
+.yao-label { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: baseline; }
+.yao-pos { font-family: var(--display); font-size: 14px; color: var(--ink-3); letter-spacing: .08em; }
+.yao-name { font-size: 14px; color: var(--ink-2); line-height: 1.3; }
+.yao-total { grid-column: 1 / -1; margin-top: 2px; font-size: clamp(24px, 2.1vw, 28px); line-height: 1.15; }
+.yao-total small { font-family: var(--text); font-size: 13px; color: var(--ink-2); margin-left: 4px; }
+.yao-delta { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink-3); line-height: 1.45; }
+.yao-delta:empty { display: none; }
 .yao.moving .yao-pos, .yao.moving .yao-delta { color: var(--zhu); }
 .yao-bar { position: relative; height: var(--bar-h); color: var(--ink); }
-.yao.moving .yao-bar { color: var(--zhu); }
-.yao-bar svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.yao.moving .yao-bar, .yao.moving .yao-day { color: var(--zhu); }
+.yao-bar svg { display: block; width: 100%; height: 100%; }
 .yao-bar .draw { clip-path: inset(0 0 0 0); }
 .yaos.casting .yao-bar .draw { animation: cast .8s var(--ease-out) both; animation-delay: calc(var(--i) * 110ms + 120ms); }
 @keyframes cast { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
-.yao-cur { position: absolute; top: -5px; bottom: -5px; left: var(--x); width: 0; border-left: 1px solid var(--ink-deep); pointer-events: none; }
-.yao-day {
-  position: absolute; top: 50%; left: var(--x); transform: translate(8px, -50%); pointer-events: none; white-space: nowrap;
-  background: var(--paper); color: var(--ink-deep); padding: 1px 8px; font-size: 17px; line-height: 1.5; box-shadow: 0 0 0 1px var(--ink-deep);
-}
-.yaos.flip-tag .yao-day { transform: translate(calc(-100% - 8px), -50%); }
-.yaos-axis { position: relative; margin-left: 236px; height: 24px; font-size: 12.5px; color: var(--ink-3); }
+.yao-cur { position: absolute; top: -6px; bottom: -6px; left: var(--x); width: 0; border-left: 1px solid var(--ink-3); pointer-events: none; }
+.yao-dot { position: absolute; left: var(--x); top: var(--y, 100%); width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; border-radius: 50%; background: var(--paper); box-shadow: 0 0 0 1.5px currentColor; pointer-events: none; }
+.yao-day { text-align: right; font-size: 20px; line-height: 1.2; color: var(--ink-deep); white-space: nowrap; }
+.yaos-axis { position: relative; margin: 0 calc(var(--day) + 20px) 0 calc(var(--label) + 20px); height: 24px; font-size: 12.5px; color: var(--ink-3); }
 .yaos-axis span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
-.yaos-axis span:first-child { transform: none; }
-.yaos-axis span:last-child { transform: translateX(-100%); }
+.yaos-axis span.edge-l { transform: none; }
+.yaos-axis span.edge-r { transform: translateX(-100%); }
 
 /* ----- 小节 ----- */
 .sec { position: relative; z-index: 1; margin-top: clamp(44px, 6vw, 84px); padding-top: 22px; border-top: 1px solid var(--ink); }
@@ -253,18 +255,16 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
   .stamp { order: 3; width: 100%; }
   .reading { grid-template-columns: 1fr; align-items: start; }
   .today { border-left: 0; border-top: 1px solid var(--rule); padding: 14px 0 0; }
-  .yaos { --bar-h: 46px; }
-  .yaos-head { grid-template-columns: 1fr auto; }
-  .yao { grid-template-columns: 1fr; margin-bottom: 16px; }
-  .yao-label { grid-template-columns: auto auto 1fr; column-gap: 9px; padding: 0 0 5px; }
-  .yao-pos { writing-mode: horizontal-tb; grid-row: auto; font-size: 14px; letter-spacing: 0; }
-  .yao-total { grid-column: auto; text-align: right; font-size: 25px; }
-  .yao-delta { grid-column: 1 / -1; }
-  .yaos-head span:first-child { display: none; }
-  .yaos-head { grid-template-columns: 1fr; }
+  .yaos { --bar-h: 38px; --day: 52px; }
+  .yao { grid-template-columns: minmax(0, 1fr) var(--day); column-gap: 12px; row-gap: 6px; margin-bottom: 18px; }
+  .yao-label { grid-column: 1 / -1; grid-template-columns: auto auto 1fr; column-gap: 9px; }
+  .yao-total { grid-column: auto; margin: 0; text-align: right; font-size: 24px; }
+  .yao-day { font-size: 15px; color: var(--ink-2); }
+  .yaos-day-h { display: none; }
+  .yaos-head { flex-direction: column; gap: 2px; }
   .yaos-date { text-align: left; }
   .pick-name span { display: block; margin: 0; }
-  .yaos-axis { margin-left: 0; }
+  .yaos-axis { margin: 0 calc(var(--day) + 12px) 0 0; }
   .cols { grid-template-columns: 1fr; }
   .square { grid-template-columns: 22px repeat(8, 1fr); gap: 2px; }
   .sq-h { font-size: 13px; }
@@ -535,33 +535,39 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
       y.moving = Math.abs(ch) >= .5;
       y.pos = (i === 0 ? '初' : i === 5 ? '上' : '') + (i === 0 || i === 5 ? (y.yang ? '九' : '六') : (y.yang ? '九' : '六') + '二三四五'[i - 1]);
       const head = d._half ? `后 ${d._half} 天 ${y.show(y.cur)}，` : '';
-      if (!y.prev && !y.cur) y.delta = `${cmp}和现在都还没有`;
-      else if (!y.prev) y.delta = `${head}${cmp}还没有`;
+      // 上一段没有数就没得比：不在每一行重复「还没有」，只在这一组的表头说一次
+      if (!y.prev) y.delta = d._half && y.cur ? `后 ${d._half} 天 ${y.show(y.cur)}` : '';
       else {
         const p = Math.round(Math.abs(ch) * 100);
         const word = y.ratio ? (ch > 0 ? '高了' : '低了') : (ch > 0 ? '多了' : '少了');
         y.delta = `${head}${cmp} ${y.show(y.prev)}` + (p === 0 ? '，差不多' : `，${word} ${p >= 1000 ? '很多' : p + '%'}`);
       }
       y.series = daily.map(y.day);
+      y.max = Math.max(...y.series, 0);
     });
+    defs.cmp = cmp;
+    defs.fresh = defs.every(y => !y.prev);
     return defs;
   }
 
+  // 爻身是一条浅色的爻（阳爻整条，阴爻中间断开），每天的数画成里面的山形：零贴底，最多的一天顶到快到上沿。
+  // 以前整条爻是实心深蓝、线压在底上，数少的时候满屏深蓝块里只有一根平线，看不出东西
+  const yOf = (y, v) => y.max > 0 ? 100 - v / y.max * 82 : 100;
   function barSvg(y, i) {
-    const W = 1000, H = 100, s = y.series, n = s.length, max = Math.max(...s, 0);
-    const gap = y.yang ? 0 : 76, gx = (W - gap) / 2;
+    const W = 1000, H = 100, s = y.series, n = s.length;
+    const gap = y.yang ? 0 : 64, gx = (W - gap) / 2;
     const px = k => n > 1 ? k / (n - 1) * W : W / 2;
-    const py = v => max > 0 ? 84 - v / max * 66 : 84;
-    const pts = s.map((v, k) => `${px(k).toFixed(1)},${py(v).toFixed(1)}`);
-    const line = n > 1 ? 'M' + pts.join('L') : `M0,${py(s[0] || 0)}L${W},${py(s[0] || 0)}`;
+    const pts = s.map((v, k) => `${px(k).toFixed(1)},${yOf(y, v).toFixed(1)}`);
+    const line = n > 1 ? 'M' + pts.join('L') : `M0,${yOf(y, s[0] || 0)}L${W},${yOf(y, s[0] || 0)}`;
     const area = line + `L${W},${H}L0,${H}Z`;
     const body = y.yang ? `<rect width="${W}" height="${H}"/>` : `<rect width="${gx}" height="${H}"/><rect x="${gx + gap}" width="${gx}" height="${H}"/>`;
+    const stroke = 'fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round"';
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
       <defs><clipPath id="in${i}">${body}</clipPath><clipPath id="out${i}"><rect x="${gx}" width="${gap}" height="${H}"/></clipPath></defs>
       <g class="draw" style="--i:${i}">
-        <g fill="currentColor">${body}</g>
-        <g clip-path="url(#in${i})"><path d="${area}" fill="#EDF0F3" opacity=".07"/><path d="${line}" fill="none" stroke="#EDF0F3" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>
-        ${gap ? `<g clip-path="url(#out${i})"><path d="${line}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></g>` : ''}
+        <g fill="currentColor" opacity=".11">${body}</g>
+        <g clip-path="url(#in${i})"><path d="${area}" fill="currentColor" opacity=".3"/><path d="${line}" ${stroke}/></g>
+        ${gap ? `<g clip-path="url(#out${i})" opacity=".35"><path d="${line}" ${stroke} stroke-dasharray="3 3"/></g>` : ''}
       </g></svg>`;
   }
 
@@ -584,17 +590,22 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
           <span class="yao-total num">${y.show(y.total)}<small>${y.unit}</small></span>
           <span class="yao-delta">${y.delta}</span>
         </div>
-        <div class="yao-bar">${barSvg(y, i)}<i class="yao-cur"></i><span class="yao-day num" data-i="${i}"></span></div>
+        <div class="yao-bar">${barSvg(y, i)}<i class="yao-cur"></i><i class="yao-dot" data-i="${i}"></i></div>
+        <span class="yao-day num" data-i="${i}"></span>
       </div>`).reverse().join('');
     const ticks = [];
     if (n) {
+      // 刻度从今天往回等距排（隔几天一格是整数），不再四舍五入出 4 天、5 天交错的间隔
       const want = Math.min(n, innerWidth < 720 ? 4 : 7);
-      for (let k = 0; k < want; k++) {
-        const idx = want > 1 ? Math.round(k * (n - 1) / (want - 1)) : 0;
-        ticks.push(`<span style="left:${n > 1 ? idx / (n - 1) * 100 : 50}%">${shortDay(daily[idx].date)}</span>`);
+      const step = want > 1 ? Math.ceil((n - 1) / (want - 1)) : 1;
+      for (let idx = n - 1; idx >= 0; idx -= step) {
+        const x = n > 1 ? idx / (n - 1) : .5;
+        const edge = x > .97 ? ' class="edge-r"' : x < .03 ? ' class="edge-l"' : '';
+        ticks.unshift(`<span${edge} style="left:${x * 100}%">${shortDay(daily[idx].date)}</span>`);
       }
     }
-    el.innerHTML = `<div class="yaos-head"><span>上爻在上，初爻在下</span><span class="yaos-date">在卦上划一下看别的日子<b id="scrubDate"></b></span></div>${rows}<div class="yaos-axis">${ticks.join('')}</div>`;
+    const note = yaoDefs.fresh ? `上爻在上，初爻在下。${yaoDefs.cmp}还没有数，没得比` : '上爻在上，初爻在下';
+    el.innerHTML = `<div class="yaos-head"><span class="yaos-note">${note}</span><span class="yaos-date">在卦上划一下看别的日子<b id="scrubDate"></b></span><span class="yaos-day-h">这一天</span></div>${rows}<div class="yaos-axis">${ticks.join('')}</div>`;
     el.classList.remove('casting');
     if (cast && !calm) { void el.offsetWidth; el.classList.add('casting'); }
     setScrub(n - 1);
@@ -606,11 +617,14 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
     scrubAt = idx;
     const x = n > 1 ? idx / (n - 1) : .5;
     el.style.setProperty('--x', (x * 100) + '%');
-    el.classList.toggle('flip-tag', x > .5);
     $('#scrubDate').textContent = dayLabel(daily[idx].date, idx === n - 1);
     el.querySelectorAll('.yao-day').forEach(tag => {
       const y = yaoDefs[Number(tag.dataset.i)];
       tag.textContent = y.show(y.series[idx]);
+    });
+    el.querySelectorAll('.yao-dot').forEach(dot => {
+      const y = yaoDefs[Number(dot.dataset.i)];
+      dot.style.setProperty('--y', yOf(y, y.series[idx]) + '%');
     });
   }
   function scrubFromEvent(e) {
