@@ -281,7 +281,25 @@ function archiveFlight(panel, tag, open) {
 
     // 目标：方图里亮着的格子；还没有记录时没有卦要飞，只剩面板本身的浮现
     const targets = Array.from(panel.querySelectorAll('.am-cell.lit'))
-        .map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx') }));
+        .map(c => ({ v: Number(c.dataset.v), el: c.querySelector('.hx'), cell: c }));
+    // 只飞落点整个看得见的格子：方图下半截常在牌册的滚动区外面（屏幕矮、记录多时），
+    // 飞过去的替身没有被滚动区裁掉，会落在「清空牌册」那一栏上、甚至面板外面，收尾时才突然消失。
+    // 看不全的格子不飞，真卦画直接留在格子里（.am-still），由滚动区自己裁
+    panel.querySelectorAll('.am-still').forEach(c => c.classList.remove('am-still'));
+    const scroller = (() => {
+        const c = targets[0] && targets[0].cell;
+        for (let p = c && c.parentElement; p && p !== panel.parentElement; p = p.parentElement) {
+            const o = getComputedStyle(p).overflowY;
+            if (o === 'auto' || o === 'scroll') return p;
+        }
+        return null;
+    })();
+    const sr = scroller ? scroller.getBoundingClientRect() : null;
+    const view = {
+        top: Math.max(0, sr ? sr.top : 0), bottom: Math.min(window.innerHeight, sr ? sr.bottom : window.innerHeight),
+        left: Math.max(0, sr ? sr.left : 0), right: Math.min(window.innerWidth, sr ? sr.right : window.innerWidth)
+    };
+    const seen = r => r.width && r.top >= view.top - 1 && r.bottom <= view.bottom + 1 && r.left >= view.left - 1 && r.right <= view.right + 1;
     // 起点：首页圆图上同一卦的位置（带着它在圆周上的朝向）；结果页上正看着的那一卦；否则是挂签
     const ringOn = !toItem && document.body.classList.contains('view-home') && typeof Cosmos !== 'undefined' && Cosmos.state === 'circle';
     const ring = ringOn ? document.querySelectorAll('.cosmos-ring .cg') : null;
@@ -309,10 +327,10 @@ function archiveFlight(panel, tag, open) {
     layer.className = 'archive-flyers';
     const flights = [];
     // 先把要量的全量完（位置、亮度），再统一改样式：边量边改会让每一卦都触发一次重新排版
-    const plan = targets.map(({ v, el }) => {
+    const plan = targets.map(({ v, el, cell }) => {
         if (!el) return null;
         const t = el.getBoundingClientRect();
-        if (!t.width) return null;
+        if (!seen(cell.getBoundingClientRect())) { cell.classList.add('am-still'); return null; }
         const cg = ring && ring[63 - v];
         return { v, el, t, cg, cr: cg ? cg.getBoundingClientRect() : null, cw: cg ? cg.offsetWidth : 0, endOp: Number(getComputedStyle(el).opacity) || 1 };
     }).filter(Boolean);
@@ -423,6 +441,7 @@ function archiveFlight(panel, tag, open) {
         panel.classList.remove('morphing', 'flying');
         panel.offsetHeight;
         panel.style.transition = '';
+        panel.querySelectorAll('.am-still').forEach(c => c.classList.remove('am-still'));
         if (!open) {
             panel.getAnimations().forEach(a => a.cancel());
             showSlots();
