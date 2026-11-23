@@ -1625,8 +1625,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .share-close { position: absolute; top: calc(var(--frame) + 14px); right: calc(var(--frame) + 14px); }
 /* 从结果页飞到相纸上的那份卦画，显影时淡去 */
 .share-flyer { position: fixed; z-index: 72; pointer-events: none; transform-origin: 0 0; will-change: transform; }
-.share-flyer-glyph .bar::before, .share-flyer-glyph .bar::after { transition: background .35s ease; }
-.share-flyer-glyph.inked { --ink: #17396E; --zhu: #D63A16; }
 
 .confirm-box { width: min(360px, 100%); padding: 26px 24px 22px; }
 .confirm-msg { font-size: 18px; line-height: 1.7; }
