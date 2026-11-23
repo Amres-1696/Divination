@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="天衍：在网页上用《周易》起卦。掷铜钱或用生辰起出一卦，再按古人的读法，指出要读的那一句。">
+    <meta name="description" content="天衍：在网页上用《周易》起卦。掷铜钱或用生辰起出一卦，再按古人的读法，找出这一卦里最该读的那一句。">
     <meta name="theme-color" content="#1A3D72">
     <!-- 发到社交平台时的卡片：标题、说明和封面（封面底稿在 tools/og.html）。地址写死线上站点，换了部署地址要一起改 -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="天衍">
     <meta property="og:title" content="天衍 · 周易起卦">
-    <meta property="og:description" content="在网页上用《周易》起卦。掷铜钱或用生辰起出一卦，再按古人的读法，指出要读的那一句。">
+    <meta property="og:description" content="在网页上用《周易》起卦。掷铜钱或用生辰起出一卦，再按古人的读法，找出这一卦里最该读的那一句。">
     <meta property="og:url" content="https://amres-1696.github.io/Divination/">
     <meta property="og:image" content="https://amres-1696.github.io/Divination/og.jpg">
     <meta property="og:image:width" content="1200">
@@ -20,11 +20,11 @@
     <title>天衍 · 周易起卦</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
     <!-- 标题字体（站酷小薇子集）随仓库走，提前取，免得「天衍」两个字先以宋体闪一下 -->
-    <link rel="preload" href="fonts/ZCOOLXiaoWei-subset.woff2?v=c54af65c" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=99adecb5">
+    <link rel="preload" href="fonts/ZCOOLXiaoWei-subset.woff2?v=09cdaea0" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="style.css?v=26fa9d62">
     <!-- 正文字体（思源宋体）本站用到的字在 style.css 里；其余常用字的那一份异步挂上，只有页面上真出现这些字时才下载 -->
-    <link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=ee00a20b" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=ee00a20b"></noscript>
+    <link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=b493833c" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=b493833c"></noscript>
 </head>
 <body class="view-home intro">
 <div class="cosmos" id="cosmos" aria-hidden="true"></div>
@@ -79,7 +79,7 @@
           <option value="bazi">生辰起卦</option>
         </select>
       </div>
-      <div class="settings-hint">铜钱起卦：三枚铜钱掷六次，每次定一爻。生辰起卦：用你的生辰和所问的事推出一卦，取数照梅花易数；生辰填公历，会自动换算成农历。同一个问题，用生辰起卦总是得到同一卦。</div>
+      <div class="settings-hint">铜钱起卦是把三枚铜钱掷六次，每掷一次定一爻。生辰起卦是用你的生辰加上所问的事推出一卦，取数的方法照梅花易数；生辰按公历填，会自动换算成农历。用生辰起卦时，同一个问题每次得到的都是同一卦，不写问题也是一样。</div>
     </div>
     <div class="settings-group" id="baziSettings" style="--k:1">
       <div class="settings-label">公历生辰</div>
@@ -114,7 +114,7 @@
           <option value="none">直出</option>
         </select>
       </div>
-      <div class="settings-hint">完整：每掷一次定一爻，共点六次。快掷：点一次，六爻一口气掷完。直出：跳过掷钱，直接看结果。</div>
+      <div class="settings-hint">完整：点六次，每次掷出一爻。快掷：只点一次，六爻一口气掷完。直出：跳过掷钱，直接看结果。</div>
     </div>
     <!-- 生辰起卦不掷钱，六爻自己一根根显出来；它的快慢单独设，不跟掷钱那一项走 -->
     <div class="settings-group" id="baziRitualGroup" style="--k:2" hidden>
@@ -126,14 +126,14 @@
           <option value="none">直出</option>
         </select>
       </div>
-      <div class="settings-hint">完整：六爻逐根显出，圆图转到位再出下一爻。加快：过程一样，速度快一倍多。直出：跳过推演，直接看结果。</div>
+      <div class="settings-hint">完整：六爻一根根显出来，圆图转到位再出下一爻。加快：过程不变，速度快一倍多。直出：跳过推演，直接看结果。</div>
     </div>
     <div class="settings-group" style="--k:3">
       <div class="settings-row toggle-row">
         <span class="settings-label">今日一卦</span>
         <label class="toggle-switch"><input type="checkbox" id="settingDaily" checked aria-label="今日一卦"><span class="toggle-slider"></span><span class="toggle-state" aria-hidden="true"></span></label>
       </div>
-      <div class="settings-hint">在首页显示今天的一卦，附一句「象曰」。</div>
+      <div class="settings-hint">在首页显示今天的一卦，旁边附上这一卦的「象曰」。</div>
     </div>
     <div class="settings-group" style="--k:4">
       <div class="settings-row toggle-row">
@@ -173,7 +173,7 @@
     </div>
     <div class="settings-group settings-about" style="--k:5">
       <div class="settings-label">关于天衍</div>
-      <div class="settings-hint">天衍免费、开源。它是一个读《周易》的小游戏，不能预知未来，结果只作参考。</div>
+      <div class="settings-hint">天衍免费、开源，是一个读《周易》的小游戏。它不能预知未来，结果只作参考。</div>
       <a class="github-support-link" href="https://github.com/Amres-1696/Divination" target="_blank" rel="noopener noreferrer">
         <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 .8a11.4 11.4 0 0 0-3.6 22.2c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.4-1.3-5.4-5.7 0-1.3.4-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.1 1.2A10.8 10.8 0 0 1 12 6.2c1.1 0 2.1.1 3.1.4 2.2-1.5 3.1-1.2 3.1-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.4 5.7.4.4.8 1.1.8 2.1v3c0 .3.2.7.8.6A11.4 11.4 0 0 0 12 .8Z"/></svg>
         在 GitHub 上加星或提建议
@@ -224,7 +224,7 @@
         </div>
     </div>
 
-    <script src="data.js?v=4c76cb89"></script>
+    <script src="data.js?v=b935f67e"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
     <script src="js/core.js?v=b32355e4"></script>
     <script src="js/lunar.js?v=6965c80a"></script>
@@ -232,14 +232,14 @@
     <script src="js/glyphs.js?v=fb175be5"></script>
     <script src="js/cosmos.js?v=3381c55a"></script>
     <script src="js/ritual.js?v=6e4440a4"></script>
-    <script src="js/ai.js?v=e7044131"></script>
+    <script src="js/ai.js?v=c2819d70"></script>
     <script src="js/settings.js?v=62ec86ff"></script>
     <script src="js/share.js?v=fdf7dca1"></script>
     <script src="js/history.js?v=cbebd969"></script>
     <script src="js/daily.js?v=296e5431"></script>
     <script src="js/track.js?v=2b4cb200"></script>
-    <script src="js/divination.js?v=2bab686e"></script>
-    <script src="js/instruments.js?v=615a9804"></script>
+    <script src="js/divination.js?v=2af5bafe"></script>
+    <script src="js/instruments.js?v=e2c10685"></script>
     <script src="js/theme.js?v=6cc429d7"></script>
     <script src="js/main.js?v=0855fd5f"></script>
 </body>
