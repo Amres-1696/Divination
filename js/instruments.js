@@ -1,7 +1,8 @@
 // instruments —— 生辰与配置的输入器具
 // 年份是一列竖向的年轮，月日是一条可拖动的月相带，时辰是一面十二时辰钟（拖指针选）。
-// 原生 input / select 仍是数据源（settings.js 照常读写），也直接显示在器具上方，可以敲数字；
-// 这里只负责画和同步：敲了数字器具跟着转，拨了器具输入框跟着变。
+// 原生 input / select 仍是数据源（settings.js 照常读写），显示在最上面，敲数字是主要的填法；
+// 下面一张「生辰签」写出换算后的农历年、月日、时辰，点签上哪一段，就展开那一件器具来拨（平时都收着）。
+// 这里只负责画和同步：敲了数字器具和生辰签跟着变，拨了器具输入框跟着变。
 
 function hookValue(el, onSet) {
     const proto = el instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
@@ -71,7 +72,8 @@ function makeYearWheel(input, onChange) {
         root.classList.toggle('empty', !shown);
         if (shown) {
             const ny = newYearDay(y);
-            note.textContent = ny ? `这一年春节是 ${ny}，春节前出生，农历算上一年（${ganZhiYear(y - 1)}年）` : '';
+            // 只说规则，不替人下结论：是不是春节前出生要看月日，生辰签上会写明
+            note.textContent = ny ? `${y} 年的春节在 ${ny}，这天之前出生的，农历算上一年（${ganZhiYear(y - 1)}年）` : '';
         } else {
             note.textContent = '上下滑动年轮，选出生年份';
         }
@@ -509,6 +511,96 @@ function makeHourDial(sel) {
     return root;
 }
 
+// ---------- 生辰签 ----------
+// 把输入框里的公历生辰换成起卦实际用的农历：年写干支和生肖，月日配当天的月相，时辰配一个小钟面。
+// 春节前出生、23 点后出生（算作次日）这两种容易弄错的情况，在签下面单独说一句。
+// 签上三段各是一个按钮：点开下面对应的器具，再点一下收起；开一件时另外两件自动收起。
+const HOUR_RANGE = ['0–1', '1–3', '3–5', '5–7', '7–9', '9–11', '11–13', '13–15', '15–17', '17–19', '19–21', '21–23', '23–24'];
+function birthSlipData(y, m, d, h) {
+    const okDate = y >= 1900 && y <= 2100 && m >= 1 && m <= 12 && d >= 1 && d <= new Date(y, m, 0).getDate();
+    const okHour = h >= 0 && h <= 12;
+    let lu = null, ny = '';
+    if (okDate) {
+        // 23 点后（晚子时）按次日算，和 birthNumbers 一致
+        const used = okHour && h === 12 ? new Date(y, m - 1, d + 1) : new Date(y, m - 1, d);
+        lu = solarToLunar(used.getFullYear(), used.getMonth() + 1, used.getDate());
+        if (lu && lu.year < used.getFullYear()) {
+            for (let t = new Date(used.getFullYear(), 0, 15); t.getMonth() < 3; t.setDate(t.getDate() + 1)) {
+                const x = solarToLunar(t.getFullYear(), t.getMonth() + 1, t.getDate());
+                if (x && x.month === 1 && x.day === 1 && !x.isLeap) { ny = `${t.getMonth() + 1} 月 ${t.getDate()} 日`; break; }
+            }
+        }
+    }
+    const notes = [];
+    if (ny) notes.push(`那年春节在 ${ny}，你在春节前出生，农历算${ganZhiYear(lu.year)}年`);
+    if (okDate && okHour && h === 12) notes.push(`23 点后出生算作次日，月日按${lunarMonthName(lu ? lu.month : m, lu && lu.isLeap)}${lu ? lunarDayName(lu.day) : ''}算`);
+    if (okDate && !lu) notes.push('早于 1900 年春节，查不到农历，按公历日期起卦');
+    return { okDate, okHour, lu, h, note: notes.join('；') };
+}
+function initBirthSlip(year, month, day, hour) {
+    const slip = document.getElementById('birthSlip');
+    const note = document.getElementById('slipNote');
+    if (!slip) return;
+    const parts = {};
+    slip.querySelectorAll('.slip-part').forEach(b => { parts[b.dataset.tool] = b; });
+    const tools = {};
+    document.querySelectorAll('.birth-tool').forEach(t => { tools[t.dataset.tool] = t; });
+    const set = (part, main, sub, ico) => {
+        part.classList.toggle('empty', !main);
+        part.querySelector('b').textContent = main || '未填';
+        part.querySelector('small').textContent = sub || '点这里拨';
+        const i = part.querySelector('.slip-ico');
+        if (i) i.innerHTML = ico || '';
+    };
+    function render() {
+        const x = birthSlipData(parseInt(year.value, 10), parseInt(month.value, 10), parseInt(day.value, 10), parseInt(hour.value, 10));
+        const y = parseInt(year.value, 10);
+        if (x.lu) set(parts.year, `${ganZhiYear(x.lu.year)}年`, `属${YEAR_ZODIAC[lunarYearBranch(x.lu.year) - 1]}`);
+        else if (y >= 1900 && y <= 2100) set(parts.year, `${ganZhiYear(y)}年`, `属${YEAR_ZODIAC[lunarYearBranch(y) - 1]}`);
+        else set(parts.year, '', '');
+        if (x.lu) {
+            const r = 9, lit = moonLitPath(x.lu.day, r);
+            set(parts.cal, `${lunarMonthName(x.lu.month, x.lu.isLeap)}${lunarDayName(x.lu.day)}`, moonPhaseName(x.lu.day),
+                `<svg viewBox="-11 -11 22 22"><circle class="m-dark" r="${r}"/>${lit ? `<path class="m-lit" d="${lit}"/>` : ''}</svg>`);
+        } else if (x.okDate) set(parts.cal, `${parseInt(month.value, 10)}月${parseInt(day.value, 10)}日`, '公历');
+        else set(parts.cal, '', '');
+        if (x.okHour) {
+            const z = x.h % 12, deg = x.h === 12 ? -7.5 : x.h === 0 ? 7.5 : x.h * 30, a = deg * Math.PI / 180;
+            set(parts.dial, `${DI_ZHI[z]}时`, `${HOUR_RANGE[x.h]} 点`,
+                `<svg viewBox="-11 -11 22 22"><circle class="c-ring" r="9.5"/><line class="c-hand" x1="0" y1="0" x2="${(7 * Math.sin(a)).toFixed(2)}" y2="${(-7 * Math.cos(a)).toFixed(2)}"/><circle class="c-dot" r="1.6"/></svg>`);
+        } else set(parts.dial, '', '');
+        if (note) note.textContent = x.note;
+    }
+    function open(name) {
+        Object.keys(tools).forEach(k => {
+            const on = k === name;
+            tools[k].classList.toggle('open', on);
+            tools[k].inert = !on;
+            parts[k].setAttribute('aria-expanded', String(on));
+        });
+        const inst = name && tools[name].querySelector('.yw, .band, .dial');
+        if (inst && inst.spinIn) setTimeout(() => inst.spinIn(), 60);
+    }
+    slip.addEventListener('click', e => {
+        const b = e.target.closest('.slip-part');
+        if (!b) return;
+        open(b.getAttribute('aria-expanded') === 'true' ? null : b.dataset.tool);
+    });
+    // 输入框的值有三种来路：手敲（input）、器具拨完（change）、程序写入（恢复设置时直接赋 value）。
+    // 第三种不发事件，所以在器具挂上的 value 写入钩子外面再包一层（不能用 hookValue，会把器具的钩子覆盖掉）
+    [year, month, day, hour].forEach(el => {
+        el.addEventListener('input', render);
+        el.addEventListener('change', render);
+        const own = Object.getOwnPropertyDescriptor(el, 'value');
+        if (own && own.set) Object.defineProperty(el, 'value', {
+            configurable: true,
+            get() { return own.get.call(this); },
+            set(v) { own.set.call(this, v); render(); }
+        });
+    });
+    render();
+}
+
 // ---------- AI 配置：图纸页签 ----------
 function makeProfileTabs(sel) {
     const root = document.createElement('div');
@@ -558,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cal = makeMoonBand(year, month, day);
         slots.cal.appendChild(cal);
         slots.dial.appendChild(makeHourDial(hour));
+        initBirthSlip(year, month, day, hour);
     }
     const prof = document.getElementById('aiProfileSelect');
     if (prof) {

@@ -155,7 +155,8 @@ function updateBaziSaveState() {
     btn.classList.toggle('is-dirty', !!saved && !same);
     btn.textContent = same ? '生辰已保存' : saved ? '保存改动' : '保存生辰';
     if (same) {
-        status.textContent = `已保存 · ${baziSummary(saved)}`;
+        // 按钮已经写着「生辰已保存」，换算出来的农历就在上面的生辰签上，这里不再重复一遍
+        status.textContent = '';
         status.className = 'bazi-status success';
     } else if (saved) {
         status.textContent = `改动还没保存（现在存的是 ${baziSummary(saved)}）`;
@@ -225,11 +226,11 @@ function setBaziGroupShown(group, show) {
     if (show) spinBirthInstruments(group, [140, 220, 300]);
 }
 
-// 年轮、月相带、时辰钟依次顺势转到所选的位置（delays 依次是三件的延迟）
+// 年轮、月相带、时辰钟依次顺势转到所选的位置（delays 依次是三件的延迟）。收着的器具看不见，不转
 function spinBirthInstruments(group, delays) {
     ['.yw', '.band', '.dial'].forEach((sel, k) => {
         const el = group.querySelector(sel);
-        if (el && el.spinIn) setTimeout(() => el.spinIn(), delays[k]);
+        if (el && el.spinIn && el.closest('.birth-tool.open')) setTimeout(() => el.spinIn(), delays[k]);
     });
 }
 
