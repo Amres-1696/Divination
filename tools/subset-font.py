@@ -42,6 +42,8 @@ def wanted_chars():
         if rel == 'data.js':
             # 每一卦的第五项是「卦象」那段白话，页面上用正文字体，不用展示字体
             text = re.sub(r"(\['[^']*', '[^']*', '[^']*', '[^']*', )'[^']*'\]", r"\1'']", text)
+            # 卦辞、爻辞的白话（GUA_PLAIN、YONG_PLAIN）也用正文字体
+            text = text.split('const GUA_PLAIN')[0]
         chars.update(ch for ch in text if ord(ch) > 0x7f and not ch.isspace())
     return chars
 

@@ -109,41 +109,47 @@ function getMainReading(gua, change) {
             : { from: `${label}《${name}》`, text: raw || '' };
     };
     const nameOf = raw => String(raw || '').split('：')[0];
+    // 白话（data.js 的 GUA_PLAIN）：第 i 爻，或者 i 为 null 时的卦辞；没有就是空串
+    const plainOf = (name, i) => {
+        const p = typeof GUA_PLAIN !== 'undefined' && GUA_PLAIN[name];
+        return p ? (i == null ? p.ci : p.yao[i]) || '' : '';
+    };
+    const yong = name => (typeof YONG_PLAIN !== 'undefined' && YONG_PLAIN[name]) || '';
 
     if (n === 0)
         return { rule: '静卦无变', text: `没有动爻，取本卦《${benName}》卦辞：「${gua[1]}」`, at: null,
-            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }], how: '没有动爻，读本卦的卦辞。' };
+            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1], plain: plainOf(benName) }], how: '没有动爻，读本卦的卦辞。' };
     if (n === 1)
         return { rule: '一爻动', text: `一爻动，取本卦《${benName}》这一爻：${yaoArr[changing[0]] || ''}`, at: changing[0],
-            lines: [yaoLine('本卦', benName, yaoArr[changing[0]])], how: `只有${nameOf(yaoArr[changing[0]])}一根动爻，读它的爻辞。` };
+            lines: [{ ...yaoLine('本卦', benName, yaoArr[changing[0]]), plain: plainOf(benName, changing[0]) }], how: `只有${nameOf(yaoArr[changing[0]])}一根动爻，读它的爻辞。` };
     if (n === 2)
         return { rule: '二爻动', text: `两爻动，取本卦《${benName}》上面那根动爻：${yaoArr[changing[1]] || ''}`, at: changing[1],
-            lines: [yaoLine('本卦', benName, yaoArr[changing[1]])],
+            lines: [{ ...yaoLine('本卦', benName, yaoArr[changing[1]]), plain: plainOf(benName, changing[1]) }],
             how: `有${nameOf(yaoArr[changing[0]])}、${nameOf(yaoArr[changing[1]])}两根动爻，读靠上的${nameOf(yaoArr[changing[1]])}。` };
     if (n === 3)
         return { rule: '三爻动', text: `三爻动，本卦《${benName}》和之卦《${zhi[0]}》的卦辞合看：本卦「${gua[1]}」，之卦「${zhi[1]}」`, at: null,
-            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }, { from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }],
+            lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1], plain: plainOf(benName) }, { from: `之卦《${zhi[0]}》卦辞`, text: zhi[1], plain: plainOf(zhi[0]) }],
             how: '有三根动爻，本卦和之卦的卦辞要合起来读，以本卦为主。' };
     if (n === 4) {
         const low = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[low] || '';
         return { rule: '四爻动', text: `四爻动，取之卦《${zhi[0]}》没动的两爻里下面那一根：${raw}`, at: low,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: `有四根动爻，读之卦里没动的那两爻中靠下的${nameOf(raw)}。` };
+            lines: [{ ...yaoLine('之卦', zhi[0], raw), plain: plainOf(zhi[0], low) }], how: `有四根动爻，读之卦里没动的那两爻中靠下的${nameOf(raw)}。` };
     }
     if (n === 5) {
         const only = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[only] || '';
         return { rule: '五爻动', text: `五爻动，取之卦《${zhi[0]}》唯一没动的那一爻：${raw}`, at: only,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: `有五根动爻，读之卦里唯一没动的${nameOf(raw)}。` };
+            lines: [{ ...yaoLine('之卦', zhi[0], raw), plain: plainOf(zhi[0], only) }], how: `有五根动爻，读之卦里唯一没动的${nameOf(raw)}。` };
     }
     if (benName === '乾为天')
         return { rule: '六爻全变·用九', text: '乾卦六爻全动，取「用九」：「见群龙无首，吉。」', at: null,
-            lines: [{ from: '本卦《乾为天》用九', text: '见群龙无首，吉。' }], how: '六根全是动爻。乾卦在六条爻辞之外还多一句「用九」，这时就读它。' };
+            lines: [{ from: '本卦《乾为天》用九', text: '见群龙无首，吉。', plain: yong('乾为天') }], how: '六根全是动爻。乾卦在六条爻辞之外还多一句「用九」，这时就读它。' };
     if (benName === '坤为地')
         return { rule: '六爻全变·用六', text: '坤卦六爻全动，取「用六」：「利永贞。」', at: null,
-            lines: [{ from: '本卦《坤为地》用六', text: '利永贞。' }], how: '六根全是动爻。坤卦在六条爻辞之外还多一句「用六」，这时就读它。' };
+            lines: [{ from: '本卦《坤为地》用六', text: '利永贞。', plain: yong('坤为地') }], how: '六根全是动爻。坤卦在六条爻辞之外还多一句「用六」，这时就读它。' };
     return { rule: '六爻全变', text: `六爻全动，取之卦《${zhi[0]}》卦辞：「${zhi[1]}」`, at: null,
-        lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六根全是动爻，读之卦的卦辞。' };
+        lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1], plain: plainOf(zhi[0]) }], how: '六根全是动爻，读之卦的卦辞。' };
 }
 
 // ---------- 术语：虚线下划的词，悬停、聚焦或点一下浮出解释（浮窗逻辑在 theme.js 的 initTermTips） ----------
@@ -251,11 +257,12 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     const quoteCls = mainLen > 28 ? ' xl' : mainLen > 14 ? ' long' : '';
     const mainHtml = `<section class="main-reading" style="--d:3" aria-label="主断">
         <h3 class="mr-label">${term('主断', TIPS.zhuduan)}</h3>
-        ${mainReading.lines.map(l => `<p class="mr-line"><q class="mr-quote${quoteCls}">${softPunct(l.text)}</q><cite class="mr-from">${l.from}</cite></p>`).join('')}
+        ${mainReading.lines.map(l => `<div class="mr-line"><q class="mr-quote${quoteCls}">${softPunct(l.text)}</q><cite class="mr-from">${l.from}</cite>${l.plain ? `<p class="mr-plain">${l.plain}</p>` : ''}</div>`).join('')}
         <p class="mr-how">${mainReading.how.replace('动爻', term('动爻', TIPS.dongyao(sealMoving)))}</p>
       </section>`;
 
     const yaoArr = gua[3].split('|');
+    const yaoPlain = (typeof GUA_PLAIN !== 'undefined' && GUA_PLAIN[gua[0]]) ? GUA_PLAIN[gua[0]].yao : [];
     // 老阳少阴这类词只在一行加虚线：有动爻放在最上面那根动爻，没有就放第一行，免得六行全是下划线
     const typeTipAt = sealMoving ? Math.max(...change.changingYaos) : 5;
     const yaoHtml = hexLines.map((line, i) => [line, i]).reverse().map(([line, i]) => {
@@ -266,8 +273,11 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         const yaoText = cut > 0 ? raw.slice(cut + 1) : raw;
         const isChanging = change.changingYaos.includes(i);
         // 每一行自己带着那一根爻（阴阳、动爻朱色），不再另画一个卦：左栏已经有大卦画了
-        return `<li class="yao-item${isChanging ? ' changing' : ''}" data-i="${i}">
-<span class="yao-mark ${isYang ? 'yang' : 'yin'}" aria-hidden="true"></span><span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${i === typeTipAt ? term(YAO_TYPE_CN[line], TIPS.yaotype(line, readingContext.method)) : YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span></li>`;
+        // 点一行展开这一爻的白话，再点收起（键盘回车、空格也行）；没有白话的不能点
+        const plain = yaoPlain[i] || '';
+        const open = plain ? ` tabindex="0" role="button" aria-expanded="false" aria-controls="yaoPlain${i}"` : '';
+        return `<li class="yao-item${isChanging ? ' changing' : ''}${plain ? ' has-plain' : ''}" data-i="${i}"${open}>
+<span class="yao-mark ${isYang ? 'yang' : 'yin'}" aria-hidden="true"></span><span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${i === typeTipAt ? term(YAO_TYPE_CN[line], TIPS.yaotype(line, readingContext.method)) : YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span>${plain ? `<span class="yao-plain" id="yaoPlain${i}"><span>${plain}</span></span>` : ''}</li>`;
     }).join('');
 
     const analysisHtml = gua[4].split('。').filter(s => s.trim()).map(s =>
@@ -331,7 +341,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
-      <section class="block yao-details" style="--d:6"><h3>${term('六爻', TIPS.liuyao(hexLines, mainReading.at))} <span class="rule-tag">从上往下</span></h3>
+      <section class="block yao-details" style="--d:6"><h3>${term('六爻', TIPS.liuyao(hexLines, mainReading.at))} <span class="rule-tag">从上往下${yaoPlain.length ? '，点一爻看白话' : ''}</span></h3>
         <ol class="yao-list">${yaoHtml}</ol>
       </section>
       </div>
@@ -396,6 +406,23 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     if (benBtn && zhiBtn && zhi) {
         benBtn.addEventListener('click', () => showZhi(false));
         zhiBtn.addEventListener('click', () => showZhi(true));
+    }
+
+    // 六爻：点一行展开这一爻的白话，再点收起。行里的「老阳」这类术语点了只出解释，不展开
+    const yaoList = resultArea.querySelector('.yao-list');
+    if (yaoList && yaoList.addEventListener) {
+        const toggleYao = li => {
+            const on = !li.classList.contains('open');
+            li.classList.toggle('open', on);
+            li.setAttribute('aria-expanded', String(on));
+        };
+        yaoList.addEventListener('click', e => {
+            const li = e.target.closest('.yao-item.has-plain');
+            if (li && !e.target.closest('.term')) toggleYao(li);
+        });
+        yaoList.addEventListener('keydown', e => {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('has-plain')) { e.preventDefault(); toggleYao(e.target); }
+        });
     }
 
     const aiBody = resultArea.querySelector('#aiReadingBody');

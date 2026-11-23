@@ -334,6 +334,26 @@ test('day stem-branch, clash animal and benming year follow the almanac', () => 
     assert.match(f.run(`shareCardYear(2026)`), /data:image\/svg\+xml/);
 });
 
+test('every judgement and line has a plain reading, and the main reading carries the one it reads', () => {
+    const f = fixture();
+    // 六十四卦都有卦辞白话和六条爻辞白话，乾坤另有用九、用六
+    assert.equal(f.run(`GUA.filter(g => GUA_PLAIN[g[0]] && GUA_PLAIN[g[0]].ci && GUA_PLAIN[g[0]].yao.length === 6 && GUA_PLAIN[g[0]].yao.every(Boolean)).length`), 64);
+    assert.ok(f.run(`YONG_PLAIN['乾为天'] && YONG_PLAIN['坤为地']`));
+    const plainOf = (bin, lines) => JSON.parse(f.run(`JSON.stringify(getMainReading(lookupGua('${bin}'), calculateChangeGua(${JSON.stringify(lines)}, '${bin}')).lines.map(l => l.plain))`));
+    // 坤卦只有六三动：读本卦六三的白话
+    assert.deepEqual(plainOf('000000', [8,8,6,8,8,8]), [f.run(`GUA_PLAIN['坤为地'].yao[2]`)]);
+    // 没有动爻：读本卦卦辞的白话
+    assert.deepEqual(plainOf('111111', [7,7,7,7,7,7]), [f.run(`GUA_PLAIN['乾为天'].ci`)]);
+    // 乾卦六爻全动：读用九的白话
+    assert.deepEqual(plainOf('111111', [9,9,9,9,9,9]), [f.run(`YONG_PLAIN['乾为天']`)]);
+    // 三爻动：本卦、之卦两句卦辞各带白话
+    assert.equal(plainOf('111111', [9,9,9,7,7,7]).filter(Boolean).length, 2);
+    // 起卦签只取最后一句（落到人身上的那句）
+    assert.match(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], '')`), /先沉住气，别急着出头。/);
+    assert.equal(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], ' xl')`), '');
+    assert.equal(f.run(`shareCardPlain([{ plain: 'a。b。' }, { plain: 'c。' }], '')`), '');
+});
+
 test('ritual pace defaults to the full ceremony and remembers the chosen pace', () => {
     const f = fixture();
     assert.equal(f.run('loadSettings().ritual'), 'full');
