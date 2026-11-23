@@ -1309,31 +1309,47 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .birth-type-note { margin: 10px 0 16px; font-size: var(--fs-2); line-height: 1.7; color: var(--ink-3); }
 .birth-type-note button { color: var(--ink-2); }
 
-/* 生辰签：上面敲的公历，换成程序实际起卦用的农历年、月日、时辰。三段各是一个按钮，点开下面对应的器具 */
-.birth-slip { position: relative; display: grid; grid-template-columns: 1fr 1.25fr 1fr; border: 1px solid var(--rule); }
-.slip-part { position: relative; display: grid; gap: 6px; align-content: start; padding: 10px 12px 12px; text-align: left; min-width: 0; transition: background-color var(--t-hover) ease; }
-.slip-part + .slip-part { border-left: 1px solid var(--rule); }
-.slip-part::after { content: ""; position: absolute; left: -1px; right: -1px; bottom: -1px; height: 2px; background: var(--ink); transform: scaleX(0); transition: transform .35s var(--ease-out); }
-.slip-part:hover { background: rgba(238, 242, 247, .05); }
-.slip-part[aria-expanded="true"] { background: rgba(238, 242, 247, .08); }
-.slip-part[aria-expanded="true"]::after { transform: scaleX(1); }
-.slip-k { font-size: 11.5px; letter-spacing: .3em; color: var(--ink-3); }
-.slip-v { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; min-width: 0; }
-.slip-v b { grid-column: -2; font-family: var(--display); font-weight: 400; font-size: 21px; line-height: 1.15; letter-spacing: .06em; color: var(--ink); white-space: nowrap; }
-.slip-v small { grid-column: -2; font-size: 12px; line-height: 1.4; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.slip-ico { grid-row: 1 / 3; width: 22px; height: 22px; margin-right: 8px; }
+/* 生辰签：上面敲的公历，换成程序实际起卦用的农历年、月日、时辰。
+   一行大字，四角裁切线框住，细竖线分成三段，月日配当天的月相、时辰配一个小钟面，注记写在下面。
+   三段各是一个按钮，点开下面对应的器具；点开的那段，字下画一道线 */
+.birth-slip {
+  position: relative; display: flex; padding: 16px 4px 14px;
+  --c: var(--ink-3);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 12px 1px no-repeat, linear-gradient(var(--c), var(--c)) left top / 1px 12px no-repeat,
+    linear-gradient(var(--c), var(--c)) right top / 12px 1px no-repeat, linear-gradient(var(--c), var(--c)) right top / 1px 12px no-repeat,
+    linear-gradient(var(--c), var(--c)) left bottom / 12px 1px no-repeat, linear-gradient(var(--c), var(--c)) left bottom / 1px 12px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 12px 1px no-repeat, linear-gradient(var(--c), var(--c)) right bottom / 1px 12px no-repeat;
+}
+.slip-part { flex: 1 1 0; min-width: 0; padding: 2px 8px; text-align: center; }
+.slip-part:nth-child(2) { flex-grow: 1.3; }
+.slip-part + .slip-part { box-shadow: -1px 0 0 var(--rule-soft); }
+.slip-v { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: center; column-gap: 8px; row-gap: 3px; }
+.slip-v:not(:has(.slip-ico)) { grid-template-columns: auto; }
+.slip-v b {
+  grid-row: 1; position: relative; padding-bottom: 5px; margin-right: -.12em;
+  font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.2; letter-spacing: .12em; color: var(--ink); white-space: nowrap;
+}
+.slip-v b::after { content: ""; position: absolute; left: 10%; right: calc(10% + .12em); bottom: 0; height: 1.5px; background: var(--ink); transform: scaleX(0); transition: transform .35s var(--ease-out); }
+.slip-part[aria-expanded="true"] b::after { transform: scaleX(1); }
+.slip-v small { grid-row: 2; grid-column: 1 / -1; font-size: 12px; line-height: 1.4; letter-spacing: .2em; margin-right: -.2em; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slip-ico { grid-row: 1; width: 20px; height: 20px; margin-bottom: 5px; }
 .slip-ico svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.slip-ico .m-dark { fill: rgba(238, 242, 247, .06); stroke: rgba(238, 242, 247, .35); stroke-width: .8; }
+.slip-ico .m-dark { fill: rgba(238, 242, 247, .07); stroke: var(--ink-3); stroke-width: .9; }
 .slip-ico .m-lit { fill: var(--ink); }
 .slip-ico .c-ring { fill: none; stroke: var(--ink-3); stroke-width: 1; }
-.slip-ico .c-hand { stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.slip-ico .c-tick { stroke: var(--ink-3); stroke-width: 1; }
+.slip-ico .c-hand { stroke: var(--ink); stroke-width: 1.5; stroke-linecap: round; }
 .slip-ico .c-dot { fill: var(--ink); }
+.slip-part:hover b, .slip-part:focus-visible b { text-shadow: 0 0 12px rgba(238, 242, 247, .35); }
+.slip-part:focus-visible { outline: 1px dashed var(--ink-3); outline-offset: -2px; }
 .slip-part.empty b { color: var(--ink-3); }
 @media (max-width: 440px) {
-  .birth-slip { grid-template-columns: .85fr 1.3fr 1fr; }
-  .slip-part { padding: 9px 8px 10px; }
-  .slip-v b { font-size: 18px; letter-spacing: .02em; }
-  .slip-ico { width: 18px; height: 18px; margin-right: 6px; }
+  .slip-part { padding: 2px 4px; }
+  .slip-v { column-gap: 6px; }
+  .slip-v b { font-size: 19px; letter-spacing: .06em; margin-right: -.06em; }
+  .slip-v small { letter-spacing: .1em; margin-right: -.1em; }
+  .slip-ico { width: 16px; height: 16px; }
 }
 .slip-note { margin-top: 8px; font-size: var(--fs-1); line-height: 1.6; color: var(--ink-2); }
 .slip-note:empty { display: none; }
