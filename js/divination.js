@@ -289,7 +289,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     let changeHtml = '';
     if (zhi) {
         changeHtml = `<section class="block change-section"><h3>${term('之卦', TIPS.zhigua)} <span class="rule-tag">${zhi[0]}</span></h3>
-<div class="change-details"><p>${zhi[4]}</p></div></section>`;
+<div class="change-details"><p class="zhi-lead">接下来，事情会往这一卦的方向走：</p><p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};

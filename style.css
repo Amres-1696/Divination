@@ -20,7 +20,7 @@
    可变字体，字重 400–700 都在这一个文件里。 */
 @font-face {
   font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-subset.woff2?v=98ad6398") format("woff2");
+  src: url("fonts/NotoSerifSC-subset.woff2?v=9a6b4ce8") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -899,6 +899,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .analysis-list { font-size: 18px; line-height: 1.95; }
 .change-details { margin-top: 16px; }
 .change-details p { font-size: var(--fs-5); }
+/* 之卦那段前面的一行小字：说明下面讲的是走向，不是眼下 */
+.change-details p.zhi-lead { margin-bottom: 6px; font-size: var(--fs-2); color: var(--ink-3); }
 
 /* 六爻：每一行开头是它自己那一根爻（阴爻中间断开，动爻朱色），左栏已经有大卦画，这里不再重画一个 */
 .yao-list { list-style: none; margin: 4px 0 0; padding: 0; }
