@@ -88,7 +88,7 @@ function fixture() {
     });
     const run = source => vm.runInContext(source, context);
     function load(file) { vm.runInContext(fs.readFileSync(path.join(ROOT, file), 'utf8'), context, { filename: file }); }
-    for (const file of ['data.js', ...['core', 'lunar', 'glyphs', 'ritual', 'ai', 'settings', 'share', 'history', 'daily', 'divination'].map(n => 'js/' + n + '.js')]) load(file);
+    for (const file of ['data.js', ...['core', 'lunar', 'zodiac', 'glyphs', 'ritual', 'ai', 'settings', 'share', 'history', 'daily', 'divination'].map(n => 'js/' + n + '.js')]) load(file);
     context.showToast = (...args) => notices.push(args);
     run(`var gua = lookupGua('111111'); var lines = [7,7,7,7,7,7]; var change = calculateChangeGua(lines, '111111');`);
     return { run, load, context, storage, byId, timers, frames, notices, documentEvents,
@@ -311,6 +311,27 @@ test('the bundled body-font subset covers every text on the page, and nothing lo
     const inRange = cp => range[1].split(',').some(r => { const [a, b = a] = r.trim().slice(2).split('-').map(h => parseInt(h, 16)); return cp >= a && cp <= b; });
     assert.deepEqual([...included].filter(ch => inRange(ch.codePointAt(0))), []);
     assert.ok(inRange('您'.codePointAt(0)), '常用字应该在扩展字库里');
+});
+
+test('day stem-branch, clash animal and benming year follow the almanac', () => {
+    const f = fixture();
+    // 2000-01-01 戊午日，2024-02-10（甲辰年春节）甲辰日
+    assert.equal(f.run(`ganZhiDay(new Date(2000, 0, 1))`), '戊午');
+    assert.equal(f.run(`ganZhiDay(new Date(2024, 1, 10))`), '甲辰');
+    const html = f.run(`dailyAlmanacHtml(new Date(2024, 1, 10))`);
+    assert.match(html, /甲辰日/);
+    assert.match(html, /冲狗/);          // 辰戌相冲
+    assert.match(html, /<svg/);          // 配了生肖线稿
+    assert.doesNotMatch(html, /本命年/);  // 没填生辰
+    // 1990 年（庚午，马）出生，2026 年丙午是本命年；2025 年不是；出生前的春节前后按农历年算
+    f.run(`localStorage.setItem('tianyan_settings', JSON.stringify({ method: 'bazi', bazi: { year: 1990, month: 5, day: 1, hour: 3 } }))`);
+    assert.equal(f.run(`benmingZhi(new Date(2026, 10, 23))`), 6);
+    assert.equal(f.run(`benmingZhi(new Date(2025, 10, 23))`), -1);
+    assert.equal(f.run(`benmingZhi(new Date(2026, 0, 20))`), -1);   // 2026 年春节前还是乙巳年
+    assert.match(f.run(`dailyAlmanacHtml(new Date(2026, 10, 23))`), /本命年/);
+    // 起卦签落款写起卦那年的干支和生肖
+    assert.match(f.run(`shareCardYear(2026)`), /丙午年/);
+    assert.match(f.run(`shareCardYear(2026)`), /data:image\/svg\+xml/);
 });
 
 test('ritual pace defaults to the full ceremony and remembers the chosen pace', () => {

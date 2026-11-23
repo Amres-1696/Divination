@@ -78,6 +78,12 @@ function solarToLunar(y, m, d) {
 
 const TIAN_GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const DI_ZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const YEAR_ZODIAC = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+
+// 第几个地支（0 = 子）对应的生肖线稿，js/zodiac.js 没加载时返回空串
+function zodiacSvg(zhi) {
+    return typeof ZODIAC_SVG !== 'undefined' ? ZODIAC_SVG[((zhi % 12) + 12) % 12] || '' : '';
+}
 
 // 干支纪年：1984 = 甲子
 function ganZhiYear(lunarYear) {
@@ -86,11 +92,19 @@ function ganZhiYear(lunarYear) {
     return TIAN_GAN[g] + DI_ZHI[z];
 }
 
-// 此刻在图框上的坐标：[日干序号 0–9, 时辰序号 0–11]。1900-01-01 是甲戌日（六十甲子第 10）
+// 日干支在六十甲子里的序号（0 = 甲子）。1900-01-01 是甲戌日（第 10），按公历日数往后推，不分子时前后
+function dayGanZhiIndex(d) {
+    const days = Math.round((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - Date.UTC(1900, 0, 1)) / 864e5);
+    return ((days + 10) % 60 + 60) % 60;
+}
+function ganZhiDay(d) {
+    const gz = dayGanZhiIndex(d);
+    return TIAN_GAN[gz % 10] + DI_ZHI[gz % 12];
+}
+
+// 此刻在图框上的坐标：[日干序号 0–9, 时辰序号 0–11]
 function frameNow(now) {
-    const days = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - Date.UTC(1900, 0, 1)) / 864e5);
-    const gz = ((days + 10) % 60 + 60) % 60;
-    return [gz % 10, Math.floor((now.getHours() + 1) / 2) % 12];
+    return [dayGanZhiIndex(now) % 10, Math.floor((now.getHours() + 1) / 2) % 12];
 }
 
 // 地支序数（梅花易数年数）：子1 … 亥12

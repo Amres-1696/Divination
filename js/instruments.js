@@ -20,7 +20,6 @@ const _reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-
 // 竖向滚轮：一列年份上下滚，停在中间读数框里的就是出生年份。每一行写出年份和这一年的干支、生肖，
 // 中间一行最大最亮，越往上下越小越淡。拖动带惯性、松手吸附到整年；滚轮、点某一行、上下键也都能选。
 // 方向是竖的，和下面横向拖动的月相带、圆形的时辰钟区分开。
-const YEAR_ZODIAC = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
 
 function makeYearWheel(input, onChange) {
     const MIN = 1900, MAX = 2100, ROW = 40, DEFAULT = 1990;
@@ -28,7 +27,7 @@ function makeYearWheel(input, onChange) {
     root.className = 'yw';
     const rows = [];
     for (let y = MIN; y <= MAX; y++) {
-        rows.push(`<div class="yw-row" data-y="${y}"><b>${y}</b><span>${ganZhiYear(y)} · ${YEAR_ZODIAC[lunarYearBranch(y) - 1]}</span></div>`);
+        rows.push(`<div class="yw-row" data-y="${y}"><b>${y}</b><span>${ganZhiYear(y)}<em> · ${YEAR_ZODIAC[lunarYearBranch(y) - 1]}</em></span></div>`);
     }
     root.innerHTML = `
 <div class="yw-window" tabindex="0" role="slider" aria-label="出生年份（公历）" aria-valuemin="${MIN}" aria-valuemax="${MAX}">
@@ -44,6 +43,11 @@ function makeYearWheel(input, onChange) {
     // 直接在输入框里敲年份时，年轮跟着转过去（input 事件只在用户输入时触发，不会和 commit 互相触发）
     input.addEventListener('input', () => fromInput(true));
     let pos = DEFAULT - MIN, has = false, anim = 0, drag = null, drawn = [];
+    // 中间那一行的「· 羊」换成生肖线稿：只有一个图案元素，跟着中间行挪（每行都放一份太重）
+    const zod = document.createElement('i');
+    zod.className = 'yw-zod';
+    zod.setAttribute('aria-hidden', 'true');
+    let zodAt = -1;
 
     // 这一年正月初一落在公历哪天
     function newYearDay(y) {
@@ -69,6 +73,13 @@ function makeYearWheel(input, onChange) {
         });
         drawn = near;
         const y = MIN + c, shown = has || !!drag;
+        const svg = shown ? zodiacSvg(lunarYearBranch(y) - 1) : '';
+        if (!svg) { zod.remove(); zodAt = -1; }
+        else if (zodAt !== c) {
+            zod.innerHTML = svg;
+            rowEls[c].querySelector('span').appendChild(zod);
+            zodAt = c;
+        }
         root.classList.toggle('empty', !shown);
         if (shown) {
             const ny = newYearDay(y);
