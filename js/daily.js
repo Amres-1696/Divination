@@ -72,14 +72,37 @@ function renderDailyGua(now = new Date()) {
     if (!el) return;
     const gua = getDailyGua(now);
     const motto = getDailyMotto(now);
-    // 卦画居中，左边「今日一卦」和卦名，右边箴言
+    // 卦画居中，左边「今日一卦」和卦名，右边箴言；下面一行是黄历上的日干支和冲煞，赶上本命年再添一句
     el.innerHTML = `
 <span class="daily-side left"><span class="daily-eyebrow">今日一卦</span><span class="daily-name">${gua[0]}</span></span>
 <span class="daily-symbol" aria-hidden="true">${buildYaoArtSvg(binToHexLines(guaBinary(gua)), [])}</span>
-<span class="daily-side right"><span class="daily-motto">${motto}</span></span>`;
+<span class="daily-side right"><span class="daily-motto">${motto}</span></span>
+${dailyAlmanacHtml(now)}`;
     _dailyDateKey = dailyDateKey(now);
     // 详情与可见卡片共用快照，避免跨日/设置变化时点击到另一卦。
     el.onclick = () => showGuaDetail(gua);
+}
+
+// 黄历一行：今天是什么日（干支），冲哪个生肖（地支相差六位相冲：子午、丑未、寅申、卯酉、辰戌、巳亥）
+function dailyAlmanacHtml(now) {
+    const gz = dayGanZhiIndex(now), chong = (gz % 12 + 6) % 12;
+    const ico = zhi => { const s = zodiacSvg(zhi); return s ? `<i class="da-zod" aria-hidden="true">${s}</i>` : ''; };
+    let html = `<span class="daily-almanac"><span>${ganZhiDay(now)}日</span><i class="da-sep">·</i><span>${ico(chong)}冲${YEAR_ZODIAC[chong]}</span>`;
+    const ben = benmingZhi(now);
+    if (ben >= 0) html += `<i class="da-sep">·</i><span class="da-ben">${ico(ben)}今年是你的本命年</span>`;
+    return html + '</span>';
+}
+
+// 填了生辰、今年（农历）和出生那年同一个地支，返回这个地支序号（0 = 子）；不是本命年返回 -1。
+// 出生当年不算；23 点后出生按次日算，和起卦一致
+function benmingZhi(now) {
+    const b = loadSettings().bazi;
+    if (!b || !b.year || !b.month || !b.day) return -1;
+    const birth = new Date(b.year, b.month - 1, b.day + (Number(b.hour) === 12 ? 1 : 0));
+    const bl = solarToLunar(birth.getFullYear(), birth.getMonth() + 1, birth.getDate());
+    const nl = solarToLunar(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    if (!bl || !nl || nl.year <= bl.year || (nl.year - bl.year) % 12) return -1;
+    return lunarYearBranch(nl.year) - 1;
 }
 
 // 卦象详解 

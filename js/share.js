@@ -63,6 +63,8 @@ const SHARE_CARD_CSS = `
     .sc-quote .cl { display: inline-block; white-space: nowrap; }
     .sc-from { margin-top: 8px; font-size: 14px; letter-spacing: .08em; color: rgba(15, 42, 84, .72); }
     .sc-foot { position: relative; flex: none; margin-bottom: 50px; font-size: 14px; letter-spacing: .24em; color: rgba(15, 42, 84, .72); }
+    .sc-year { margin-right: 12px; }
+    .sc-zod { display: inline-block; width: 22px; height: 22px; margin-right: 5px; vertical-align: -5px; opacity: .8; }
     .sc-foot b { margin-right: 14px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 19px; font-weight: 400; letter-spacing: .2em; color: #0F2A54; }
 `;
 
@@ -74,9 +76,19 @@ function shareCardWhen(d) {
     const shi = DI_ZHI[Math.floor((when.getHours() + 1) / 2) % 12] + '时';
     const pad = n => String(n).padStart(2, '0');
     return {
+        year: lu ? lu.year : 0,
         lunar: lu ? `${ganZhiYear(lu.year)}年${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)} ${shi}` : '',
         solar: `${when.getFullYear()}.${pad(when.getMonth() + 1)}.${pad(when.getDate())} ${pad(when.getHours())}:${pad(when.getMinutes())}`
     };
+}
+
+// 落款里的年份：起卦那年的生肖线稿 + 干支年。线稿做成 <img>（html2canvas 画内联 SVG 不稳），颜色写死成墨色；
+// 一定要写宽高，不然图片的原始尺寸按 300×150 算，html2canvas 画出来是一团
+function shareCardYear(year) {
+    if (!year) return '';
+    const svg = zodiacSvg(lunarYearBranch(year) - 1).replace(/currentColor/g, '#0F2A54').replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" ');
+    const img = svg ? `<img class="sc-zod" alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}">` : '';
+    return `<span class="sc-year">${img}${ganZhiYear(year)}年</span>`;
 }
 
 // 四角裁切线：和出图前的空版对得上（位置 18px、长 22px）
@@ -128,7 +140,7 @@ function createShareCard(d) {
   <i class="sc-sep"></i>
   <div class="sc-main"><span class="sc-lbl">主断</span>${mainHtml}</div>
   <i class="sc-gap"></i>
-  <div class="sc-foot"><b>天衍</b>${escHtml(String(when.solar).split(' ')[0])}</div>
+  <div class="sc-foot"><b>天衍</b>${shareCardYear(when.year)}${escHtml(String(when.solar).split(' ')[0])}</div>
 </div>`;
 }
 
