@@ -84,12 +84,12 @@ function makeYearWheel(input, onChange) {
         if (shown) {
             const ny = newYearDay(y);
             // 只说规则，不替人下结论：是不是春节前出生要看月日，生辰签上会写明
-            note.textContent = ny ? `${y} 年的春节是 ${ny}，在这之前出生的人，农历要算上一年（${ganZhiYear(y - 1)}年）` : '';
+            note.textContent = ny ? `${y}年的春节是${ny}，在这之前出生的人，农历要算上一年（${ganZhiYear(y - 1)}年）` : '';
         } else {
             note.textContent = '上下滑动年轮，选出生年份';
         }
         win.setAttribute('aria-valuenow', y);
-        win.setAttribute('aria-valuetext', has ? `${y} 年，${ganZhiYear(y)}年，属${YEAR_ZODIAC[lunarYearBranch(y) - 1]}` : '未选择');
+        win.setAttribute('aria-valuetext', has ? `${y}年，${ganZhiYear(y)}年，属${YEAR_ZODIAC[lunarYearBranch(y) - 1]}` : '未选择');
     }
     function commit(i) {
         has = true;
@@ -195,15 +195,14 @@ function moonLitPath(lunarDay, r) {
     return `M0 ${-r}A${r} ${r} 0 0 ${outer} 0 ${r}A${rx} ${r} 0 0 ${inner} 0 ${-r}Z`;
 }
 function moonPhaseName(lunarDay) {
-    if (lunarDay <= 1) return '朔';
+    if (lunarDay <= 1) return '新月';
     if (lunarDay <= 6) return '蛾眉月';
     if (lunarDay <= 8) return '上弦月';
     if (lunarDay <= 14) return '盈凸月';
-    if (lunarDay <= 16) return '望';
+    if (lunarDay <= 16) return '满月';
     if (lunarDay <= 21) return '亏凸月';
     if (lunarDay <= 23) return '下弦月';
-    if (lunarDay <= 29) return '残月';
-    return '晦';
+    return '残月';
 }
 const BAND_MONTH_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
 const BAND_WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
@@ -271,7 +270,7 @@ function makeMoonBand(yearInput, monthSel, dayInput) {
         const shown = has || !!drag;
         if (shown) {
             read.innerHTML = `${x.m}月${x.d}日<small>周${BAND_WEEK_CN[x.w]}</small>`;
-            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '早于 1900 年春节，查不到农历，按公历日期起卦';
+            lunarLine.textContent = x.lu ? `${formatLunar(x.lu)} · ${moonPhaseName(x.lu.day)}` : '早于1900年春节，查不到农历，按公历日期起卦';
         } else {
             read.textContent = '—';
             lunarLine.textContent = '左右拖动月相带，让出生那天停在指针下';
@@ -440,12 +439,12 @@ function makeHourDial(sel) {
     // 指针落在子时格里 0 点刻度左边（23–24 点）就是晚子时
     function nearest(deg) { const i = ((Math.round(deg / 30) % 12) + 12) % 12; return i === 0 && deg > 180 ? 12 : i; }
     function show(i) {
-        const z = i % 12, note = i === 12 ? '，算作次日' : '';
+        const z = i % 12, note = i === 12 ? '，算作第二天' : '';
         selG.style.transform = `rotate(${z * 30}deg)`;
         root.querySelectorAll('.hd-name').forEach(t => t.classList.toggle('on', Number(t.dataset.i) === z));
-        read.innerHTML = `<b>${NAMES[z]}时</b><span>${RANGE[i]} 点${note}</span>`;
+        read.innerHTML = `<b>${NAMES[z]}时</b><span>${RANGE[i]}点${note}</span>`;
         root.setAttribute('aria-valuenow', i);
-        root.setAttribute('aria-valuetext', `${NAMES[z]}时，${RANGE[i]} 点${note}`);
+        root.setAttribute('aria-valuetext', `${NAMES[z]}时，${RANGE[i]}点${note}`);
     }
     function turnTo(i, smooth) {
         // 子时的指针停在所选那半格的正中，看得出是 0 点前还是 0 点后
@@ -538,14 +537,14 @@ function birthSlipData(y, m, d, h) {
         if (lu && lu.year < used.getFullYear()) {
             for (let t = new Date(used.getFullYear(), 0, 15); t.getMonth() < 3; t.setDate(t.getDate() + 1)) {
                 const x = solarToLunar(t.getFullYear(), t.getMonth() + 1, t.getDate());
-                if (x && x.month === 1 && x.day === 1 && !x.isLeap) { ny = `${t.getMonth() + 1} 月 ${t.getDate()} 日`; break; }
+                if (x && x.month === 1 && x.day === 1 && !x.isLeap) { ny = `${t.getMonth() + 1}月${t.getDate()}日`; break; }
             }
         }
     }
     const notes = [];
-    if (ny) notes.push(`那年春节是 ${ny}，你在春节前出生，农历要算上一年，也就是${ganZhiYear(lu.year)}年`);
-    if (okDate && okHour && h === 12) notes.push(`23 点后出生算作第二天，农历日期按${lunarMonthName(lu ? lu.month : m, lu && lu.isLeap)}${lu ? lunarDayName(lu.day) : ''}算`);
-    if (okDate && !lu) notes.push('早于 1900 年春节，查不到农历，按公历日期起卦');
+    if (ny) notes.push(`那年春节是${ny}，你在春节前出生，农历要算上一年，也就是${ganZhiYear(lu.year)}年`);
+    if (okDate && okHour && h === 12) notes.push(`23点后出生算作第二天，农历日期按${lunarMonthName(lu ? lu.month : m, lu && lu.isLeap)}${lu ? lunarDayName(lu.day) : ''}算`);
+    if (okDate && !lu) notes.push('早于1900年春节，查不到农历，按公历日期起卦');
     return { okDate, okHour, lu, h, note: notes.join('；') };
 }
 function initBirthSlip(year, month, day, hour) {
@@ -579,7 +578,7 @@ function initBirthSlip(year, month, day, hour) {
         else set(parts.cal, '', '');
         if (x.okHour) {
             const z = x.h % 12, deg = x.h === 12 ? -7.5 : x.h === 0 ? 7.5 : x.h * 30, a = deg * Math.PI / 180;
-            set(parts.dial, `${DI_ZHI[z]}时`, `${HOUR_RANGE[x.h]} 点`,
+            set(parts.dial, `${DI_ZHI[z]}时`, `${HOUR_RANGE[x.h]}点`,
                 `<svg viewBox="-11 -11 22 22"><circle class="c-ring" r="9.5"/>${[0, 90, 180, 270].map(t => `<line class="c-tick" x1="0" y1="-9.5" x2="0" y2="-7.5" transform="rotate(${t})"/>`).join('')}<line class="c-hand" x1="0" y1="0" x2="${(6.5 * Math.sin(a)).toFixed(2)}" y2="${(-6.5 * Math.cos(a)).toFixed(2)}"/><circle class="c-dot" r="1.5"/></svg>`);
         } else set(parts.dial, '', '');
         if (note) note.textContent = x.note;

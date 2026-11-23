@@ -87,7 +87,7 @@ ${dailyAlmanacHtml(now)}`;
 function dailyAlmanacHtml(now) {
     const gz = dayGanZhiIndex(now), chong = (gz % 12 + 6) % 12;
     const ico = zhi => { const s = zodiacSvg(zhi); return s ? `<i class="da-zod" aria-hidden="true">${s}</i>` : ''; };
-    let html = `<span class="daily-almanac"><span>${ganZhiDay(now)}日</span><i class="da-sep">·</i><span>${ico(chong)}冲${YEAR_ZODIAC[chong]}</span>`;
+    let html = `<span class="daily-almanac"><span>${ganZhiDay(now)}日</span><i class="da-sep">·</i><span>${ico(chong)}${term('冲' + YEAR_ZODIAC[chong], `黄历的说法：今天的地支和属${YEAR_ZODIAC[chong]}的人相冲，属${YEAR_ZODIAC[chong]}的人今天做事多留个心。`)}</span>`;
     const ben = benmingZhi(now);
     if (ben >= 0) html += `<i class="da-sep">·</i><span class="da-ben">${ico(ben)}今年是你的本命年</span>`;
     return html + '</span>';
@@ -138,7 +138,7 @@ function showGuaDetail(gua, when) {
 <div class="detail-box gua-sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <button class="detail-close btn-close" id="detailCloseBtn" aria-label="关闭"></button>
     <header class="gs-head">
-        <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1} 月 ${d.getDate()} 日</p>
+        <p class="gs-eyebrow">今日一卦　${d.getMonth() + 1}月${d.getDate()}日</p>
         <div class="gs-name-row"><h2 id="detailTitle">${gua[0]}</h2><span class="seal-wrap aside"><span class="verdict-seal ${verdict}" aria-label="吉凶：${verdictText}"><span>${verdictText}</span></span><span class="seal-note">${term('大致吉凶', TIPS.sealDaily)}</span></span></div>
         <p class="gs-sub">${gua[1]}</p>
         ${DA_XIANG[gua[0]] ? `<p class="gs-xiang"><span>${term('象曰', TIPS.xiang)}</span>${DA_XIANG[gua[0]]}</p>` : ''}

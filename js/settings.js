@@ -63,7 +63,7 @@ function saveBazi() {
     }
     const maxDay = new Date(parseInt(year), parseInt(month), 0).getDate();
     if (day < 1 || day > maxDay) {
-        status.textContent = `${month} 月只有 ${maxDay} 天`;
+        status.textContent = `${month}月只有${maxDay}天`;
         status.className = 'bazi-status error';
         return;
     }
@@ -84,7 +84,7 @@ function saveBazi() {
 // 生辰的一句话说法：农历年月日 + 时辰；早于农历历表时用公历
 function baziSummary(b) {
     const lu = solarToLunar(b.year, b.month, b.day);
-    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour % 12]}时` + (b.hour === 12 ? '（23 点后，算作次日）' : '');
+    return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour % 12]}时` + (b.hour === 12 ? '（23点后，算作第二天）' : '');
 }
 
 // 首页起卦方式下面的一行：铜钱和生辰各说各的起法；生辰模式直接亮出已存的生辰，没存就引导去填

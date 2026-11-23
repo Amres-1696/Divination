@@ -163,19 +163,21 @@ const TIPS = {
     seal: '这是给每一卦大致定下的吉、平、凶，算是这一卦的底色。它不看动爻，也不一定和卦辞的意思一致，回答你这一问，还是以主断为准。',
     sealDaily: '这是给每一卦大致定下的吉、平、凶，不一定和卦辞的意思一致，只作参考。',
     sealArchive: n => `这是给每一卦大致定下的吉、平、凶，不看动爻。这里统计的是你起过的 ${n} 卦各自的本卦，也就是变化之前的那一卦。`,
-    zhuduan: '主断是针对你这一问要读的那一句，从卦辞或爻辞里挑出来。卦辞说的是整卦，爻辞说的是其中某一爻。具体挑哪一句，要看有几根动爻，用的是朱熹定下的读法。',
+    zhuduan: '主断是针对你这一问要读的那一句（三根动爻时是两句），从卦辞或爻辞里挑出来。卦辞说的是整卦，爻辞说的是其中某一爻。具体挑哪一句，要看有几根动爻，用的是朱熹定下的读法。',
     dongyao: moving => moving
         ? '动爻是会变的爻，阳爻会变成阴爻，阴爻会变成阳爻。卦画旁边标着「动 →」的就是动爻，箭头后面写的是它变成的样子。'
         : '动爻是会变的爻，阳爻会变成阴爻，阴爻会变成阳爻。只有起到老阳、老阴才会有动爻，这一卦六根都是少阳、少阴，所以没有。',
     zhigua: '把动爻都翻过来，就得到之卦，用来看事情接下来往哪里走。原来那一卦叫本卦，看的是眼下。点卦画下面的「之卦」，就能看到它的卦画。',
     xiang: '这是《象传》解说这一卦的话，先讲上下卦合成的景象，再讲人该怎么做。首页「今日一卦」旁边的那句话就出自这里。',
     fangtu: '方图是把先天六十四卦排成八行八列。同一行的卦下卦相同，同一列的卦上卦相同，坤在左上角，乾在右下角。',
-    liuyao(hexLines, at) {
+    liuyao(hexLines, at, fromZhi) {
         const POS = ['最下面一', '从下数第二', '从下数第三', '从下数第四', '从下数第五', '最上面一'];
-        const eg = at != null
-            ? `主断读的是${yaoLabel(hexLines[at], at)}，也就是${POS[at]}根${hexLines[at] % 2 ? '阳' : '阴'}爻。`
-            : `比如最上面那一根叫${yaoLabel(hexLines[5], 5)}。`;
-        return '一卦有六根线，每一根叫一爻。从下往上依次叫初、二、三、四、五、上，阳爻用九来称，阴爻用六来称。' + eg;
+        const eg = at == null
+            ? `比如最上面那一根叫${yaoLabel(hexLines[5], 5)}。`
+            : fromZhi
+                ? `这一卦主断读的是之卦的${yaoLabel(hexLines[at], at)}，也就是${POS[at]}根；下面列的是本卦的爻辞，同一个位置上的话不一样。`
+                : `主断读的是${yaoLabel(hexLines[at], at)}，也就是${POS[at]}根${hexLines[at] % 2 ? '阳' : '阴'}爻。`;
+        return '一卦有六根线，每一根叫一爻。从下往上依次叫初、二、三、四、五、上，阳爻叫「九」，阴爻叫「六」。' + eg;
     },
     yaotype(line, method) {
         const base = {
@@ -314,7 +316,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     resultArea.innerHTML = `
 <div class="result entering">
   <div class="result-bar" style="--d:0"><button class="back-link" id="backHomeBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>${shared ? '我也问一卦' : '回到起卦'}</button>${shared ? '<span class="shared-note">朋友分享的一卦</span>' : ''}</div>
-  <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '心中所念'}</h1></div>
+  <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '没写问题'}</h1></div>
   <div class="reading-layout">
     <aside class="result-header">
       <figure class="glyph-figure">
@@ -341,7 +343,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
-      <section class="block yao-details" style="--d:6"><h3>${term('六爻', TIPS.liuyao(hexLines, mainReading.at))} <span class="rule-tag">从上往下${yaoPlain.length ? '，点一爻看白话' : ''}</span></h3>
+      <section class="block yao-details" style="--d:6"><h3>${term('六爻', TIPS.liuyao(hexLines, mainReading.at, /^[四五]爻动$/.test(mainReading.rule)))} <span class="rule-tag">从上往下${yaoPlain.length ? '，点一爻看白话' : ''}</span></h3>
         <ol class="yao-list">${yaoHtml}</ol>
       </section>
       </div>

@@ -239,7 +239,7 @@ test('history click during the casting phase is blocked, casting can still finis
     })()`);
     assert.equal(f.run('typeof rendered'), 'undefined');
     assert.equal(f.run('_divineRunning'), true);
-    assert.match(f.notices.at(-1)[0], /正在起卦/);
+    assert.match(f.notices.at(-1)[0], /卦还没起完/);
     await f.run(`(async()=>{for(let i=0;i<6;i++) await activeRitual._castHandler(); await pendingDivine;})()`);
     assert.equal(f.run('_divineRunning'), false);
     assert.equal(f.byId('divineBtn').disabled, false);
@@ -706,7 +706,7 @@ test('a birth after 23:00 (late 子 hour) counts as 子 hour of the next day', (
     same('{year:2024,month:2,day:29,hour:12}', '{year:2024,month:3,day:1,hour:0}');
     same('{year:1999,month:12,day:31,hour:12}', '{year:2000,month:1,day:1,hour:0}');
     assert.notDeepEqual(JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:12}))')), JSON.parse(f.run('JSON.stringify(birthNumbers({year:1990,month:3,day:3,hour:0}))')));
-    assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23 点后，算作次日）/);
+    assert.match(f.run('baziSummary({year:1990,month:3,day:3,hour:12})'), /子时（23点后，算作第二天）/);
 });
 
 test('term tips speak about the hexagram on screen, and the how line names the line it reads', () => {
@@ -755,7 +755,7 @@ test('the paper share card keeps only the question, the hexagram and the main re
     assert.doesNotMatch(card, /sc-reading|sc-seal|sc-ring/);
     const blank = f.run(`(() => { const lines = [8,8,8,8,8,8]; const gua = lookupGua('000000'), change = calculateChangeGua(lines, '000000');
         return createShareCard({ gua, change, main: getMainReading(gua, change), hexagramLines: lines, question: '', date: '', createdAt: '' }); })()`);
-    assert.match(blank, /sc-ask-q blank">心中所念/);
+    assert.match(blank, /sc-ask-q blank">没写问题/);
     assert.match(blank, /没有动爻/);
 });
 

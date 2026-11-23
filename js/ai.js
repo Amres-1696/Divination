@@ -391,7 +391,7 @@ async function testAiConnection() {
         if (resp.ok) { setStatus('连接成功', 'success'); }
         else { let t = ''; try { t = (await resp.text()).slice(0, 160); } catch (e) {} setStatus(`连接失败（${resp.status}）：${t}`, 'error'); }
     } catch (e) {
-        setStatus('连接失败：' + (e && e.message ? e.message : String(e)) + '。也可能是被浏览器的跨域限制拦下了', 'error');
+        setStatus('连接失败：' + (e && e.message ? e.message : String(e)) + '。也可能是被浏览器的跨域限制（CORS）拦下了。', 'error');
     }
 }
 
