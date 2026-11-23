@@ -25,6 +25,9 @@ function trackSource() {
     }
 }
 
+// 一打开就把来源记进会话：分享链接里的 from=share 会在离开那一卦时随参数一起从地址栏清掉
+if (_trackOn) trackSource();
+
 function _trackSend(data) {
     try {
         data.from = trackSource();

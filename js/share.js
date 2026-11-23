@@ -503,8 +503,9 @@ function closeShare() {
 }
 
 // ---------- 分享链接：打开就是这一卦 ----------
-// ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问
-// 所问可能很私人，默认不放进链接，要用户勾选才带上
+// ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问&from=share
+// 所问可能很私人，默认不放进链接，要用户勾选才带上。
+// from=share 给统计用：从分享链接进来的访问和之后起的卦，后台记在「朋友分享」名下（track.js 读它）
 function buildShareLink(lines, opts) {
     opts = opts || {};
     const p = new URLSearchParams();
@@ -513,6 +514,7 @@ function buildShareLink(lines, opts) {
     if (d) p.set('d', d[1] + d[2].padStart(2, '0') + d[3].padStart(2, '0'));
     if (opts.method === 'coin' || opts.method === 'bazi') p.set('m', opts.method[0]);
     if (opts.question) p.set('q', String(opts.question).trim().slice(0, 80));
+    p.set('from', 'share');
     return (opts.base || (location.origin + location.pathname)) + '?' + p.toString();
 }
 function parseShareLink(search) {

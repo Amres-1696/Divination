@@ -293,6 +293,26 @@ test('the bundled display-font subset covers every hexagram name, judgement, lin
     assert.ok(fs.statSync(path.join(root, 'fonts/ZCOOLXiaoWei-subset.woff2')).size > 50000);
 });
 
+test('the bundled body-font subset covers every text on the page, and nothing loads from Google Fonts', () => {
+    const fs = require('node:fs'), path = require('node:path');
+    const root = path.join(__dirname, '..');
+    const [included, absent = ''] = fs.readFileSync(path.join(root, 'fonts/NotoSerifSC-subset.chars.txt'), 'utf8').split('\n');
+    const known = new Set([...included, ...absent]);
+    const f = fixture();
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const text = f.run(`GUA.map(g=>g.join('')).join('') + Object.values(DA_XIANG).join('')`) + html.replace(/<!--[\s\S]*?-->/g, '');
+    const fresh = [...new Set([...text].filter(ch => ch.codePointAt(0) > 0x7f && !/\s/.test(ch) && !known.has(ch)))];
+    assert.deepEqual(fresh, [], '改了文案后请重新运行 tools/subset-text-font.py');
+    assert.doesNotMatch(html, /fonts\.(googleapis|gstatic)\.com/);
+    const ext = fs.readFileSync(path.join(root, 'fonts/NotoSerifSC-ext.css'), 'utf8');
+    const range = /unicode-range:\s*([^;]+);/.exec(ext);
+    assert.ok(range, '扩展字库要按 unicode-range 声明，不然每次都会下载');
+    // 扩展那份不能和常用那份重叠，否则浏览器会为本站自己的字也去下载扩展字库
+    const inRange = cp => range[1].split(',').some(r => { const [a, b = a] = r.trim().slice(2).split('-').map(h => parseInt(h, 16)); return cp >= a && cp <= b; });
+    assert.deepEqual([...included].filter(ch => inRange(ch.codePointAt(0))), []);
+    assert.ok(inRange('您'.codePointAt(0)), '常用字应该在扩展字库里');
+});
+
 test('ritual pace defaults to the full ceremony and remembers the chosen pace', () => {
     const f = fixture();
     assert.equal(f.run('loadSettings().ritual'), 'full');
@@ -332,7 +352,7 @@ test('the result page records the six line values the share card draws from', ()
 test('every ?v= cache key matches the file it points to (run tools/stamp-versions.py after editing)', () => {
     const crypto = require('node:crypto');
     const stale = [];
-    for (const rel of ['style.css', 'index.html']) {
+    for (const rel of ['style.css', 'index.html', 'fonts/NotoSerifSC-ext.css']) {
         const text = fs.readFileSync(path.join(ROOT, rel), 'utf8');
         for (const m of text.matchAll(/(?:src|href)="([\w./-]+)\?v=([\w-]*)"|url\("([\w./-]+)\?v=([\w-]*)"/g)) {
             const file = m[1] || m[3], v = m[2] || m[4];
@@ -670,7 +690,7 @@ test('a share link reopens the same reading, and the question only travels when 
     f.context.URLSearchParams = URLSearchParams;
     const base = `'https://example.test/Divination/'`;
     const plain = f.run(`buildShareLink([9,7,7,8,6,7], { date: '2026/11/5 22:03:09', method: 'coin', base: ${base} })`);
-    assert.equal(plain, 'https://example.test/Divination/?y=977867&d=20261105&m=c');
+    assert.equal(plain, 'https://example.test/Divination/?y=977867&d=20261105&m=c&from=share');
     const withQ = f.run(`buildShareLink([9,7,7,8,6,7], { question: '  年底换不换工作 ', method: 'bazi', base: ${base} })`);
     assert.match(withQ, /[?&]m=b&q=%E5%B9%B4/);
     const back = JSON.parse(f.run(`JSON.stringify(parseShareLink(${JSON.stringify(withQ.slice(withQ.indexOf('?')))}))`));

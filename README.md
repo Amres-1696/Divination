@@ -17,7 +17,7 @@
 - **每日一卦**：首页每天显示一卦和一句箴言，点开能看详情，也可以在设置里关闭。填了生辰的话，这一卦由生辰和当天的农历日期决定；没填则每个浏览器各自随机，当天之内不变。
 - **翻阅牌册**：在当前浏览器里保留最近 50 条记录。左边是一张先天方图，抽到过的卦会亮起来，次数越多越亮，点一格只看这一卦；右边按日期排成时间线，可以回看、删除和清空。
 - **生成分享图**：把当前结果做成图片，下载或复制；手机上也可以长按预览图保存。
-- **分享链接**：结果页点「分享链接」，复制或直接发送。打开链接的人看到同一卦（注明是朋友分享的），不会记进他的牌册；所问默认不放进链接，勾选后才带上。发到社交平台时显示封面卡片（封面底稿在 `tools/og.html`）。
+- **分享链接**：结果页点「分享链接」，复制或直接发送。打开链接的人看到同一卦（注明是朋友分享的），不会记进他的牌册；所问默认不放进链接，勾选后才带上。链接带着 `from=share`，后台把从分享进来的访问和起卦记在「朋友分享」名下。发到社交平台时显示封面卡片（封面底稿在 `tools/og.html`）。
 - **AI 解卦**：接入自己的接口后，可以手动请求解读，或设为起卦后自动解读。最多保存 5 套接口配置，提示词可以改。
 
 ## 卦是怎么算的
@@ -47,7 +47,7 @@
 
 这些数据在 `admin.html` 看：输密码后显示每天的访问和起卦、来源、热门卦、时段分布等。数据由云函数 `adminStats` 查出来，密码不对什么都不返回，所以页面地址公开也没关系。本地用 `admin.html?mock` 打开可以拿假数据看排版（`?mock=empty` 是刚上线没什么数的样子；假数据模式下密码随便输，输「错」会按密码不对处理）。后台页的展示字是单独一份子集 `fonts/ZCOOLXiaoWei-admin.woff2`，改了 `admin.html` 的文案后用 `tools/subset-admin-font.py` 重新生成。
 
-标题用的站酷小薇裁成了只含本站用到的字，放在仓库的 `fonts/` 里，不依赖外网。正文用的思源宋体从 Google Fonts 异步加载，连不上时用系统自带的宋体，不影响使用，只是样子会有些不同。除此之外，页面只会请求上面说的统计接口，分享图用的 `html2canvas` 也放在仓库里。
+标题用的站酷小薇和正文用的思源宋体都裁成了子集，放在仓库的 `fonts/` 里，不依赖外网（以前思源宋体从 Google Fonts 取，国内基本连不上）。思源宋体分两份：本站源码里出现过的字一份，每次都加载；其余 GB2312 一级常用字另一份，在 `fonts/NotoSerifSC-ext.css` 里按 `unicode-range` 声明，只有页面上出现这些字（自己写的问题、AI 解读）时浏览器才去下载。除此之外，页面只会请求上面说的统计接口，分享图用的 `html2canvas` 也放在仓库里。
 
 ## 本地打开和部署
 
@@ -74,11 +74,12 @@ tcb fn deploy adminStats --path /api/admin-stats --install-dependency false --fo
 
 `index.html` 里每个脚本和样式的地址后面带着 `?v=` 版本号，用来让浏览器丢掉旧缓存。版本号是文件内容的哈希，改完代码运行 `python tools/stamp-versions.py` 自动更新，不用手改；忘了运行的话回归测试会提醒。
 
-改了卦名、卦辞、爻辞或界面文字，出现了以前没有的字，要重新裁一次标题字体，否则新字会退回宋体（回归测试会提醒）。先下载[站酷小薇原字体](https://github.com/google/fonts/tree/main/ofl/zcoolxiaowei)，然后：
+改了卦名、卦辞、爻辞、卦象白话或界面文字，出现了以前没有的字，要重新裁一次字体，否则新字会退回宋体（回归测试会提醒）。先下载[站酷小薇](https://github.com/google/fonts/tree/main/ofl/zcoolxiaowei)和[思源宋体](https://github.com/google/fonts/tree/main/ofl/notoserifsc)的原字体，然后：
 
 ```sh
 pip install fonttools brotli
 python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
+python tools/subset-text-font.py "/path/to/NotoSerifSC[wght].ttf"
 ```
 
 裁完运行一次 `python tools/stamp-versions.py` 更新版本号。
@@ -104,8 +105,8 @@ python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 | `js/main.js` | 初始化和事件绑定 |
 | `admin.html` | 后台统计页（要密码） |
 | `cloudfunctions/` | CloudBase 云函数（`logReading` 收记录、`adminStats` 给后台出数，汇总逻辑在 `adminStats/stats.js`） |
-| `fonts/` | 站酷小薇子集（SIL OFL 授权，附 `OFL.txt`）和它包含的字表 |
-| `tools/subset-font.py` | 重新生成字体子集的脚本 |
+| `fonts/` | 站酷小薇和思源宋体的子集（都是 SIL OFL 授权，附 `OFL.txt`、`OFL-NotoSerifSC.txt`）和它们包含的字表 |
+| `tools/subset-font.py` / `tools/subset-text-font.py` | 重新生成标题字体、正文字体子集的脚本 |
 | `tools/stamp-versions.py` | 按文件内容更新 `?v=` 版本号 |
 | `tests/regressions.test.cjs` | 回归测试 |
 
@@ -119,7 +120,7 @@ python tools/subset-font.py /path/to/ZCOOLXiaoWei-Regular.ttf
 node --test tests/regressions.test.cjs
 ```
 
-目前有 45 项回归测试，覆盖全部 4,096 种六爻组合的变卦与主断一致性、圆图上逐爻去半（64→1，每次剩下的都是连续一段弧）、卦序编号、每日一卦的分布、标题字体子集是否缺字，牌册重绘缓存，以及设置、牌册、AI 请求的各种失败情况。测试用的是模拟的存储、时钟、页面元素和接口，不读你的浏览器数据，也不会调用真实的 AI 服务。
+目前有 53 项回归测试，覆盖全部 4,096 种六爻组合的变卦与主断一致性、圆图上逐爻去半（64→1，每次剩下的都是连续一段弧）、卦序编号、每日一卦的分布、标题和正文字体子集是否缺字，牌册重绘缓存，以及设置、牌册、AI 请求的各种失败情况。测试用的是模拟的存储、时钟、页面元素和接口，不读你的浏览器数据，也不会调用真实的 AI 服务。
 
 卦辞、爻辞用的是通行本原文并加了标点，测试会检查每卦六爻齐全、爻题的九六和卦画一致；文字本身是对照通行本整理的，测试查不出个别字句的出入。每一个农历日期也没有逐日验证过。
 
