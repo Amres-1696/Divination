@@ -564,7 +564,7 @@ function initTermTips() {
         if (!body) return;
         cur = el;
         tip.innerHTML = '<b></b>';
-        tip.firstChild.textContent = el.textContent.trim();
+        tip.firstChild.textContent = el.dataset.tipTitle || el.textContent.trim();
         tip.appendChild(document.createTextNode(body));
         el.setAttribute('aria-describedby', 'termTip');
         // 摆在词的上方居中，贴边就往里收；上面放不下就放到下面
