@@ -555,9 +555,11 @@ function initBirthSlip(year, month, day, hour) {
     function render() {
         const x = birthSlipData(parseInt(year.value, 10), parseInt(month.value, 10), parseInt(day.value, 10), parseInt(hour.value, 10));
         const y = parseInt(year.value, 10);
-        if (x.lu) set(parts.year, `${ganZhiYear(x.lu.year)}年`, `属${YEAR_ZODIAC[lunarYearBranch(x.lu.year) - 1]}`);
-        else if (y >= 1900 && y <= 2100) set(parts.year, `${ganZhiYear(y)}年`, `属${YEAR_ZODIAC[lunarYearBranch(y) - 1]}`);
-        else set(parts.year, '', '');
+        const ly = x.lu ? x.lu.year : (y >= 1900 && y <= 2100 ? y : 0);
+        if (ly) {
+            const br = lunarYearBranch(ly) - 1;
+            set(parts.year, `${ganZhiYear(ly)}年`, `属${YEAR_ZODIAC[br]}`, typeof ZODIAC_SVG !== 'undefined' ? ZODIAC_SVG[br] : '');
+        } else set(parts.year, '', '');
         if (x.lu) {
             const r = 9, lit = moonLitPath(x.lu.day, r);
             set(parts.cal, `${lunarMonthName(x.lu.month, x.lu.isLeap)}${lunarDayName(x.lu.day)}`, moonPhaseName(x.lu.day),
