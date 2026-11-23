@@ -20,7 +20,7 @@
    可变字体，字重 400–700 都在这一个文件里。 */
 @font-face {
   font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-subset.woff2?v=ce84e591") format("woff2");
+  src: url("fonts/NotoSerifSC-subset.woff2?v=4af5d889") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -869,6 +869,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .mr-quote.xl { font-family: var(--text); font-size: 20px; line-height: 1.75; letter-spacing: .02em; }
 .mr-from { display: block; margin-top: 6px; font-style: normal; font-size: var(--fs-4); color: var(--ink-2); }
 .mr-how { margin-top: 12px; font-size: var(--fs-2); color: var(--ink-3); }
+/* 主断的白话：紧跟在出处下面，正文字号，比辞淡一档 */
+.mr-plain { margin-top: 10px; max-width: 34em; font-size: 17px; line-height: 1.85; color: var(--ink); opacity: .86; }
 
 .block { margin-top: 46px; }
 .block > h3 {
@@ -897,7 +899,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
   position: relative;
   display: grid;
   grid-template-columns: 32px 3.2em minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 0 14px;
   align-items: baseline;
   padding: 10px 0;
   font-size: var(--fs-5);
@@ -905,6 +907,13 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .yao-name { font-family: var(--text); font-weight: 600; font-size: var(--fs-5); }
 .yao-type { font-size: var(--fs-2); color: var(--ink-3); white-space: nowrap; }
 .yao-item.changing .yao-type { color: var(--zhu); }
+/* 点开一爻：白话从爻辞下面展开（高度用 grid 行从 0fr 过渡到 1fr） */
+.yao-item.has-plain { cursor: pointer; }
+.yao-item.has-plain:hover .yao-text, .yao-item.open .yao-text { color: var(--ink); }
+.yao-item.has-plain:focus-visible { outline: 1px dashed var(--ink-3); outline-offset: 2px; }
+.yao-plain { grid-column: 3 / -1; display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .35s var(--ease), opacity .25s ease; }
+.yao-plain > span { min-height: 0; overflow: hidden; padding-top: 6px; font-size: 16px; line-height: 1.8; color: var(--ink-2); }
+.yao-item.open .yao-plain { grid-template-rows: 1fr; opacity: 1; }
 
 .ai-reading-text { white-space: pre-wrap; font-size: var(--fs-5); line-height: 1.9; }
 .ai-error { color: var(--zhu); font-size: var(--fs-5); margin-bottom: 12px; }

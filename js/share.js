@@ -62,6 +62,7 @@ const SHARE_CARD_CSS = `
     .sc-quote.xl .pu { margin-right: 0; }
     .sc-quote .cl { display: inline-block; white-space: nowrap; }
     .sc-from { margin-top: 8px; font-size: 14px; letter-spacing: .08em; color: rgba(15, 42, 84, .72); }
+    .sc-plain { margin: 14px auto 0; max-width: 380px; font-size: 16px; line-height: 1.7; letter-spacing: .04em; color: rgba(15, 42, 84, .86); word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
     .sc-foot { position: relative; flex: none; margin-bottom: 50px; font-size: 14px; letter-spacing: .24em; color: rgba(15, 42, 84, .72); }
     .sc-year { margin-right: 12px; }
     .sc-zod { display: inline-block; width: 22px; height: 22px; margin-right: 5px; vertical-align: -5px; opacity: .8; }
@@ -80,6 +81,16 @@ function shareCardWhen(d) {
         lunar: lu ? `${ganZhiYear(lu.year)}年${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)} ${shi}` : '',
         solar: `${when.getFullYear()}.${pad(when.getMonth() + 1)}.${pad(when.getDate())} ${pad(when.getHours())}:${pad(when.getMinutes())}`
     };
+}
+
+// 主断下面一行短白话：取白话里落到人身上的那一句（最后一句），太长就整句不放。
+// 主断已经很长（xl 小字号）时不加，免得挤掉落款；三爻动放了两卦卦辞时也不加，一行白话说不清两句
+function shareCardPlain(lines, quoteCls) {
+    if (quoteCls === ' xl' || lines.length !== 1 || !lines[0].plain) return '';
+    const parts = lines[0].plain.split('。').map(s => s.trim()).filter(Boolean);
+    const pick = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+    if (!pick || pick.length > 40) return '';
+    return `<div class="sc-plain">${escHtml(pick)}。</div>`;
 }
 
 // 落款里的年份：起卦那年的生肖线稿 + 干支年。线稿做成 <img>（html2canvas 画内联 SVG 不稳），颜色写死成墨色；
@@ -127,7 +138,8 @@ function createShareCard(d) {
     const q = d.question;
     const quoteLen = main.lines.reduce((s, l) => s + l.text.length, 0);
     const quoteCls = quoteLen > 28 ? ' xl' : quoteLen > 14 ? ' long' : '';
-    const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${shareCardPunct(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('');
+    const mainHtml = main.lines.map(l => `<div class="sc-quote${quoteCls}">${shareCardPunct(l.text)}</div><div class="sc-from">${escHtml(l.from)}</div>`).join('')
+        + shareCardPlain(main.lines, quoteCls);
 
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
