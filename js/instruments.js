@@ -84,7 +84,7 @@ function makeYearWheel(input, onChange) {
         if (shown) {
             const ny = newYearDay(y);
             // 只说规则，不替人下结论：是不是春节前出生要看月日，生辰签上会写明
-            note.textContent = ny ? `${y} 年的春节在 ${ny}，这天之前出生的，农历算上一年（${ganZhiYear(y - 1)}年）` : '';
+            note.textContent = ny ? `${y} 年的春节是 ${ny}，在这之前出生的人，农历要算上一年（${ganZhiYear(y - 1)}年）` : '';
         } else {
             note.textContent = '上下滑动年轮，选出生年份';
         }
@@ -543,8 +543,8 @@ function birthSlipData(y, m, d, h) {
         }
     }
     const notes = [];
-    if (ny) notes.push(`那年春节在 ${ny}，你在春节前出生，农历算${ganZhiYear(lu.year)}年`);
-    if (okDate && okHour && h === 12) notes.push(`23 点后出生算作次日，月日按${lunarMonthName(lu ? lu.month : m, lu && lu.isLeap)}${lu ? lunarDayName(lu.day) : ''}算`);
+    if (ny) notes.push(`那年春节是 ${ny}，你在春节前出生，农历要算上一年，也就是${ganZhiYear(lu.year)}年`);
+    if (okDate && okHour && h === 12) notes.push(`23 点后出生算作第二天，农历日期按${lunarMonthName(lu ? lu.month : m, lu && lu.isLeap)}${lu ? lunarDayName(lu.day) : ''}算`);
     if (okDate && !lu) notes.push('早于 1900 年春节，查不到农历，按公历日期起卦');
     return { okDate, okHour, lu, h, note: notes.join('；') };
 }

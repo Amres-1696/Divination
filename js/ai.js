@@ -45,7 +45,7 @@ function persistAiReading(reading, historyId) {
             localStorage.setItem('divinationHistory', JSON.stringify(history.slice(0, HISTORY_MAX)));
         }
     } catch (e) {
-        showToast('解读写好了，但未能保存到牌册。需要的话，先复制下来', 'error');
+        showToast('解读写好了，但没能存进牌册，需要的话先复制下来', 'error');
     }
 }
 

@@ -138,7 +138,7 @@ test('AI save errors notify without changing stored reading', () => {
     const f = fixture(); twoRecords(f); f.failWrites();
     f.run(`persistAiReading('answer',older);`);
     assert.equal(f.run('readHistorySafe().find(h=>h.id===older).aiReading'), undefined);
-    assert.match(f.notices.at(-1)[0], /未能保存/);
+    assert.match(f.notices.at(-1)[0], /没能存进牌册/);
 });
 
 test('legacy records retain a stable ID and use their saved date and unknown method', () => {
@@ -699,7 +699,7 @@ test('term tips speak about the hexagram on screen, and the how line names the l
     const m = JSON.parse(f.run(`JSON.stringify(getMainReading(lookupGua('000000'), calculateChangeGua([8,8,6,8,8,8], '000000')))`));
     assert.equal(m.how, '只有六三一根动爻，读它的爻辞。');
     assert.equal(m.at, 2);
-    assert.match(f.run(`TIPS.liuyao([8,8,6,8,8,8], 2)`), /主断读的六三，是从下数第三根阴爻/);
+    assert.match(f.run(`TIPS.liuyao([8,8,6,8,8,8], 2)`), /主断读的是六三，也就是从下数第三根阴爻/);
     // 浮窗标题取页面上的词本身，解释进 data-tip 并转义
     assert.equal(f.run(`term('本卦吉凶', '他说"吉"')`), '<span class="term" tabindex="0" data-tip="他说&quot;吉&quot;">本卦吉凶</span>');
     assert.match(f.run(`TIPS.yaotype(9, 'coin')`), /三枚都是背面/);

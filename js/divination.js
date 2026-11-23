@@ -119,29 +119,29 @@ function getMainReading(gua, change) {
     if (n === 2)
         return { rule: '二爻动', text: `两爻动，取本卦《${benName}》上面那根动爻：${yaoArr[changing[1]] || ''}`, at: changing[1],
             lines: [yaoLine('本卦', benName, yaoArr[changing[1]])],
-            how: `${nameOf(yaoArr[changing[0]])}、${nameOf(yaoArr[changing[1]])}两根动爻，读靠上的${nameOf(yaoArr[changing[1]])}。` };
+            how: `有${nameOf(yaoArr[changing[0]])}、${nameOf(yaoArr[changing[1]])}两根动爻，读靠上的${nameOf(yaoArr[changing[1]])}。` };
     if (n === 3)
         return { rule: '三爻动', text: `三爻动，本卦《${benName}》和之卦《${zhi[0]}》的卦辞合看：本卦「${gua[1]}」，之卦「${zhi[1]}」`, at: null,
             lines: [{ from: `本卦《${benName}》卦辞`, text: gua[1] }, { from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }],
-            how: '三根动爻，本卦和之卦的卦辞一起读，以本卦为主。' };
+            how: '有三根动爻，本卦和之卦的卦辞要合起来读，以本卦为主。' };
     if (n === 4) {
         const low = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[low] || '';
         return { rule: '四爻动', text: `四爻动，取之卦《${zhi[0]}》没动的两爻里下面那一根：${raw}`, at: low,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: `四根动爻，读之卦里没动的两爻中靠下的${nameOf(raw)}。` };
+            lines: [yaoLine('之卦', zhi[0], raw)], how: `有四根动爻，读之卦里没动的那两爻中靠下的${nameOf(raw)}。` };
     }
     if (n === 5) {
         const only = all.filter(i => !changing.includes(i))[0];
         const raw = zhi[3].split('|')[only] || '';
         return { rule: '五爻动', text: `五爻动，取之卦《${zhi[0]}》唯一没动的那一爻：${raw}`, at: only,
-            lines: [yaoLine('之卦', zhi[0], raw)], how: `五根动爻，读之卦里唯一没动的${nameOf(raw)}。` };
+            lines: [yaoLine('之卦', zhi[0], raw)], how: `有五根动爻，读之卦里唯一没动的${nameOf(raw)}。` };
     }
     if (benName === '乾为天')
         return { rule: '六爻全变·用九', text: '乾卦六爻全动，取「用九」：「见群龙无首，吉。」', at: null,
-            lines: [{ from: '本卦《乾为天》用九', text: '见群龙无首，吉。' }], how: '六根全是动爻。乾卦在六爻之外另有一句「用九」，就读它。' };
+            lines: [{ from: '本卦《乾为天》用九', text: '见群龙无首，吉。' }], how: '六根全是动爻。乾卦在六条爻辞之外还多一句「用九」，这时就读它。' };
     if (benName === '坤为地')
         return { rule: '六爻全变·用六', text: '坤卦六爻全动，取「用六」：「利永贞。」', at: null,
-            lines: [{ from: '本卦《坤为地》用六', text: '利永贞。' }], how: '六根全是动爻。坤卦在六爻之外另有一句「用六」，就读它。' };
+            lines: [{ from: '本卦《坤为地》用六', text: '利永贞。' }], how: '六根全是动爻。坤卦在六条爻辞之外还多一句「用六」，这时就读它。' };
     return { rule: '六爻全变', text: `六爻全动，取之卦《${zhi[0]}》卦辞：「${zhi[1]}」`, at: null,
         lines: [{ from: `之卦《${zhi[0]}》卦辞`, text: zhi[1] }], how: '六根全是动爻，读之卦的卦辞。' };
 }
@@ -154,32 +154,32 @@ function term(text, tip) {
 }
 const TRIGRAM_IMAGE = { 乾: '天', 坤: '地', 震: '雷', 巽: '风', 坎: '水', 离: '火', 艮: '山', 兑: '泽' };
 const TIPS = {
-    seal: '给每一卦定的粗略底色，分吉、平、凶。它不看动爻，也不一定和卦辞一致。这一问的答案以主断为准。',
-    sealDaily: '给每一卦定的粗略底色，分吉、平、凶。不一定和卦辞一致，只作参考。',
-    sealArchive: n => `给每一卦定的粗略底色，不看动爻。这里数的是你起过的 ${n} 卦各自的本卦，也就是变化之前的那一卦。`,
-    zhuduan: '回答你所问的那一句，从卦辞或爻辞里挑。卦辞讲整卦，爻辞讲某一爻。挑哪一句看动爻有几根，用的是朱熹的读法。',
+    seal: '这是给每一卦大致定下的吉、平、凶，算是这一卦的底色。它不看动爻，也不一定和卦辞的意思一致，回答你这一问，还是以主断为准。',
+    sealDaily: '这是给每一卦大致定下的吉、平、凶，不一定和卦辞的意思一致，只作参考。',
+    sealArchive: n => `这是给每一卦大致定下的吉、平、凶，不看动爻。这里统计的是你起过的 ${n} 卦各自的本卦，也就是变化之前的那一卦。`,
+    zhuduan: '主断是针对你这一问要读的那一句，从卦辞或爻辞里挑出来。卦辞说的是整卦，爻辞说的是其中某一爻。具体挑哪一句，要看有几根动爻，用的是朱熹定下的读法。',
     dongyao: moving => moving
-        ? '会变的爻，阳变阴，阴变阳。卦画旁标着「动 →」的就是，箭头后面是它变成的爻。'
-        : '会变的爻，阳变阴，阴变阳。起到老阳、老阴才有动爻，这一卦六根都是少阳、少阴。',
-    zhigua: '动爻翻转后得到的新卦，看事情往哪里走。原来那一卦叫本卦，看眼下。点卦画下面的「之卦」，可以看它的卦画。',
-    xiang: '《象传》里解说这一卦的话：先讲上下卦合成的景象，再讲人该怎么做。首页今日一卦旁边那句就是它。',
-    fangtu: '先天六十四卦排成八行八列。同一行下卦相同，同一列上卦相同；坤在左上，乾在右下。',
+        ? '动爻是会变的爻，阳爻会变成阴爻，阴爻会变成阳爻。卦画旁边标着「动 →」的就是动爻，箭头后面写的是它变成的样子。'
+        : '动爻是会变的爻，阳爻会变成阴爻，阴爻会变成阳爻。只有起到老阳、老阴才会有动爻，这一卦六根都是少阳、少阴，所以没有。',
+    zhigua: '把动爻都翻过来，就得到之卦，用来看事情接下来往哪里走。原来那一卦叫本卦，看的是眼下。点卦画下面的「之卦」，就能看到它的卦画。',
+    xiang: '这是《象传》解说这一卦的话，先讲上下卦合成的景象，再讲人该怎么做。首页「今日一卦」旁边的那句话就出自这里。',
+    fangtu: '方图是把先天六十四卦排成八行八列。同一行的卦下卦相同，同一列的卦上卦相同，坤在左上角，乾在右下角。',
     liuyao(hexLines, at) {
         const POS = ['最下面一', '从下数第二', '从下数第三', '从下数第四', '从下数第五', '最上面一'];
         const eg = at != null
-            ? `主断读的${yaoLabel(hexLines[at], at)}，是${POS[at]}根${hexLines[at] % 2 ? '阳' : '阴'}爻。`
-            : `比如最上面这根是${yaoLabel(hexLines[5], 5)}。`;
-        return '一卦六根线，每根叫一爻。位置从下往上叫初、二、三、四、五、上；阳爻叫九，阴爻叫六。' + eg;
+            ? `主断读的是${yaoLabel(hexLines[at], at)}，也就是${POS[at]}根${hexLines[at] % 2 ? '阳' : '阴'}爻。`
+            : `比如最上面那一根叫${yaoLabel(hexLines[5], 5)}。`;
+        return '一卦有六根线，每一根叫一爻。从下往上依次叫初、二、三、四、五、上，阳爻用九来称，阴爻用六来称。' + eg;
     },
     yaotype(line, method) {
         const base = {
-            9: '会变的阳爻，属于动爻，到之卦里变成阴爻。不变的阳爻叫少阳。',
-            6: '会变的阴爻，属于动爻，到之卦里变成阳爻。不变的阴爻叫少阴。',
-            7: '不变的阳爻。会变的阳爻叫老阳，属于动爻。',
-            8: '不变的阴爻。会变的阴爻叫老阴，属于动爻。'
+            9: '老阳是会变的阳爻，算作动爻，到了之卦里会变成阴爻。不会变的阳爻叫少阳。',
+            6: '老阴是会变的阴爻，算作动爻，到了之卦里会变成阳爻。不会变的阴爻叫少阴。',
+            7: '少阳是不会变的阳爻。会变的阳爻叫老阳，算作动爻。',
+            8: '少阴是不会变的阴爻。会变的阴爻叫老阴，算作动爻。'
         }[line];
-        if (method === 'coin') return base + `掷钱时${COIN_FACE_CN[LINE_TO_BEI[line]]}，就是${YAO_TYPE_CN[line]}。`;
-        if (method === 'bazi') return base + (line === 6 || line === 9 ? '生辰起卦只算出一根动爻。' : '生辰起卦只算出一根动爻，其余都是少阳、少阴。');
+        if (method === 'coin') return base + `掷钱时如果${COIN_FACE_CN[LINE_TO_BEI[line]]}，得到的就是${YAO_TYPE_CN[line]}。`;
+        if (method === 'bazi') return base + (line === 6 || line === 9 ? '生辰起卦只会算出一根动爻。' : '生辰起卦只会算出一根动爻，其余五根都是少阳或少阴。');
         return base;
     },
     guaxu(gua) {
@@ -187,16 +187,16 @@ const TIPS = {
         const where = n === 1 ? '乾卦是第一卦，后面是坤卦。'
             : n === 64 ? '未济卦是最后一卦，前面是既济卦。'
             : n ? `${short}卦前面是${KING_WEN_NAMES[n - 2]}卦，后面是${KING_WEN_NAMES[n]}卦。` : '';
-        return '通行本《周易》里六十四卦的先后次序，从乾卦起，到未济卦止。' + where;
+        return '卦序是通行本《周易》里六十四卦的排列次序，从乾卦开始，到未济卦结束。' + where;
     },
     shangxia(gua, v) {
         const U = TRIGRAM_BY_VALUE[v & 7], L = TRIGRAM_BY_VALUE[v >> 3];
         const why = U === L
             ? `这一卦上下都是${U}，${U}是${TRIGRAM_IMAGE[U]}，所以叫${gua[0]}。`
             : `这一卦上${U}下${L}，${U}是${TRIGRAM_IMAGE[U]}，${L}是${TRIGRAM_IMAGE[L]}，所以叫${gua[0]}。`;
-        return '一卦六爻，下三爻是下卦，上三爻是上卦。' + why;
+        return '一卦六爻，下面三爻组成下卦，上面三爻组成上卦。' + why;
     },
-    yuantu: gua => `首页那一圈：六十四卦按先天次序围成环，乾在最上，坤在最下。小图里的长针，指着${guaShortName(gua)}卦的位置。`
+    yuantu: gua => `圆图就是首页那一圈，六十四卦按先天次序围成一个环，乾在最上面，坤在最下面。小图里那根长针，指的就是${guaShortName(gua)}卦的位置。`
 };
 // 卦序、上下卦、圆图三格：结果页和今日一卦共用
 function titleBlockCells(gua, v, before = '') {
