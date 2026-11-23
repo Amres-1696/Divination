@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=09cdaea0") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=8b8e912d") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +20,7 @@
    可变字体，字重 400–700 都在这一个文件里。 */
 @font-face {
   font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-subset.woff2?v=4af5d889") format("woff2");
+  src: url("fonts/NotoSerifSC-subset.woff2?v=a53c579b") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -518,8 +518,17 @@ body.casting .home-main > * {
 #question::placeholder { color: var(--ink-3); opacity: .8; letter-spacing: .08em; transition: opacity .25s ease; }
 #question:focus::placeholder { opacity: .45; }
 /* 字数刻度平时不显示，离写满还剩 20 字时才出现 */
-.q-count { position: absolute; right: 0; top: calc(100% + 7px); font-size: var(--fs-1); color: var(--ink-3); letter-spacing: .05em; opacity: 0; transition: opacity .25s ease; }
+.q-count { position: absolute; left: 0; top: calc(100% + 7px); font-size: var(--fs-1); color: var(--ink-3); letter-spacing: .05em; opacity: 0; transition: opacity .25s ease; }
 .q-count.show { opacity: 1; }
+/* 尺寸线右端下面的一行小注「怎么问 ?」：悬停、聚焦或点一下，浮出提问的建议（借用术语浮窗）。
+   字数刻度平时不显示，快写满时出现在同一行的左端，两者不打架 */
+.q-help, .q-help.term {
+  position: absolute; right: 0; top: calc(100% + 9px);
+  font-family: var(--text); font-size: var(--fs-1); line-height: 1.4; letter-spacing: .1em; color: var(--ink-3);
+  text-decoration: none; cursor: help; transition: color var(--t-hover) ease;
+}
+.q-help:hover, .q-help:focus-visible { color: var(--ink-2); }
+.q-help:focus-visible { outline: 1px solid var(--ink-3); outline-offset: 3px; }
 .form-row { margin-top: 34px; display: flex; align-items: center; justify-content: center; gap: 22px; }
 /* 起卦方式下面的一行：铜钱画三枚铜钱，生辰画一弯月亮，后面跟已存的生辰；换一种起法时整行淡入 */
 .method-hint { margin-top: 16px; min-height: 24px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; font-size: var(--fs-1); line-height: 1.6; color: var(--ink-3); }
@@ -852,6 +861,7 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .term-tip { position: fixed; z-index: 90; /* 要压过弹层（70）和确认框（80），弹层里的术语也会浮出解释 */left: 0; top: 0; max-width: min(300px, calc(100vw - 32px)); padding: 10px 13px 11px; background: var(--blue-deep); border: 1px solid var(--rule); box-shadow: 0 12px 30px -12px rgba(0, 0, 0, .65);
   font-family: var(--text); font-size: var(--fs-2); font-weight: 400; line-height: 1.7; letter-spacing: 0; text-align: left; color: var(--ink-2); pointer-events: none; opacity: 0; transform: translateY(4px); transition: opacity .16s ease, transform .2s var(--ease-out); }
 .term-tip.on { opacity: 1; transform: none; }
+.term-tip { white-space: pre-line; }
 .term-tip b { display: block; margin-bottom: 3px; font-weight: 600; letter-spacing: .12em; color: var(--ink); }
 
 /* 主断：结果页的主角。辞用展示字放大，出处和取法是两行小字 */
@@ -1131,6 +1141,8 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 @keyframes cell-lit { from { opacity: 0; transform: scale(.4); } }
 /* 亮着的卦飞进方图的过程中：亮格子里的真卦画先藏起来，落定后换回；卦是飞进来亮起的，不再另放点亮动画 */
 .history-panel.flying .am-cell.lit .hx { visibility: hidden; }
+/* 不在滚动区里的格子不飞，真卦画照常显示（被滚动区裁掉，看不到也不会跳） */
+.history-panel.flying .am-cell.lit.am-still .hx { visibility: visible; }
 #historyPanel.dousing { pointer-events: none; }
 .history-panel.flying .am-cell.lit .hx, .history-panel.show.flown:not(.quiet) .am-cell.lit .hx { animation: none; }
 .archive-flyer { position: fixed; z-index: 62; pointer-events: none; transform-origin: 50% 50%; }
