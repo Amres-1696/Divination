@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把 index.html 和 style.css 里每个本地文件地址后面的 ?v= 换成该文件内容的哈希。
+"""把 index.html、style.css 和 fonts/NotoSerifSC-ext.css 里每个本地文件地址后面的 ?v= 换成该文件内容的哈希。
 
 浏览器按地址缓存，文件改了而 ?v= 没改，用户就会拿到旧文件。以前是手写日期，容易忘、合并时还会冲突；
 现在改完代码跑一下这个脚本就行，没改的文件版本号不变。回归测试会检查版本号和文件内容是否对得上。
@@ -31,6 +31,6 @@ def stamp(rel):
 
 
 if __name__ == '__main__':
-    # style.css 引用字体，index.html 又引用 style.css：先盖 style.css，它的哈希才是最终的
-    n = stamp('style.css') + stamp('index.html')
+    # 两个 CSS 引用字体，index.html 又引用这两个 CSS：先盖 CSS，它们的哈希才是最终的
+    n = stamp('fonts/NotoSerifSC-ext.css') + stamp('style.css') + stamp('index.html')
     print(f'{n} 处版本号已按内容更新')

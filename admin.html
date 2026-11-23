@@ -677,7 +677,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
 
   // 最近起的卦：指到哪一条，方图上就把本卦和之卦连起来
   const METHOD = { coin: '铜钱', bazi: '生辰' };
-  const KNOWN = { xiaoheihe: '小黑盒', bilibili: 'B 站', weibo: '微博', tieba: '贴吧', zhihu: '知乎', wechat: '微信', qq: 'QQ', douyin: '抖音', xhs: '小红书' };
+  const KNOWN = { xiaoheihe: '小黑盒', bilibili: 'B 站', weibo: '微博', tieba: '贴吧', zhihu: '知乎', wechat: '微信', qq: 'QQ', douyin: '抖音', xhs: '小红书', share: '朋友分享' };
   function sourceName(s) {
     if (!s) return { name: '直接打开' };
     if (s.startsWith('ref:')) return { name: s.slice(4), note: '点过来的' };

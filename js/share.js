@@ -284,10 +284,15 @@ async function shareAsImage() {
         if (!reduce) await assembleShareCard(plate, card);
         if (!alive()) return;
         img.classList.add('in');
-        document.querySelectorAll('.share-flyer').forEach(f => {
-            const a = f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 240, easing: 'ease-out', fill: 'forwards' });
-            a.onfinish = () => f.remove();
-        });
+        // 等图片完全显出来再撤飞行层：两层同时一个淡入一个淡出，叠在一起会短暂发浅，像闪了一下。
+        // 爻条和图上的像素对得上，直接撤掉；卦名的字和图上的渲染略有出入，在不透明的图上再淡去
+        setTimeout(() => {
+            document.querySelectorAll('.share-flyer-bar').forEach(f => f.remove());
+            document.querySelectorAll('.share-flyer').forEach(f => {
+                const a = f.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'ease-out', fill: 'forwards' });
+                a.onfinish = () => f.remove();
+            });
+        }, 260);
         if (isMobile()) preview.insertAdjacentHTML('beforeend', '<p class="share-hint">长按图片可保存到相册</p>');
         img.onerror = function() {
             this.onerror = null;
@@ -401,16 +406,30 @@ function assembleShareCard(plate, card) {
     const result = document.getElementById('resultArea');
     const flights = [];   // 先把要量的都量完，再一次性建飞行层，避免边读边写反复排版
 
-    // 卦画：落到卡上六根爻条占的那块。正看着之卦时不飞，卡上画的是本卦
+    // 卦画：每一段爻条（阳爻一段，阴爻左右两段）各自从结果页飞到卡上对应的那一段。
+    // 不能把结果页的卦画整块缩放过去：两边爻条的粗细、间距、阴爻缺口比例都不一样，
+    // 落地时还是结果页的粗条，换成图片那一下会突然变细，看着像卡了一下。正看着之卦时不飞，卡上画的是本卦
     const glyph = result.querySelector('#resultGlyph');
     const asZhi = result.querySelector('.result-header.as-zhi');
-    const bars = Array.from(card.querySelectorAll('.sc-bar')).map(el => el.getBoundingClientRect());
-    if (glyph && !asZhi && bars.length) {
-        const s = glyph.getBoundingClientRect();
-        if (visible(s)) {
-            const left = Math.max(c.left, Math.min(...bars.map(r => r.left)));
-            const to = onPlate({ left, top: Math.min(...bars.map(r => r.top)), width: Math.max(...bars.map(r => r.right)) - left, height: Math.max(...bars.map(r => r.bottom)) - Math.min(...bars.map(r => r.top)) });
-            flights.push({ kind: 'glyph', html: glyph.innerHTML, from: s, to, delay: 0 });
+    if (glyph && !asZhi && visible(glyph.getBoundingClientRect())) {
+        const srcBars = Array.from(glyph.querySelectorAll('.bar'));
+        const dstBars = Array.from(card.querySelectorAll('.sc-bar'));
+        if (srcBars.length === 6 && dstBars.length === 6) {
+            const pieces = [];
+            srcBars.forEach((bar, i) => {
+                const r = bar.getBoundingClientRect(), dst = dstBars[i];
+                const before = getComputedStyle(bar, '::before'), after = getComputedStyle(bar, '::after');
+                const lw = parseFloat(before.width) || r.width, rw = parseFloat(after.width) || r.width;
+                const halves = dst.querySelectorAll('i');
+                const solid = lw + rw >= r.width - 0.5;   // 阳爻：两半连成一条
+                const src = solid ? [{ left: r.left, top: r.top, width: r.width, height: r.height, color: before.backgroundColor }]
+                    : [{ left: r.left, top: r.top, width: lw, height: r.height, color: before.backgroundColor },
+                       { left: r.right - rw, top: r.top, width: rw, height: r.height, color: after.backgroundColor }];
+                const to = solid ? [dst] : Array.from(halves);
+                if (src.length !== to.length) return;
+                to.forEach((el, j) => pieces.push({ from: src[j], to: onPlate(el.getBoundingClientRect()), color: getComputedStyle(el).backgroundColor }));
+            });
+            if (pieces.length) flights.push({ kind: 'glyph', pieces, delay: 0 });
         }
     }
     // 卦名：一个字一个字落到卡上
@@ -433,20 +452,37 @@ function assembleShareCard(plate, card) {
     if (!flights.length) return Promise.resolve();
     const ease = 'cubic-bezier(.45, 0, .2, 1)';
     const layer = document.createDocumentFragment();
-    const plans = flights.map(f => {
+    // 卦画的各段一起飞：中途整组抬高一点、放大一点（围绕整组的中心），各段的粗细从结果页渐变到卡上
+    const glyphPlans = f => {
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const mids = f.pieces.map(pc => ({
+            left: lerp(pc.from.left, pc.to.left, .6), top: lerp(pc.from.top, pc.to.top, .6),
+            width: lerp(pc.from.width, pc.to.width, .5), height: lerp(pc.from.height, pc.to.height, .5)
+        }));
+        const box = {
+            l: Math.min(...mids.map(m => m.left)), t: Math.min(...mids.map(m => m.top)),
+            r: Math.max(...mids.map(m => m.left + m.width)), b: Math.max(...mids.map(m => m.top + m.height))
+        };
+        const cx = (box.l + box.r) / 2, cy = (box.t + box.b) / 2, g = 1.06;
+        return f.pieces.map((pc, i) => {
+            const el = document.createElement('div');
+            el.className = 'share-flyer share-flyer-bar';
+            const t = pc.to, m = mids[i];
+            el.style.cssText = `left:${t.left}px;top:${t.top}px;width:${t.width}px;height:${t.height}px;background:${pc.color};`;
+            const at = r => `translate(${(r.left - t.left).toFixed(2)}px, ${(r.top - t.top).toFixed(2)}px) scale(${(r.width / t.width).toFixed(4)}, ${(r.height / t.height).toFixed(4)})`;
+            const mid = { left: cx + (m.left - cx) * g, top: cy + (m.top - cy) * g - 60, width: m.width * g, height: m.height * g };
+            // 起飞时是结果页的浅色，过半落成卡上的蓝墨、深朱
+            return { el, f, frames: [
+                { transform: at(pc.from), backgroundColor: pc.from.color },
+                { transform: at(mid), backgroundColor: pc.from.color, offset: .45 },
+                { transform: 'none', backgroundColor: pc.color, offset: .85 },
+                { transform: 'none', backgroundColor: pc.color }] };
+        });
+    };
+    const plans = flights.flatMap(f => {
+        if (f.kind === 'glyph') return glyphPlans(f);
         const el = document.createElement('div');
         el.className = 'share-flyer';
-        let sx, sy;
-        if (f.kind === 'glyph') {
-            el.innerHTML = f.html;
-            el.style.cssText = `left:${f.to.left}px;top:${f.to.top}px;width:${f.to.width}px;height:${f.to.height}px;`;
-            sx = f.from.width / f.to.width; sy = f.from.height / f.to.height;
-            const dx = f.from.left - f.to.left, dy = f.from.top - f.to.top;
-            return { el, f, frames: [
-                { transform: `translate(${dx}px, ${dy}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})` },
-                { transform: `translate(${dx * .4}px, ${dy * .4 - 60}px) scale(${((sx + 1) / 2 * 1.06).toFixed(4)}, ${((sy + 1) / 2 * 1.06).toFixed(4)})`, offset: .5 },
-                { transform: 'none' }] };
-        }
         // 文字：用落点的字体、字距、行高，起飞时按出发处的字号排，飞行中缩放到落点的字号
         const srcSize = parseFloat(f.src.fontSize), dstSize = parseFloat(f.dst.fontSize) * f.k;
         const s = dstSize / srcSize;
@@ -467,8 +503,6 @@ function assembleShareCard(plate, card) {
     plans.forEach(pl => layer.appendChild(pl.el));
     document.body.appendChild(layer);
     const anims = plans.map(pl => pl.el.animate(pl.frames, { duration: pl.f.kind === 'glyph' ? 780 : 720, delay: pl.f.delay, easing: ease, fill: 'both' }));
-    // 卦画飞到一半换成纸上的蓝墨、深朱（颜色在 .bar 的伪元素上，靠 CSS 过渡）
-    plans.forEach(pl => { if (pl.f.kind === 'glyph') { pl.el.classList.add('share-flyer-glyph'); setTimeout(() => pl.el.classList.add('inked'), pl.f.delay + 390); } });
     return Promise.all(anims.map(a => a.finished.catch(() => {})));
 }
 
@@ -503,8 +537,9 @@ function closeShare() {
 }
 
 // ---------- 分享链接：打开就是这一卦 ----------
-// ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问
-// 所问可能很私人，默认不放进链接，要用户勾选才带上
+// ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问&from=share
+// 所问可能很私人，默认不放进链接，要用户勾选才带上。
+// from=share 给统计用：从分享链接进来的访问和之后起的卦，后台记在「朋友分享」名下（track.js 读它）
 function buildShareLink(lines, opts) {
     opts = opts || {};
     const p = new URLSearchParams();
@@ -513,6 +548,7 @@ function buildShareLink(lines, opts) {
     if (d) p.set('d', d[1] + d[2].padStart(2, '0') + d[3].padStart(2, '0'));
     if (opts.method === 'coin' || opts.method === 'bazi') p.set('m', opts.method[0]);
     if (opts.question) p.set('q', String(opts.question).trim().slice(0, 80));
+    p.set('from', 'share');
     return (opts.base || (location.origin + location.pathname)) + '?' + p.toString();
 }
 function parseShareLink(search) {

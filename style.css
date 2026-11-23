@@ -1,7 +1,7 @@
 /* 天衍 —— 样式
    整站是一张蓝晒图纸：外框带天干地支分区，按钮、卡片用制图的角标，
    开关画成一根爻（关是阴爻，开是阳爻），结果页附图签和引线标注。
-   展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei，子集随仓库），正文用思源宋体（Noto Serif SC）。
+   展示字（卦名、标题）用站酷小薇（ZCOOL XiaoWei），正文用思源宋体（Noto Serif SC），两种都裁成子集随仓库走。
    结果页的正文铺一层淡淡的浅灰读纸，和满屏的蓝图装饰分开。
    动效只改 transform / opacity；六十四卦图层由 cosmos.js 逐帧补间。 */
 
@@ -11,6 +11,17 @@
   font-family: "ZCOOL XiaoWei";
   src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=c54af65c") format("woff2");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 正文：思源宋体，本站源码里出现过的字裁成一份（tools/subset-text-font.py 生成），不再从 Google Fonts 取（国内连不上）。
+   用户自己写的问题、AI 解读里的其它常用字在 fonts/NotoSerifSC-ext.css 里按 unicode-range 另给一份，用到才下载。
+   可变字体，字重 400–700 都在这一个文件里。 */
+@font-face {
+  font-family: "Noto Serif SC";
+  src: url("fonts/NotoSerifSC-subset.woff2?v=9e2c077f") format("woff2");
+  font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
@@ -1614,8 +1625,6 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .share-close { position: absolute; top: calc(var(--frame) + 14px); right: calc(var(--frame) + 14px); }
 /* 从结果页飞到相纸上的那份卦画，显影时淡去 */
 .share-flyer { position: fixed; z-index: 72; pointer-events: none; transform-origin: 0 0; will-change: transform; }
-.share-flyer-glyph .bar::before, .share-flyer-glyph .bar::after { transition: background .35s ease; }
-.share-flyer-glyph.inked { --ink: #17396E; --zhu: #D63A16; }
 
 .confirm-box { width: min(360px, 100%); padding: 26px 24px 22px; }
 .confirm-msg { font-size: 18px; line-height: 1.7; }
