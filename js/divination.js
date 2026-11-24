@@ -316,7 +316,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     resultArea.innerHTML = `
 <div class="result entering">
   <div class="result-bar" style="--d:0"><button class="back-link" id="backHomeBtn"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>${shared ? '我也问一卦' : '回到起卦'}</button>${shared ? '<span class="shared-note">朋友分享的一卦</span>' : ''}</div>
-  <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '没写问题'}</h1></div>
+  <div class="result-question" style="--d:1"><span class="rq-label">所问</span><h1>${question ? escHtml(question) : '心中所念'}</h1></div>
   <div class="reading-layout">
     <aside class="result-header">
       <figure class="glyph-figure">
