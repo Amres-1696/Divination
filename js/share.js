@@ -85,12 +85,26 @@ function shareCardWhen(d) {
 
 // 主断下面一行短白话：取白话里落到人身上的那一句（最后一句），太长就整句不放。
 // 主断已经很长（xl 小字号）时不加，免得挤掉落款；三爻动放了两卦卦辞时也不加，一行白话说不清两句
+// 起卦签上的白话：从末尾往前取整句，取到能单独读懂为止。
+// 开头是「但」「不过」「这样」「就像」这类接着上文说的字，就再往前带一句；整段超过 SHARE_PLAIN_MAX 字就不印
+const SHARE_PLAIN_MAX = 60;
+const SHARE_PLAIN_DANGLING = /^(但|不过|可是|可|好在|只是|这|那|就像|还|也|而|反而|于是|所以|因此|否则|结果)|这样|这么|这份|这一步|这种|这些|这条|他|她|它|对方/;
+const SHARE_PLAIN_STANDALONE = /^(这时候|这阵子|这一卦)(?!.*(这样|这么|这份|这一步|这种|这些|这条|他|她|它|对方))/;
+function shareCardPick(plain) {
+    const parts = String(plain || '').split(/(?<=[。？！])/).map(s => s.trim()).filter(Boolean);
+    for (let k = 1; k <= parts.length; k++) {
+        const tail = parts.slice(-k).join('');
+        if (tail.length > SHARE_PLAIN_MAX) return '';
+        const head = parts[parts.length - k];
+        // 取到整段就不用再看开头了：整段本身是完整的
+        if (k === parts.length || !SHARE_PLAIN_DANGLING.test(head) || SHARE_PLAIN_STANDALONE.test(head)) return tail;
+    }
+    return '';
+}
 function shareCardPlain(lines, quoteCls) {
     if (quoteCls === ' xl' || lines.length !== 1 || !lines[0].plain) return '';
-    const parts = lines[0].plain.split('。').map(s => s.trim()).filter(Boolean);
-    const pick = parts.length > 1 ? parts[parts.length - 1] : parts[0];
-    if (!pick || pick.length > 40) return '';
-    return `<div class="sc-plain">${escHtml(pick)}。</div>`;
+    const pick = shareCardPick(lines[0].plain);
+    return pick ? `<div class="sc-plain">${escHtml(pick)}</div>` : '';
 }
 
 // 落款里的年份：起卦那年的生肖线稿 + 干支年。线稿做成 <img>（html2canvas 画内联 SVG 不稳），颜色写死成墨色；

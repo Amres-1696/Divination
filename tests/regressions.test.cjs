@@ -348,8 +348,14 @@ test('every judgement and line has a plain reading, and the main reading carries
     assert.deepEqual(plainOf('111111', [9,9,9,9,9,9]), [f.run(`YONG_PLAIN['乾为天']`)]);
     // 三爻动：本卦、之卦两句卦辞各带白话
     assert.equal(plainOf('111111', [9,9,9,7,7,7]).filter(Boolean).length, 2);
-    // 起卦签只取最后一句（落到人身上的那句）
+    // 起卦签从末尾取整句，取到能单独读懂为止
     assert.match(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], '')`), /先沉住气，别急着出头。/);
+    assert.equal(f.run(`shareCardPick('前面一句。不过后面接着说。')`), '前面一句。不过后面接着说。');
+    assert.equal(f.run(`shareCardPick('前面一句。这时候先等等。')`), '这时候先等等。');
+    // 每一条白话都要印得出来，而且开头不能是接着上文的字
+    const bad = JSON.parse(f.run(`JSON.stringify(Object.values(GUA_PLAIN).flatMap(p => [p.ci, ...p.yao]).concat(Object.values(YONG_PLAIN))
+        .map(t => [t, shareCardPick(t)]).filter(([t, s]) => !s || (s !== t && SHARE_PLAIN_DANGLING.test(s.split(/(?<=[。？！])/)[0]) && !SHARE_PLAIN_STANDALONE.test(s))).map(([t]) => t))`));
+    assert.deepEqual(bad, []);
     assert.equal(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], ' xl')`), '');
     assert.equal(f.run(`shareCardPlain([{ plain: 'a。b。' }, { plain: 'c。' }], '')`), '');
 });
