@@ -349,7 +349,7 @@ test('every judgement and line has a plain reading, and the main reading carries
     // 三爻动：本卦、之卦两句卦辞各带白话
     assert.equal(plainOf('111111', [9,9,9,7,7,7]).filter(Boolean).length, 2);
     // 起卦签从末尾取整句，取到能单独读懂为止
-    assert.match(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], '')`), /先沉住气，别急着出头。/);
+    assert.match(f.run(`shareCardPlain([{ plain: GUA_PLAIN['乾为天'].yao[0] }], '')`), /先沉住气积累，别急着出头。/);
     assert.equal(f.run(`shareCardPick('前面一句。不过后面接着说。')`), '前面一句。不过后面接着说。');
     assert.equal(f.run(`shareCardPick('前面一句。这时候先等等。')`), '这时候先等等。');
     // 每一条白话都要印得出来，而且开头不能是接着上文的字
