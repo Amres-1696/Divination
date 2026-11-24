@@ -144,7 +144,7 @@ function createShareCard(d) {
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
   ${shareCardBackdrop()}
-  <div class="sc-ask"><span class="sc-lbl">所问</span><span class="sc-ask-q${q ? (q.length > 32 ? ' long' : '') : ' blank'}">${q ? escHtml(q) : '心中所念'}</span></div>
+  <div class="sc-ask"><span class="sc-lbl">所问</span><span class="sc-ask-q${q ? (q.length > 32 ? ' long' : '') : ' blank'}">${q ? escHtml(q) : '没写问题'}</span></div>
   <i class="sc-gap"></i>
   <div class="sc-glyph">${bars}</div>
   <div class="sc-name${chars.length > 4 ? ' long' : ''}">${nameHtml}</div>
@@ -289,7 +289,7 @@ async function shareAsImage() {
         assertCanvasExportable(canvas);
         if (!canvas || !canvas.width || !canvas.height) throw new Error('起卦签没生成出来');
         const blob = await canvasToBlob(canvas, 'image/png');
-        if (!blob) throw new Error('toBlob returned null');
+        if (!blob) throw new Error('图片没能导出');
         if (!alive()) return;
         const objectUrl = URL.createObjectURL(blob);
         _lastBlobUrl = objectUrl;
@@ -357,8 +357,10 @@ async function shareAsImage() {
     } catch (e) {
         if (!alive()) return;
         document.querySelectorAll('.share-flyer').forEach(el => el.remove());
-        const msg = (e && e.message) ? e.message : String(e);
-        preview.innerHTML = '<p class="share-error">起卦签没有生成出来。<small>' + escHtml(msg) + '</small></p>';
+        // 原始报错多半是浏览器给的英文，只留在 console；页面上只说中文
+        console.error('[share]', e);
+        const msg = (e && e.message && /[\u4e00-\u9fff]/.test(e.message)) ? e.message + '。' : '';
+        preview.innerHTML = '<p class="share-error">起卦签没有生成出来。<small>' + escHtml(msg) + '换个浏览器试试，或者直接截图。</small></p>';
     } finally {
         if (tmp.parentNode) tmp.parentNode.removeChild(tmp);
     }

@@ -101,16 +101,16 @@ function historyGroup(d, now) {
     const diff = Math.round((day(now) - day(d)) / 86400000);
     if (diff <= 0) return '今天';
     if (diff === 1) return '昨天';
-    if (diff < 7) return '这一周';
+    if (diff < 7) return '这几天';
     if (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()) return '这个月';
-    if (d.getFullYear() === now.getFullYear()) return `${d.getMonth() + 1} 月`;
-    return `${d.getFullYear()} 年`;
+    if (d.getFullYear() === now.getFullYear()) return `${d.getMonth() + 1}月`;
+    return `${d.getFullYear()}年`;
 }
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 // 方图下的说明：鼠标移开格子时也用它复原（要用 innerHTML，「方图」带着虚线解释）
 function archiveCaption() {
-    return `${term('方图', TIPS.fangtu)}里亮着的格子是抽到过的卦，越亮抽到得越多。点一格，只看这一卦的记录。`;
+    return `${term('方图', TIPS.fangtu)}里亮着的格子是抽到过的卦，抽到的次数越多，格子越亮。点一格，只看这一卦的记录。`;
 }
 function renderArchiveMap(history) {
     const map = document.getElementById('historyMap');
@@ -212,7 +212,7 @@ function renderArchiveList(history) {
 <span class="tl-time">${time}</span>
 <span class="history-thumb">${buildHexBars(hexLines, item.changingYaos || [])}</span>
 <span class="tl-main">
-  <span class="history-q${blank ? ' blank' : ''}">${blank ? '未写问题' : escHtml(item.question)}</span>
+  <span class="history-q${blank ? ' blank' : ''}">${blank ? '没写问题' : escHtml(item.question)}</span>
   <span class="history-gua"><b>${item.gua || ''}</b><span class="history-verdict v-${verdict}" aria-label="本卦${VERDICT_CN[verdict]}">${VERDICT_CN[verdict]}</span>${zhi ? `<span class="history-change">→ ${zhi[0]}</span>` : ''}</span>
 </span>
 <button class="history-del" data-id="${item.id || ''}" aria-label="删除这条记录"></button>
@@ -297,7 +297,7 @@ function loadHistory(opts) {
 function loadHistoryItem(id, fromRect) {
     // 起卦途中不能切去别的结果：仪式那一页会被换掉，起卦流程就停在半路了
     if (_divineRunning) {
-        showToast('正在起卦。掷完六爻或者点「跳过」，再来翻牌册');
+        showToast('卦还没起完，等它起完，或者点「跳过」，再来翻牌册');
         return;
     }
     const history = readHistorySafe();

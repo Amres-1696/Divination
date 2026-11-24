@@ -154,7 +154,7 @@ class HexRitual {
         this.setStatus(`${yaoLabel(line, i)}　${typeText}`,
             withCoins ? COIN_FACE_CN[bei] : `第${'一二三四五六'[i]}爻`);
         const left = 64 >> (i + 1);
-        const leftText = left === 1 ? '只剩这一卦' : `还剩${toChineseNum(left)}卦`;
+        const leftText = left === 1 ? '只剩这一卦' : left === 2 ? '还剩两卦' : `还剩${toChineseNum(left)}卦`;
         this.countEl.textContent = leftText;
         // 圆图转到位要花的时间。掷钱时下一爻等人来点；生辰起卦是自己往下走的，
         // 得等这一下转完再出下一爻，不然圆图转到一半又被拽去别处，来回晃
@@ -186,9 +186,9 @@ async function showInvocation() {
         return;
     }
     _invocationShown = true;
-    // 写了问题：所问既定；没写：默念所问
+    // 写了问题、没写问题，开场各说一句
     const asked = (document.getElementById('question') || {}).value;
-    const text = asked && asked.trim() ? '所问既定，六爻将起' : '默念所问，六爻将起';
+    const text = asked && asked.trim() ? '问题记下了，开始起卦' : '心里想着那件事，开始起卦';
     const inv = document.createElement('div');
     inv.className = 'invocation';
     inv.innerHTML = '<p>' + text.split('').map((ch, i) => `<span style="--k:${i}">${ch}</span>`).join('') + '</p>';

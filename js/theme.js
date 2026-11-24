@@ -25,7 +25,7 @@ function playHomeEnter(delay) {
 // 结果页 → 首页：卦画从结果页飞回圆图原位，其余卦沿圆周亮起，首页内容随后进场
 async function returnToInquiry(opts) {
     opts = opts || {};
-    if (_divineRunning) { showToast('卦还没起完。掷完六爻，或者点「跳过」'); return; }
+    if (_divineRunning) { showToast('卦还没起完，等它起完，或者点「跳过」'); return; }
     if (_viewBusy) return;
     _viewBusy = true;
     if (typeof clearShareParams === 'function') clearShareParams();

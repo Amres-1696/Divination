@@ -540,7 +540,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
       else {
         const p = Math.round(Math.abs(ch) * 100);
         const word = y.ratio ? (ch > 0 ? '高了' : '低了') : (ch > 0 ? '多了' : '少了');
-        y.delta = `${head}${cmp} ${y.show(y.prev)}` + (p === 0 ? '，差不多' : `，${word} ${p >= 1000 ? '很多' : p + '%'}`);
+        y.delta = `${head}${cmp} ${y.show(y.prev)}` + (p === 0 ? '，差不多' : `，${word}${p >= 1000 ? '很多' : ' ' + p + '%'}`);
       }
       y.series = daily.map(y.day);
       y.max = Math.max(...y.series, 0);
@@ -646,8 +646,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
     $('#guaName').textContent = g[0];
     $('#guaCi').textContent = g[1];
     const cmp = d._half ? `后 ${d._half} 天比前 ${d._half} 天` : `比前 ${n} 天`;
-    $('#how').innerHTML = `这一卦不是算出来的，是数出来的。六项统计各占一爻，${cmp}没有减少就是阳爻，减少了就是阴爻。` +
-      (moving ? `涨跌超过一半的算动爻，<i>标成朱色</i>，这次有 ${moving} 根。` : '涨跌超过一半的算动爻，这次一根也没有。') + '爻身里的线是每天的数据。';
+    $('#how').innerHTML = `这一卦不是算出来的，是数出来的。六项统计各占一爻，${cmp}多了或者持平（而且不是零）就是阳爻，否则是阴爻。` +
+      (moving ? `涨跌达到一半的算动爻，<i>标成朱色</i>，这次有 ${moving} 根。` : '涨跌达到一半的算动爻，这次一根也没有。') + '爻身里的线是每天的数据。';
     const t = d.today || {};
     $('#today').innerHTML = `<h2>今天到现在</h2>
       <p><span class="num">${fmt(t.visitors)}</span>个人来过，开了 ${fmt(t.visits)} 次</p>
@@ -665,8 +665,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
     const seen = list.filter(h => h.count > 0).length;
     const partial = !d.prev && list.length >= 12 && list.reduce((a, h) => a + h.count, 0) < totalReadings;
     $('#guaNote').textContent = !totalReadings ? '这段时间还没人起卦。以后有人起到哪一卦，那一格就会染上颜色。'
-      : (partial ? `横着是上卦，竖着是下卦，颜色越深起到的次数越多。现在只拿得到最多的 ${list.length} 卦，更新云函数后六十四卦都会有。`
-        : `横着是上卦，竖着是下卦，颜色越深起到的次数越多。六十四卦里已经出过 ${seen} 卦` + (seen < 64 ? `，还有 ${64 - seen} 卦没人起到。` : '，一卦不落。'));
+      : (partial ? `顶上一排标的是上卦，左边一列标的是下卦，颜色越深起到的次数越多。现在只拿得到最多的 ${list.length} 卦，更新云函数后六十四卦都会有。`
+        : `顶上一排标的是上卦，左边一列标的是下卦，颜色越深起到的次数越多。六十四卦里已经出过 ${seen} 卦` + (seen < 64 ? `，还有 ${64 - seen} 卦没人起到。` : '，一卦不落。'));
     let html = '<span class="sq-corner"></span>' + TRI.map(t => `<span class="sq-h">${t[0]}</span>`).join('');
     TRI.forEach(low => {
       html += `<span class="sq-h side">${low[0]}</span>`;
@@ -757,7 +757,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; -webkit-tap-h
     const total = hrs.reduce((a, h) => a + h.visits, 0);
     const peak = hrs.reduce((a, h) => h.visits > a.visits ? h : a, hrs[0]);
     const night = hrs.filter(h => h.hour >= 23 || h.hour < 5).reduce((a, h) => a + h.visits, 0);
-    const rest = total ? `最热闹的是 ${peak.hour} 点，${SHICHEN[Math.floor((peak.hour + 1) % 24 / 2)]}时。夜里十一点到早上五点来的占 ${pct(night, total)}。` : '这段时间还没人来。';
+    const rest = total ? `最热闹的是 ${peak.hour} 点，${SHICHEN[Math.floor((peak.hour + 1) % 24 / 2)]}时。夜里 23 点到早上 5 点来的占 ${pct(night, total)}。` : '这段时间还没人来。';
     const read = h => { $('#hoursRead').textContent = h ? `${h.hour} 点到 ${h.hour + 1} 点：访问 ${fmt(h.visits)} 次，起了 ${fmt(h.readings)} 卦。` : rest; };
     read(null);
     const el = $('#hours');
