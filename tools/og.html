@@ -8,6 +8,7 @@
 <title>天衍 封面底稿</title>
 <style>
   @font-face { font-family: "ZCOOL XiaoWei"; src: url("../fonts/ZCOOLXiaoWei-subset.woff2") format("woff2"); }
+  @font-face { font-family: "Noto Serif SC"; src: url("../fonts/NotoSerifSC-subset.woff2") format("woff2"); }
   html, body { margin: 0; }
   body { width: 1200px; height: 630px; overflow: hidden; color: #EEF2F7; font-family: "Noto Serif SC", "Songti SC", serif;
     background: radial-gradient(120% 90% at 30% 40%, #22508F 0%, #1A3D72 55%, #102B53 100%); position: relative; }
@@ -15,11 +16,15 @@
     background-image: linear-gradient(rgba(238,242,247,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(238,242,247,.06) 1px, transparent 1px);
     background-size: 30px 30px; }
   .frame { position: absolute; inset: 28px; border: 1px solid rgba(238,242,247,.35); }
-  .ring { position: absolute; left: 610px; top: 55px; width: 520px; height: 520px; }
-  .text { position: absolute; left: 96px; top: 168px; }
-  h1 { margin: 0; font-family: "ZCOOL XiaoWei", serif; font-weight: 400; font-size: 132px; letter-spacing: .16em; line-height: 1; }
-  .sub { margin-top: 30px; font-size: 30px; letter-spacing: .3em; color: #C9D5E6; }
-  .tag { margin-top: 44px; font-size: 22px; letter-spacing: .12em; color: #A7B8D3; }
+  /* 圆图和标题都放在正中：聊天软件的小卡片会从中间裁一个正方形当缩略图，裁出来正好是整个圆和「天衍」 */
+  .ring { position: absolute; left: 330px; top: 45px; width: 540px; height: 540px; }
+  .text { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  h1 { margin: 0 0 0 .14em; font-family: "ZCOOL XiaoWei", serif; font-weight: 400; font-size: 150px; letter-spacing: .14em; line-height: 1; }
+  .sub { margin: 26px 0 0 .4em; font-size: 26px; letter-spacing: .4em; color: #C9D5E6; }
+  /* 两侧竖排的那句简介，在正方形缩略图之外，只在大卡片里看得到 */
+  .side { position: absolute; top: 50%; transform: translateY(-50%); writing-mode: vertical-rl; font-family: "ZCOOL XiaoWei", serif;
+    font-size: 32px; letter-spacing: .36em; white-space: nowrap; color: #A7B8D3; }
+  .side.l { left: 150px; } .side.r { right: 150px; }
   .icon { display: none; }
   body.as-icon { width: 180px; height: 180px; background: #1A3D72; }
   body.as-icon > :not(.icon) { display: none; }
@@ -32,9 +37,11 @@
 <svg class="ring" viewBox="-280 -280 560 560" id="ring"></svg>
 <div class="text">
   <h1>天衍</h1>
-  <div class="sub">周易六十四卦起卦</div>
-  <div class="tag">掷六次铜钱，六十四卦只剩一卦</div>
+  <div class="sub">周易起卦</div>
 </div>
+<!-- 竖排从右往左读，上句放右边 -->
+<div class="side r">心有所惑　掷钱一问</div>
+<div class="side l">六爻既成　卦自有言</div>
 <svg class="icon" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1A3D72"/><g fill="#EEF2F7"><rect x="18" y="20" width="64" height="11"/><rect x="18" y="44" width="27" height="11"/><rect x="55" y="44" width="27" height="11"/><rect x="18" y="68" width="64" height="11"/></g></svg>
 <script>
   if (location.hash === '#icon') document.body.classList.add('as-icon');
