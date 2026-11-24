@@ -755,7 +755,7 @@ test('the paper share card keeps only the question, the hexagram and the main re
     assert.doesNotMatch(card, /sc-reading|sc-seal|sc-ring/);
     const blank = f.run(`(() => { const lines = [8,8,8,8,8,8]; const gua = lookupGua('000000'), change = calculateChangeGua(lines, '000000');
         return createShareCard({ gua, change, main: getMainReading(gua, change), hexagramLines: lines, question: '', date: '', createdAt: '' }); })()`);
-    assert.match(blank, /sc-ask-q blank">没写问题/);
+    assert.match(blank, /sc-ask-q blank">心中所念/);
     assert.match(blank, /没有动爻/);
 });
 

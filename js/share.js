@@ -144,7 +144,7 @@ function createShareCard(d) {
     // 9:16 竖版，宽 500
     return `<div id="shareCard" class="sc-card"><style>${SHARE_CARD_CSS}</style>
   ${shareCardBackdrop()}
-  <div class="sc-ask"><span class="sc-lbl">所问</span><span class="sc-ask-q${q ? (q.length > 32 ? ' long' : '') : ' blank'}">${q ? escHtml(q) : '没写问题'}</span></div>
+  <div class="sc-ask"><span class="sc-lbl">所问</span><span class="sc-ask-q${q ? (q.length > 32 ? ' long' : '') : ' blank'}">${q ? escHtml(q) : '心中所念'}</span></div>
   <i class="sc-gap"></i>
   <div class="sc-glyph">${bars}</div>
   <div class="sc-name${chars.length > 4 ? ' long' : ''}">${nameHtml}</div>

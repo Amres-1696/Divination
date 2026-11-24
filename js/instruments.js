@@ -195,14 +195,15 @@ function moonLitPath(lunarDay, r) {
     return `M0 ${-r}A${r} ${r} 0 0 ${outer} 0 ${r}A${rx} ${r} 0 0 ${inner} 0 ${-r}Z`;
 }
 function moonPhaseName(lunarDay) {
-    if (lunarDay <= 1) return '新月';
+    if (lunarDay <= 1) return '朔';
     if (lunarDay <= 6) return '蛾眉月';
     if (lunarDay <= 8) return '上弦月';
     if (lunarDay <= 14) return '盈凸月';
-    if (lunarDay <= 16) return '满月';
+    if (lunarDay <= 16) return '望';
     if (lunarDay <= 21) return '亏凸月';
     if (lunarDay <= 23) return '下弦月';
-    return '残月';
+    if (lunarDay <= 29) return '残月';
+    return '晦';
 }
 const BAND_MONTH_CN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
 const BAND_WEEK_CN = ['日', '一', '二', '三', '四', '五', '六'];
