@@ -647,6 +647,96 @@ function makeProfileTabs(sel) {
     return root;
 }
 
+// ---------- 月份、时辰：宫格选择 ----------
+// 原生下拉框弹出来的列表是系统画的（白底、系统字体、蓝色高亮），改不了样式，和这张图纸格格不入。
+// 换成一块深蓝的宫格：月份四列三行；时辰按子丑寅卯……四列三行，23 点后的子时（算作第二天）单独占底下一整行。
+// 原生 select 仍是数据源，只是藏起来；键盘可用方向键在格子里走，回车选定，Esc 收起。
+function makeGridPick(sel, { cols, label, cell, wide }) {
+    const root = document.createElement('div');
+    root.className = 'pick';
+    const id = sel.id + 'Pick';
+    root.innerHTML = `<button type="button" class="pick-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}" aria-label="${escHtml(label)}"></button>`
+        + `<div class="pick-pop" id="${id}" role="listbox" aria-label="${escHtml(label)}" tabindex="-1" hidden><i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i><div class="pick-grid" style="--cols:${cols}"></div></div>`;
+    const btn = root.querySelector('.pick-btn'), pop = root.querySelector('.pick-pop'), grid = root.querySelector('.pick-grid');
+    const opts = Array.from(sel.options).filter(o => o.value !== '');
+    grid.innerHTML = opts.map(o =>
+        `<button type="button" role="option" class="pick-cell${wide && wide(o) ? ' wide' : ''}" data-value="${o.value}" tabindex="-1">${cell(o)}</button>`
+    ).join('');
+    const cells = Array.from(grid.children);
+    const placeholder = sel.options[0] && sel.options[0].value === '' ? sel.options[0].textContent : '';
+    const sync = () => {
+        const o = sel.selectedOptions[0];
+        const empty = !o || o.value === '';
+        btn.textContent = empty ? placeholder : o.textContent;
+        btn.classList.toggle('empty', empty);
+        cells.forEach(c => c.setAttribute('aria-selected', String(c.dataset.value === sel.value)));
+    };
+    const close = (refocus) => {
+        if (pop.hidden) return;
+        pop.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('pointerdown', outside, true);
+        if (refocus) btn.focus();
+    };
+    const outside = e => { if (!root.contains(e.target)) close(false); };
+    const open = () => {
+        document.querySelectorAll('.pick-pop:not([hidden])').forEach(p => { if (p !== pop) p.closest('.pick')._close(false); });
+        pop.hidden = false;
+        // 靠右的那个（时辰）在窄屏上可能伸出面板，伸出去就改成右对齐
+        pop.classList.remove('end');
+        const box = root.closest('.settings-content') || document.body;
+        if (pop.getBoundingClientRect().right > box.getBoundingClientRect().right - 8) pop.classList.add('end');
+        btn.setAttribute('aria-expanded', 'true');
+        document.addEventListener('pointerdown', outside, true);
+        (cells.find(c => c.dataset.value === sel.value) || cells[0]).focus();
+    };
+    root._close = close;
+    const pick = c => {
+        if (sel.value !== c.dataset.value) {
+            sel.value = c.dataset.value;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        sync();
+        close(true);
+    };
+    btn.addEventListener('click', () => (pop.hidden ? open() : close(true)));
+    btn.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+    });
+    grid.addEventListener('click', e => { const c = e.target.closest('.pick-cell'); if (c) pick(c); });
+    pop.addEventListener('keydown', e => {
+        const i = cells.indexOf(document.activeElement);
+        let n = -1;
+        if (e.key === 'Escape' || e.key === 'Tab') { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); } close(e.key === 'Escape'); return; }
+        if (e.key === 'Enter' || e.key === ' ') { if (i >= 0) { e.preventDefault(); pick(cells[i]); } return; }
+        if (e.key === 'ArrowRight') n = i + 1;
+        else if (e.key === 'ArrowLeft') n = i - 1;
+        else if (e.key === 'ArrowDown') n = Math.min(cells.length - 1, i + cols);
+        else if (e.key === 'ArrowUp') n = i - cols;
+        else if (e.key === 'Home') n = 0;
+        else if (e.key === 'End') n = cells.length - 1;
+        else return;
+        e.preventDefault();
+        if (n >= 0 && n < cells.length) cells[n].focus();
+    });
+    // 值的来路和生辰签一样有三种（手选、器具拨、恢复设置时直接赋值），在已有的 value 钩子外面再包一层
+    sel.addEventListener('change', sync);
+    sel.addEventListener('input', sync);
+    const own = Object.getOwnPropertyDescriptor(sel, 'value');
+    const base = own || Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+    Object.defineProperty(sel, 'value', {
+        configurable: true,
+        get() { return base.get.call(this); },
+        set(v) { base.set.call(this, v); sync(); }
+    });
+    sel.after(root);
+    sel.classList.add('sr-native');
+    sel.tabIndex = -1;
+    sel.setAttribute('aria-hidden', 'true');
+    sync();
+    return root;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const year = document.getElementById('baziYear');
     const month = document.getElementById('baziMonth');
@@ -664,6 +754,16 @@ document.addEventListener('DOMContentLoaded', () => {
         slots.cal.appendChild(cal);
         slots.dial.appendChild(makeHourDial(hour));
         initBirthSlip(year, month, day, hour);
+        makeGridPick(month, { cols: 4, label: '出生月份', cell: o => escHtml(o.textContent) });
+        // 时辰格子：大字写地支，下面一行小字写钟点；晚子时那一格加注「算作第二天」
+        makeGridPick(hour, {
+            cols: 4, label: '出生时辰',
+            wide: o => o.value === '12',
+            cell: o => {
+                const [name, range] = o.textContent.split(' ');
+                return `<b>${escHtml(name.slice(0, 1))}</b><small>${escHtml(range.replace('（', ' · ').replace('）', ''))}</small>`;
+            }
+        });
     }
     const prof = document.getElementById('aiProfileSelect');
     if (prof) {

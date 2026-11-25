@@ -1343,6 +1343,38 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 }
 .birth-type select option { background: var(--blue-deep); color: var(--ink); }
 .birth-type input:focus, .birth-type select:focus { border-color: var(--ink); }
+/* 月份、时辰的宫格选择（instruments.js makeGridPick）：按钮长得和旁边的输入框一样，展开是一块带裁切角的深蓝图纸 */
+.pick { position: relative; display: inline-block; }
+.pick-btn {
+  min-width: 3.6em; padding: 6px 22px 7px 2px; font-size: var(--fs-5); line-height: 1.5; text-align: left; color: var(--ink);
+  background: transparent no-repeat right 4px center; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; outline: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A7B8D3' stroke-width='1.4'/%3E%3C/svg%3E");
+  transition: border-color var(--t-hover) ease;
+}
+.pick-btn.empty { color: var(--ink-3); }
+.pick-btn:hover, .pick-btn:focus-visible, .pick-btn[aria-expanded="true"] { border-color: var(--ink); outline: none; }
+.pick-pop {
+  position: absolute; z-index: 6; top: calc(100% + 8px); left: 0;
+  padding: 10px; background: var(--blue-deep); border: 1px solid var(--rule);
+  box-shadow: 0 12px 32px rgba(4, 12, 28, .5);
+  animation: pick-in .18s var(--ease-out);
+}
+.pick-pop.end { left: auto; right: 0; }
+@keyframes pick-in { from { opacity: 0; transform: translateY(-4px); } }
+.pick-grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(52px, auto)); gap: 2px; }
+.pick-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-height: 40px; padding: 6px 8px; font-size: var(--fs-4); color: var(--ink-2); white-space: nowrap;
+  background: transparent; border: 0; cursor: pointer; outline: none;
+  transition: color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.pick-cell b { font-family: var(--display); font-weight: 400; font-size: 20px; line-height: 1.2; }
+.pick-cell small { font-size: var(--fs-1); color: var(--ink-3); }
+.pick-cell.wide { grid-column: 1 / -1; flex-direction: row; gap: 10px; }
+.pick-cell:hover, .pick-cell:focus-visible { color: var(--ink); background: rgba(238, 242, 247, .07); }
+.pick-cell:focus-visible { box-shadow: inset 0 0 0 1px var(--ink-3); }
+.pick-cell[aria-selected="true"] { color: var(--ink); background: rgba(238, 242, 247, .12); box-shadow: inset 0 -2px 0 var(--ink); }
+.pick-cell[aria-selected="true"] small { color: var(--ink-2); }
 .birth-type-note { margin: 10px 0 16px; font-size: var(--fs-2); line-height: 1.7; color: var(--ink-3); }
 .birth-type-note button { color: var(--ink-2); }
 
