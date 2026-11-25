@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=9b76555e") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=b62102e3") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +20,7 @@
    可变字体，字重 400–700 都在这一个文件里。 */
 @font-face {
   font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-subset.woff2?v=ccc4c066") format("woff2");
+  src: url("fonts/NotoSerifSC-subset.woff2?v=26264692") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -464,8 +464,13 @@ body.view-home .site { min-height: 0; height: 100svh; }
   display: grid;
   place-items: center;
   overflow: hidden;
+  position: relative;
 }
 .home-main { width: min(400px, 100%); text-align: center; }
+/* 备案号贴着图框底边，不占首页那一屏的版面 */
+.site-foot { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font-size: var(--fs-1); line-height: 1.4; }
+.site-foot a { color: var(--ink-3); text-decoration: none; transition: color var(--t-hover) ease; }
+.site-foot a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .home-main > * { transition: opacity .35s ease, transform .5s var(--ease-out); }
 /* 首次打开、脚本还没接手时先不露首页内容：否则未装好的原生下拉框等会先闪一下，接着入场动画又从头放一遍 */
 body.intro .home-view:not(.entering) .home-main > * { opacity: 0; }
@@ -1839,7 +1844,7 @@ body:has(#shareImageContainer.show) .toast-container { bottom: auto; top: calc(v
 @media (max-height: 500px) {
   html:has(> body.view-home), body.view-home { height: auto; overflow: visible; }
   body.view-home .site { height: auto; }
-  .home-view { height: auto; min-height: calc(100svh - var(--head-h) - var(--frame) * 2); padding-bottom: 24px; }
+  .home-view { height: auto; min-height: calc(100svh - var(--head-h) - var(--frame) * 2); padding-bottom: 44px; }
 }
 
 /* ---------- 手机 ---------- */
