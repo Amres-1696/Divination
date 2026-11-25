@@ -651,9 +651,9 @@ function makeProfileTabs(sel) {
 // 原生下拉框弹出来的列表是系统画的（白底、系统字体、蓝色高亮），改不了样式，和这张图纸格格不入。
 // 换成一块深蓝的宫格：月份四列三行；时辰按子丑寅卯……四列三行，23 点后的子时（算作第二天）单独占底下一整行。
 // 原生 select 仍是数据源，只是藏起来；键盘可用方向键在格子里走，回车选定，Esc 收起。
-function makeGridPick(sel, { cols, label, cell, wide }) {
+function makeGridPick(sel, { cols, label, cell, wide, short }) {
     const root = document.createElement('div');
-    root.className = 'pick';
+    root.className = 'pick pick-' + sel.id;
     const id = sel.id + 'Pick';
     root.innerHTML = `<button type="button" class="pick-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}" aria-label="${escHtml(label)}"></button>`
         + `<div class="pick-pop" id="${id}" role="listbox" aria-label="${escHtml(label)}" tabindex="-1" hidden><i class="crop tl"></i><i class="crop tr"></i><i class="crop bl"></i><i class="crop br"></i><div class="pick-grid" style="--cols:${cols}"></div></div>`;
@@ -667,7 +667,8 @@ function makeGridPick(sel, { cols, label, cell, wide }) {
     const sync = () => {
         const o = sel.selectedOptions[0];
         const empty = !o || o.value === '';
-        btn.textContent = empty ? placeholder : o.textContent;
+        // 按钮宽度是固定的（见 style.css），选项文字太长时只写短的那一截，免得撑宽按钮、把它挤到下一行
+        btn.textContent = empty ? placeholder : (short ? short(o) : o.textContent);
         btn.classList.toggle('empty', empty);
         cells.forEach(c => c.setAttribute('aria-selected', String(c.dataset.value === sel.value)));
     };
@@ -759,6 +760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         makeGridPick(hour, {
             cols: 4, label: '出生时辰',
             wide: o => o.value === '12',
+            short: o => o.textContent.replace(/（.*）$/, ''),
             cell: o => {
                 const [name, range] = o.textContent.split(' ');
                 return `<b>${escHtml(name.slice(0, 1))}</b><small>${escHtml(range.replace('（', ' · ').replace('）', ''))}</small>`;
