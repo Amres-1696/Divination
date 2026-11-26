@@ -151,6 +151,24 @@ test('legacy records retain a stable ID and use their saved date and unknown met
     assert.match(f.run(`buildAiContext(gua,change,'old',renderArgs[7]).method`), /未知/);
 });
 
+test('the copied AI prompt carries the whole reading, filled into the same prompt the site uses', () => {
+    const f = fixture();
+    const p = f.run(`(() => { const lines = [9,7,8,7,7,8]; const bin = lines.map(n => (n === 7 || n === 9) ? '1' : '0').reverse().join('');
+        return buildAiPrompt(lookupGua(bin), calculateChangeGua(lines, bin), '这次换工作合适吗', { date: '2026/11/26' }); })()`);
+    assert.match(p, /【所问】这次换工作合适吗/);
+    assert.match(p, /【起卦】2026\/11\/26\n/);
+    assert.match(p, /【本卦】兑为泽（上兑下兑）\n卦辞：亨，利贞。\n象曰：丽泽，兑；君子以朋友讲习。/);
+    assert.match(p, /初九：和兑，吉。（动）\n九二：孚兑，吉，悔亡。\n/);
+    assert.match(p, /【之卦】泽水困（上兑下坎）\n卦辞：亨，贞，大人吉，无咎。有言不信。/);
+    assert.match(p, /【主断】只有初九一根动爻，读它的爻辞：本卦《兑为泽》初九「和兑，吉。」/);
+    assert.doesNotMatch(p, /\{\w+\}|未知/);
+    // 没写问题、没记起卦方式、没有动爻：这些行整行不写
+    const still = f.run(`buildAiReadingBlock(lookupGua('000000'), calculateChangeGua([8,8,8,8,8,8], '000000'), '', {})`);
+    assert.match(still, /^【本卦】坤为地/);
+    assert.doesNotMatch(still, /【所问】|【起卦】|【之卦】|（动）/);
+    assert.match(still, /【主断】没有动爻，读本卦的卦辞：本卦《坤为地》卦辞「/);
+});
+
 test('saved history metadata, not current settings, reaches AI request and retry', async () => {
     const f = fixture(); twoRecords(f); configureAi(f, `settings.method='bazi';`);
     const prompts = [];
