@@ -182,7 +182,7 @@ html::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* ---------- 注记：图纸上的小字标签 ----------
    所问、链接、图签、AI 的字段名、今日一卦的眉标、顶栏上挂着的问题，都是同一种小字 */
-.rq-label, .q-carry i, .link-label, .title-block dt, .ai-field-label, .daily-eyebrow, .gs-eyebrow, .gs-xiang span {
+.rq-label, .q-carry i, .link-label, .title-block dt, .ai-field-label, .daily-eyebrow, .gs-eyebrow, .gs-xiang span, .xiang-src .xs-label {
   font-size: var(--fs-1);
   letter-spacing: .2em;
   color: var(--ink-3);
@@ -930,6 +930,9 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .analysis-list { font-size: 18px; line-height: 1.95; }
 .change-details { margin-top: 16px; }
 .change-details p { font-size: var(--fs-5); }
+/* 象辞原文：放在白话前面，正文字体加粗一档，和下面的白话分开 */
+.xiang-src, .change-details p.xiang-src { margin-bottom: 12px; font-size: 19px; font-weight: 600; line-height: 1.7; letter-spacing: .06em; color: var(--ink); }
+.xiang-src .xs-label { margin-right: .9em; font-weight: 400; }
 /* 之卦那段前面的一行小字：说明下面讲的是走向，不是眼下 */
 .change-details p.zhi-lead { margin-bottom: 6px; font-size: var(--fs-2); color: var(--ink-3); }
 
@@ -1985,6 +1988,7 @@ body:has(#shareImageContainer.show) .toast-container { bottom: auto; top: calc(v
   .verdict-seal span { font-size: 21px; }
   .block { margin-top: 38px; }
   .analysis-list { font-size: 17px; }
+  .xiang-src, .change-details p.xiang-src { font-size: 18px; }
   .yao-item { grid-template-columns: 24px 2.8em minmax(0, 1fr); gap: 2px 12px; font-size: 16px; }
   .yao-mark { width: 24px; height: 5px; }
   .yao-type { grid-column: 3; }

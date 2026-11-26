@@ -306,6 +306,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
 <span class="yao-mark ${isYang ? 'yang' : 'yin'}" aria-hidden="true"></span><span class="yao-name">${yaoName}</span><span class="yao-text">${yaoText}</span><span class="yao-type">${i === typeTipAt ? term(YAO_TYPE_CN[line], TIPS.yaotype(line, readingContext.method)) : YAO_TYPE_CN[line]}${isChanging ? '，动' : ''}</span>${plain ? `<span class="yao-plain" id="yaoPlain${i}"><span>${plain}</span></span>` : ''}</li>`;
     }).join('');
 
+    // 卦象、之卦两段都先贴《象传》原文，再接白话：白话就是照着这句象辞写的
+    const xiangSrc = (name, label) => (typeof DA_XIANG !== 'undefined' && DA_XIANG[name])
+        ? `<p class="xiang-src"><span class="xs-label">${label}</span>${DA_XIANG[name]}。</p>` : '';
     const analysisHtml = gua[4].split('。').filter(s => s.trim()).map(s =>
         `<span class="analysis-item">${s.trim()}。</span>`
     ).join('');
@@ -315,7 +318,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     let changeHtml = '';
     if (zhi) {
         changeHtml = `<section class="block change-section"><h3>${term('之卦', TIPS.zhigua)} <span class="rule-tag">${zhi[0]}</span></h3>
-<div class="change-details"><p class="zhi-lead">接下来，事情会往这一卦的方向走：</p><p>${zhi[4]}</p></div></section>`;
+<div class="change-details"><p class="zhi-lead">接下来，事情会往这一卦的方向走：</p>${xiangSrc(zhi[0], '象曰')}<p>${zhi[4]}</p></div></section>`;
     }
 
     const aiSettings = loadSettings().ai || {};
@@ -364,7 +367,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
       </header>
       ${mainHtml}
       <div class="reading-sheet">
-      <section class="block" style="--d:4"><h3>卦象</h3><p class="analysis-list">${analysisHtml}</p></section>
+      <section class="block" style="--d:4"><h3>卦象</h3>${xiangSrc(gua[0], term('象曰', TIPS.xiang))}<p class="analysis-list">${analysisHtml}</p></section>
       ${changeHtml.replace('<section class="block change-section">', '<section class="block change-section" style="--d:5">')}
       ${aiHtml.replace('<section class="block card-ai"', '<section style="--d:5" class="block card-ai"')}
       <section class="block yao-details" style="--d:6"><h3>${term('六爻', TIPS.liuyao(hexLines, mainReading.at, /^[四五]爻动$/.test(mainReading.rule)))} <span class="rule-tag">从上往下${yaoPlain.length ? '，点一爻看白话' : ''}</span></h3>
