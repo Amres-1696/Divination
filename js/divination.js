@@ -329,10 +329,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     }
 
     const aiSettings = loadSettings().ai || {};
-    const showAiCard = !!savedAi || aiSettings.enabled;
-    const aiHtml = showAiCard
-        ? `<section class="block card-ai" id="aiReadingCard"><h3>AI 解读</h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`
-        : '';
+    // AI 解读一栏总在：没开站内解读的，这里给「复制提示词」，拿去自己常用的 AI 里解
+    const aiHtml = `<section class="block card-ai" id="aiReadingCard"><h3>AI 解读</h3><div class="ai-reading-body" id="aiReadingBody"></div></section>`;
 
     // 记录本卦所问和起卦时间，供分享卡读取（不读实时输入框和当前时间：回看历史时分享卡要对得上那一卦）
     resultArea.dataset.question = question || '';
@@ -466,6 +464,8 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         if (savedAi) {
             aiBody.innerHTML = '<div class="ai-reading-text"></div>';
             aiBody.querySelector('.ai-reading-text').textContent = savedAi;
+        } else if (!aiSettings.enabled) {
+            offerAiCopy(gua, change, question, aiBody, readingContext);
         } else if (typeof aiReady === 'function' && !aiReady()) {
             // 开了 AI 解卦但还没配好：不放解读按钮，直接说缺什么、带去设置
             aiNotReady(gua, change, question, aiBody, readingContext);

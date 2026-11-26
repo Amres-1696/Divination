@@ -7,7 +7,7 @@ const AI_METHOD_LABEL = Object.fromEntries(METHOD_ORDER.map(m => [m, METHODS[m].
 function buildAiContext(gua, change, question, readingContext = {}) {
     const changing = change.changingYaos || [];
     const changePos = changing.length
-        ? changing.map(p => YAO_POS_CN[p]).join('、') + ' 爻动'
+        ? changing.map(p => YAO_POS_CN[p]).join('、') + '爻动'
         : '没有动爻';
     // 主断之爻：复用既有取爻规则，只给 AI 主断指向的那一爻，而非六爻全丢
     const main = getMainReading(gua, change);
@@ -24,8 +24,34 @@ function buildAiContext(gua, change, question, readingContext = {}) {
         symbol: gua[2],
         bianGua,
         changePos,
-        changeYao: main.text
+        changeYao: main.text,
+        reading: buildAiReadingBlock(gua, change, question, readingContext, main)
     };
+}
+
+// 提示词里的整卦信息：AI 手上没有《周易》原文也能照着解。缺的项（没写问题、没记起卦方式、没有之卦）整行不写
+const TRIGRAM_OF_SYMBOL = { '☰': '乾', '☱': '兑', '☲': '离', '☳': '震', '☴': '巽', '☵': '坎', '☶': '艮', '☷': '坤' };
+function buildAiReadingBlock(gua, change, question, readingContext = {}, main = getMainReading(gua, change)) {
+    const updown = g => { const s = Array.from(g[2] || ''); return s.length === 2 ? `（上${TRIGRAM_OF_SYMBOL[s[0]]}下${TRIGRAM_OF_SYMBOL[s[1]]}）` : ''; };
+    const xiang = name => (typeof DA_XIANG !== 'undefined' && DA_XIANG[name]) ? `象曰：${DA_XIANG[name]}。` : '';
+    const guaLines = g => [`${g[0]}${updown(g)}`, `卦辞：${g[1]}`, xiang(g[0])].filter(Boolean);
+    const changing = change.changingYaos || [];
+    const q = question && question.trim();
+    const when = readingContext.date || readingContext.createdAt || '';
+    const how = AI_METHOD_LABEL[readingContext.method] || '';
+    // 一段一组，组和组之间空一行；整组缺的就不出现
+    const head = [q && `【所问】${q}`, (when || how) && `【起卦】${[when, how].filter(Boolean).join('，')}`].filter(Boolean);
+    const yao = [changing.length ? '【六爻】自下而上，标「动」的是动爻' : '【六爻】自下而上，没有动爻',
+        ...gua[3].split('|').map((y, i) => y + (changing.includes(i) ? '（动）' : ''))];
+    const quotes = main.lines.map(l => `${l.from}「${l.text}」`).join('；');
+    const groups = [
+        head,
+        [`【本卦】${guaLines(gua).join('\n')}`],
+        yao,
+        change.hasChange && change.changeGua ? [`【之卦】${guaLines(change.changeGua).join('\n')}`] : [],
+        [`【主断】${String(main.how || '').replace(/。$/, '')}：${quotes}`]
+    ];
+    return groups.filter(g => g.length).map(g => g.join('\n')).join('\n\n');
 }
 
 function fillPrompt(tpl, ctx) {
@@ -86,8 +112,9 @@ function aiReady() {
 // 还没配好不是出错：不用朱色，写一行淡色说明，后面一个「去设置」直接带到 AI 那一组。
 // 在设置里存好之后，这里自动换成「请 AI 解读这一卦」
 function aiNotReady(gua, change, question, bodyEl, readingContext = {}) {
-    bodyEl.innerHTML = '<p class="ai-unset">还没配置 AI 接口<span class="ai-unset-dot" aria-hidden="true">·</span><button type="button" class="ai-goset">去设置</button></p>';
+    bodyEl.innerHTML = '<p class="ai-unset">还没配置 AI 接口<span class="ai-unset-dot" aria-hidden="true">·</span><button type="button" class="ai-goset">去设置</button><span class="ai-unset-dot" aria-hidden="true">·</span><button type="button" class="ai-goset" data-ai-copy>先复制提示词</button></p>';
     bodyEl.querySelector('.ai-goset').addEventListener('click', openAiSettings);
+    wireAiCopy(bodyEl, gua, change, question, readingContext);
     const onSaved = () => {
         if (!bodyEl.isConnected) { document.removeEventListener('ai-config-saved', onSaved); return; }
         if (!aiReady() || !bodyEl.querySelector('.ai-unset')) return;
@@ -113,8 +140,38 @@ function openAiSettings() {
     if (first && window.matchMedia && window.matchMedia('(hover: hover)').matches) setTimeout(() => first.focus({ preventScroll: true }), 600);
 }
 function offerAiReading(gua, change, question, bodyEl, readingContext = {}) {
-    bodyEl.innerHTML = '<button class="btn" id="aiRunBtn">请 AI 解读这一卦</button>';
+    bodyEl.innerHTML = '<div class="ai-acts"><button class="btn" id="aiRunBtn">请 AI 解读这一卦</button><button type="button" class="btn btn-quiet" data-ai-copy>复制提示词</button></div>';
     bodyEl.querySelector('#aiRunBtn').addEventListener('click', () => runAiReading(gua, change, question, bodyEl, readingContext));
+    wireAiCopy(bodyEl, gua, change, question, readingContext);
+}
+
+// 没接自己的接口也能用 AI：把这一卦连同提示词复制下来，粘到 DeepSeek、豆包、Kimi 这类对话里发出去。
+// 提示词和站内解读用同一份（设置里改过就用改过的），两边解出来的口径一致
+function buildAiPrompt(gua, change, question, readingContext = {}) {
+    const ai = loadSettings().ai || {};
+    const p = (ai.profiles && getActiveAiProfile(ai)) || {};
+    return fillPrompt(p.prompt || DEFAULT_AI_PROMPT, buildAiContext(gua, change, question, readingContext));
+}
+function wireAiCopy(bodyEl, gua, change, question, readingContext = {}) {
+    bodyEl.querySelectorAll('[data-ai-copy]').forEach(btn => btn.addEventListener('click', async () => {
+        const text = buildAiPrompt(gua, change, question, readingContext);
+        if (await copyText(text)) {
+            showToast('提示词复制好了，粘到 AI 对话框里发出去就行', 'success');
+            const label = btn.textContent;
+            btn.textContent = '已复制';
+            clearTimeout(btn._t);
+            btn._t = setTimeout(() => { btn.textContent = label; }, 2000);
+        } else {
+            showToast('没能自动复制，换个浏览器再试试', 'error');
+        }
+    }));
+}
+// 没开站内 AI 解读：头一样就是复制提示词，后面一句带到设置，想在站里直接解的再去接接口
+function offerAiCopy(gua, change, question, bodyEl, readingContext = {}) {
+    bodyEl.innerHTML = '<button type="button" class="btn" data-ai-copy>复制提示词</button>'
+        + '<p class="ai-copy-note">粘到 DeepSeek、豆包、Kimi 这类 AI 的对话框里发出去，它就照这一卦来解。也可以<button type="button" class="ai-goset">在设置里接上自己的接口</button>，直接在这里解。</p>';
+    bodyEl.querySelector('.ai-goset').addEventListener('click', openAiSettings);
+    wireAiCopy(bodyEl, gua, change, question, readingContext);
 }
 
 async function requestAiReading(gua, change, question, bodyEl, readingContext = {}) {
@@ -417,9 +474,7 @@ const LEGACY_AI_PROMPTS = [`你是一位精通《周易》象数与义理的解�
 - 用简体中文、纯文本分段，段首以方括号小标题标注，如【卦象总览】。
 - 不要使用 Markdown 符号（如 #、*、**），它们会原样显示。
 - 共五段，依次为：【卦象总览】【应问而断】【变爻玄机】【行止之议】【箴言】。
-- 每段约 2 至 4 句，【箴言】一句收束；全文约 400 至 700 字，语气古雅而通俗，如对坐谈心。`];
-
-const DEFAULT_AI_PROMPT = `你是熟悉《周易》的解卦人，懂卦象，也会把卦理落到问卦人的实际处境上。请根据下面这一卦，回答问卦人的问题。
+- 每段约 2 至 4 句，【箴言】一句收束；全文约 400 至 700 字，语气古雅而通俗，如对坐谈心。`, `你是熟悉《周易》的解卦人，懂卦象，也会把卦理落到问卦人的实际处境上。请根据下面这一卦，回答问卦人的问题。
 
 【所问】{question}
 【起卦时间】{time}
@@ -435,6 +490,21 @@ const DEFAULT_AI_PROMPT = `你是熟悉《周易》的解卦人，懂卦象，�
 2. 本卦看眼下的处境，之卦看事情往哪里走，主断是最要紧的那一句，把三者连起来讲清楚。
 3. 利弊、宜忌可以直说，不必含糊；但给的是参考和建议，不是断言。
 4. 没写问题时，就近况和心态来谈。
+
+格式：
+- 简体中文纯文本，不用 Markdown 符号（#、* 这类会原样显示）。
+- 分五段，段首用方括号标题：【卦象】【所问】【动爻】【怎么做】【一句话】。
+- 每段两到四句，【一句话】只写一句；全文四百到七百字。说人话，像当面聊，不要堆文言。`];
+
+// {reading} 是整卦的信息块（所问、起卦、本卦、六爻、之卦、主断），缺的项整行不写，见 buildAiReadingBlock
+const DEFAULT_AI_PROMPT = `你是熟悉《周易》的解卦人，懂卦象，也会把卦理落到问卦人的实际处境上。下面是我起的一卦，请照这一卦回答我的问题。
+
+{reading}
+
+请这样解：
+1. 主断已经按规则定好，以它为核心，不要另换一句当重点。
+2. 本卦说眼下的处境，之卦说事情往哪里走，把两卦和主断串起来，落到我问的这件事上；不说放到哪个问题上都成立的空话。
+3. 没写问题时，就近况和心态来谈。
 
 格式：
 - 简体中文纯文本，不用 Markdown 符号（#、* 这类会原样显示）。
