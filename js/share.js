@@ -63,11 +63,15 @@ const SHARE_CARD_CSS = `
     .sc-quote .cl { display: inline-block; white-space: nowrap; }
     .sc-from { margin-top: 8px; font-size: 14px; letter-spacing: .08em; color: rgba(15, 42, 84, .72); }
     .sc-plain { margin: 14px auto 0; max-width: 380px; font-size: 16px; line-height: 1.7; letter-spacing: .04em; color: rgba(15, 42, 84, .86); word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
-    .sc-foot { position: relative; flex: none; margin-bottom: 50px; font-size: 14px; letter-spacing: .24em; color: rgba(15, 42, 84, .72); }
+    .sc-foot { position: relative; flex: none; font-size: 14px; letter-spacing: .24em; color: rgba(15, 42, 84, .72); }
     .sc-year { margin-right: 12px; }
     .sc-zod { display: inline-block; width: 22px; height: 22px; margin-right: 5px; vertical-align: -5px; opacity: .8; }
+    .sc-site { position: relative; flex: none; margin: 9px 0 40px; font-size: 13px; letter-spacing: .2em; text-indent: .2em; color: rgba(15, 42, 84, .62); }
     .sc-foot b { margin-right: 14px; font-family: 'ZCOOL XiaoWei', 'Noto Serif SC', serif; font-size: 19px; font-weight: 400; letter-spacing: .2em; color: #0F2A54; }
 `;
+
+// 落款下面印一行网址：图片里放不了能点的链接，看到图的人照着输就能进来
+const SHARE_SITE = 'guashen.xyz';
 
 // 起卦时刻写成干支农历（乙巳年九月初十 午时）；旧记录没有精确时间时退回原日期字符串
 function shareCardWhen(d) {
@@ -167,6 +171,7 @@ function createShareCard(d) {
   <div class="sc-main"><span class="sc-lbl">主断</span>${mainHtml}</div>
   <i class="sc-gap"></i>
   <div class="sc-foot"><b>天衍</b>${shareCardYear(when.year)}${escHtml(String(when.solar).split(' ')[0])}</div>
+  <div class="sc-site">${SHARE_SITE}</div>
 </div>`;
 }
 
