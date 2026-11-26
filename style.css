@@ -9,7 +9,7 @@
    子集里没有的字（比如原字体本来就缺的「夬」「姤」）按 --display 往后退到思源宋体。 */
 @font-face {
   font-family: "ZCOOL XiaoWei";
-  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=b62102e3") format("woff2");
+  src: url("fonts/ZCOOLXiaoWei-subset.woff2?v=b820063d") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +20,7 @@
    可变字体，字重 400–700 都在这一个文件里。 */
 @font-face {
   font-family: "Noto Serif SC";
-  src: url("fonts/NotoSerifSC-subset.woff2?v=26264692") format("woff2");
+  src: url("fonts/NotoSerifSC-subset.woff2?v=4f2c784a") format("woff2");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -549,6 +549,32 @@ body.casting .home-main > * {
 .mh-switch { display: inline-flex; align-items: center; gap: 10px; padding: 4px 0; white-space: nowrap; color: var(--ink-3); }
 .mh-switch::before { content: "·"; text-decoration: none; display: inline-block; color: var(--ink-3); }
 .method-hint.swap { animation: hint-swap .45s var(--ease-out); }
+/* 报数起卦：问题框像一张牌那样绕横轴翻过去，背面是上卦、下卦两格。两面叠在同一个位置，翻的时候不占新地方。
+   分两段翻：先把朝外的一面转到侧立（90°）并藏起来，另一面再从侧立转正。不靠 backface-visibility，
+   输入框里的字单独合成时也不会从背面透出来 */
+.q-flip { position: relative; perspective: 900px; }
+.q-back {
+  position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-end; gap: 36px;
+  transform: rotateX(-90deg); visibility: hidden;
+}
+/* 翻回问题：报数那面先转走，问题那面随后转正 */
+.q-flip > .q-field { transition: transform .32s var(--ease-out) .26s, visibility 0s .26s; }
+.q-flip > .q-back { transition: transform .26s cubic-bezier(.5, 0, .9, .5), visibility 0s .26s; }
+/* 翻到报数：问题那面先转走，报数那面随后转正 */
+.q-flip.flipped > .q-field { transform: rotateX(90deg); visibility: hidden; transition: transform .26s cubic-bezier(.5, 0, .9, .5), visibility 0s .26s; }
+.q-flip.flipped > .q-back { transform: none; visibility: visible; transition: transform .32s var(--ease-out) .26s, visibility 0s .26s; }
+.q-back label { display: inline-flex; align-items: baseline; gap: 10px; font-size: var(--fs-1); letter-spacing: .12em; color: var(--ink-3); }
+.q-back input {
+  width: 4.6em; padding: 8px 2px 10px; font-size: 21px; line-height: 1.5; text-align: center; color: var(--ink);
+  background: transparent; border: 0; border-bottom: 1px solid var(--ink-2); border-radius: 0; outline: none;
+  -moz-appearance: textfield; appearance: textfield; transition: border-color var(--t-hover) ease, box-shadow var(--t-hover) ease;
+}
+.q-back input::-webkit-outer-spin-button, .q-back input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.q-back input::placeholder { font-size: var(--fs-3); color: var(--ink-3); opacity: .8; letter-spacing: .08em; }
+.q-back input:focus { border-color: var(--ink); box-shadow: 0 1px 0 var(--ink); }
+/* 背面右下角「改问题」占「怎么问 ?」的位置 */
+.q-return { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .q-flip > .q-field, .q-flip > .q-back, .q-flip.flipped > .q-field, .q-flip.flipped > .q-back { transition: none; } }
 @keyframes hint-swap { from { opacity: 0; transform: translateY(6px); } }
 
 /* 主按钮：实底，外加一道细线（像图纸上的双线框） */
@@ -1320,6 +1346,28 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 }
 .settings-textarea:focus { border-color: var(--ink); }
 .settings-panel .seg { flex: none; }
+/* 起卦方式：五行单选，每行只写名字；选中的一行提亮并在左边划一道竖线。
+   做法和出处收进每行右端的「?」，和首页「怎么问 ?」同一种小字，悬停或点一下浮出 */
+.method-list { margin-top: 12px; display: flex; flex-direction: column; border-top: 1px solid var(--rule-soft); }
+.ml-row { position: relative; }
+.ml-opt {
+  position: relative; display: flex; align-items: baseline; gap: 14px; width: 100%; padding: 7px 40px 7px 14px; text-align: left;
+  border-bottom: 1px solid var(--rule-soft); color: var(--ink-3); transition: color var(--t-hover) ease, background-color var(--t-hover) ease;
+}
+.ml-opt b { flex: none; font-weight: 600; font-size: var(--fs-3); letter-spacing: .1em; color: var(--ink-2); }
+.ml-opt::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; background: var(--ink); transform: scaleY(0); transition: transform .3s var(--ease-out); }
+.ml-opt:hover { color: var(--ink-2); background: rgba(238, 242, 247, .04); }
+.ml-opt[aria-checked="true"] { color: var(--ink-2); background: rgba(238, 242, 247, .07); }
+.ml-opt[aria-checked="true"] b { color: var(--ink); }
+.ml-opt[aria-checked="true"]::before { transform: none; }
+.ml-opt:focus-visible { outline: 1px solid var(--ink-3); outline-offset: -1px; }
+.ml-help, .ml-help.term {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px;
+  font-family: var(--text); font-size: var(--fs-1); line-height: 32px; letter-spacing: .1em; text-align: center; color: var(--ink-3);
+  text-decoration: none; cursor: help; transition: color var(--t-hover) ease;
+}
+.ml-help:hover, .ml-help:focus-visible { color: var(--ink-2); }
+.ml-help:focus-visible { outline: 1px solid var(--ink-3); outline-offset: -3px; }
 
 .sr-native { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 

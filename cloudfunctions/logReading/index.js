@@ -72,7 +72,7 @@ exports.main = async (event) => {
             changing,
             change_bin: changeBin,
             change_gua: str(data.changeGua, 8),
-            method: data.method === 'bazi' ? 'bazi' : 'coin'
+            method: ['coin', 'time', 'number', 'bazi', 'natal'].includes(data.method) ? data.method : 'coin'
         };
     }
 

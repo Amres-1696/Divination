@@ -585,13 +585,15 @@ function closeShare() {
 // ?y=六爻的数（自初爻起，6 老阴 / 7 少阳 / 8 少阴 / 9 老阳）&d=起卦日期 YYYYMMDD&m=c|b（铜钱 / 生辰）&q=所问&from=share
 // 所问可能很私人，默认不放进链接，要用户勾选才带上。
 // from=share 给统计用：从分享链接进来的访问和之后起的卦，后台记在「朋友分享」名下（track.js 读它）
+// 分享链接里的起卦方式用一个字母：c 铜钱、t 占时、n 报数、b 生辰、s 本命
+const SHARE_METHOD_CODE = { coin: 'c', time: 't', number: 'n', bazi: 'b', natal: 's' };
 function buildShareLink(lines, opts) {
     opts = opts || {};
     const p = new URLSearchParams();
     p.set('y', lines.join(''));
     const d = /(\d{4})\D(\d{1,2})\D(\d{1,2})/.exec(opts.date || '');
     if (d) p.set('d', d[1] + d[2].padStart(2, '0') + d[3].padStart(2, '0'));
-    if (opts.method === 'coin' || opts.method === 'bazi') p.set('m', opts.method[0]);
+    if (SHARE_METHOD_CODE[opts.method]) p.set('m', SHARE_METHOD_CODE[opts.method]);
     if (opts.question) p.set('q', String(opts.question).trim().slice(0, 80));
     p.set('from', 'share');
     return (opts.base || (location.origin + location.pathname)) + '?' + p.toString();
@@ -605,7 +607,7 @@ function parseShareLink(search) {
         lines: Array.from(y, Number),
         question: (p.get('q') || '').trim().slice(0, 80),
         date: d ? `${d[1]}/${Number(d[2])}/${Number(d[3])}` : '',
-        method: { c: 'coin', b: 'bazi' }[p.get('m')]
+        method: Object.keys(SHARE_METHOD_CODE).find(k => SHARE_METHOD_CODE[k] === p.get('m'))
     };
 }
 // 打开带 ?y= 的地址：直接显示这一卦，不记进打开者的牌册

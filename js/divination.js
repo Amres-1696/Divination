@@ -19,11 +19,32 @@ async function divine() {
         date: startedAt.toLocaleString('zh-CN')
     };
 
-    // 生辰起卦需要先存生辰
-    if (settings.method === 'bazi' && !settings.bazi) {
+    // 生辰起卦、本命卦需要先存生辰
+    if (needsBirth(settings.method) && !settings.bazi) {
         if (typeof promptForBirth === 'function') promptForBirth();
         _divineRunning = false;
         return;
+    }
+    // 报数起卦分两步：第一次点「起卦」只把问题框翻过去露出报数的两格；两格填好再点，才真正起卦
+    let nums = null;
+    if (settings.method === 'number') {
+        if (!numbersShown()) {
+            flipToNumbers(true);
+            _divineRunning = false;
+            return;
+        }
+        nums = readNumberPair();
+        if (!nums) {
+            showToast('两格各填一个数，凭直觉想到什么写什么');
+            const a = document.getElementById('numA'), b = document.getElementById('numB');
+            const empty = a && !/^\d+$/.test(String(a.value).trim()) ? a : b;
+            if (empty && empty.focus) empty.focus();
+            _divineRunning = false;
+            return;
+        }
+        // 翻回问题那一面再起卦：问题从输入框升到顶栏时，起点是看得见的那一行字
+        flipToNumbers(false, { quiet: true });
+        ['numA', 'numB'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
 
     btn.disabled = true;
@@ -40,8 +61,11 @@ async function divine() {
         const stage = document.getElementById('ritualStage');
         if (window.scrollTo) window.scrollTo({ top: 0 });
 
-        const hexLines = settings.method === 'bazi'
-            ? generateHexagramBazi(settings.bazi, question)
+        const now = new Date();
+        const hexLines = settings.method === 'bazi' ? generateHexagramBazi(settings.bazi, question)
+            : settings.method === 'natal' ? generateHexagramNatal(settings.bazi)
+            : settings.method === 'time' ? generateHexagramTime(now)
+            : settings.method === 'number' ? generateHexagramNumber(nums[0], nums[1], now)
             : generateHexagram();
 
         const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
@@ -53,11 +77,11 @@ async function divine() {
         const prefersReducedMotion = window.matchMedia &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         // 铜钱和生辰各有各的过程设置，互不影响
-        const paceSetting = settings.method === 'bazi' ? settings.ritualBazi : settings.ritual;
+        const paceSetting = settings.method === 'coin' ? settings.ritual : settings.ritualBazi;
         const ritualMode = prefersReducedMotion ? 'none' : (paceSetting || 'full');
         let chosenCard = null;
         if (ritualMode !== 'none') {
-            const ritual = new HexRitual(stage, gua, hexLines, change, settings.method, ritualMode);
+            const ritual = new HexRitual(stage, gua, hexLines, change, settings.method, ritualMode, ritualNote(settings.method, now, nums));
             // 仪式与「跳过」信号竞速：点跳过即直奔结果，不触碰内部动画时序
             let skipped = false;
             const skipPromise = new Promise(res => { ritual._onSkip = () => { skipped = true; ritual.abort(); res(); }; });
@@ -187,7 +211,7 @@ const TIPS = {
             8: '少阴是不会变的阴爻。会变的阴爻叫老阴，算作动爻。'
         }[line];
         if (method === 'coin') return base + `掷钱时如果${COIN_FACE_CN[LINE_TO_BEI[line]]}，得到的就是${YAO_TYPE_CN[line]}。`;
-        if (method === 'bazi') return base + (line === 6 || line === 9 ? '生辰起卦只会算出一根动爻。' : '生辰起卦只会算出一根动爻，其余五根都是少阳或少阴。');
+        if (METHODS[method]) return base + methodName(method) + (line === 6 || line === 9 ? '只会算出一根动爻。' : '只会算出一根动爻，其余五根都是少阳或少阴。');
         return base;
     },
     guaxu(gua) {
@@ -286,7 +310,7 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
         `<span class="analysis-item">${s.trim()}。</span>`
     ).join('');
 
-    const methodText = readingContext.method === 'bazi' ? '生辰起卦' : readingContext.method === 'coin' ? '铜钱起卦' : '未记录';
+    const methodText = methodName(readingContext.method) || '未记录';
 
     let changeHtml = '';
     if (zhi) {
@@ -475,6 +499,47 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     setTimeout(() => { if (page && page.classList) page.classList.remove('entering'); }, 2200);
 }
 
+// 报数的两格是不是正翻在外面
+function numbersShown() {
+    const flip = document.getElementById('qFlip');
+    return !!(flip && flip.classList.contains('flipped'));
+}
+// 问题框翻到背面（报数两格）或翻回来。quiet：只翻，不挪焦点（换起法、起卦开始时用）
+function flipToNumbers(on, opts) {
+    const flip = document.getElementById('qFlip');
+    if (!flip || flip.classList.contains('flipped') === on) return;
+    flip.classList.toggle('flipped', on);
+    const front = document.getElementById('qFront'), back = document.getElementById('qBack');
+    if (front) front.inert = on;
+    if (back) { back.inert = !on; back.setAttribute('aria-hidden', String(!on)); }
+    if (opts && opts.quiet) return;
+    const target = document.getElementById(on ? 'numA' : 'question');
+    // 等翻过一半、那一面露出来了再挪焦点（藏着的那一面拿不到焦点）
+    if (target && target.focus) setTimeout(() => target.focus({ preventScroll: true }), 320);
+}
+
+// 报数起卦的两个数：都要是 1–9999 的整数，否则返回 null
+function readNumberPair() {
+    const read = id => { const el = document.getElementById(id); return el ? String(el.value).trim() : ''; };
+    const a = read('numA'), b = read('numB');
+    if (!/^\d{1,4}$/.test(a) || !/^\d{1,4}$/.test(b) || +a < 1 || +b < 1) return null;
+    return [+a, +b];
+}
+// 推演开头那一行小字：说清这一卦是拿什么数推出来的
+function ritualNote(method, now, nums) {
+    if (method === 'bazi') return '生辰起卦不用掷钱，六爻由你的生辰和所问推出';
+    if (method === 'natal') return '本命卦只看生辰，六爻由生辰推出';
+    if (method === 'time') {
+        const h = hourIndexOf(now);
+        const day = h === 12 ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1) : now;
+        const lu = solarToLunar(day.getFullYear(), day.getMonth() + 1, day.getDate());
+        const when = lu ? `${ganZhiYear(lu.year)}年${lunarMonthName(lu.month, lu.isLeap)}${lunarDayName(lu.day)}` : '此刻';
+        return `${when}${DI_ZHI[h % 12]}时，由年月日时推出六爻`;
+    }
+    if (method === 'number' && nums) return `上卦取 ${nums[0]}，下卦取 ${nums[1]}，再加上时辰定动爻`;
+    return '';
+}
+
 // 归一化问题：去空白、去标点符号、全角转半角、统一小写
 // 让「同一个问题」在语义上恒定，不因末尾空格 / 标点差异而改变卦象
 function normalizeQuestion(q) {
@@ -498,16 +563,5 @@ function generateHexagramBazi(bazi, question) {
     const sumLower = base.lower + (Math.floor(qNum / 97) % 89);
     // 动爻＝年月日时总数 mod 6（梅花传统，同下卦总数；问题项随下卦总数自然融入，
     // 观梅占原例：34 起兑为上、43 起离为下，动爻 43%6=1 取初爻——总数只计一次）
-    const changingYao = ((sumLower - 1) % 6 + 6) % 6;
-    const upperBin = trigramOfNumber(sumUpper);
-    const lowerBin = trigramOfNumber(sumLower);
-
-    const lines = [];
-    for (let i = 0; i < 3; i++) lines.push(lowerBin[2 - i] === '1' ? 7 : 8);
-    for (let i = 0; i < 3; i++) lines.push(upperBin[2 - i] === '1' ? 7 : 8);
-
-    if (lines[changingYao] === 7) lines[changingYao] = 9;
-    else lines[changingYao] = 6;
-
-    return lines;
+    return meihuaLines(sumUpper, sumLower, sumLower);
 }

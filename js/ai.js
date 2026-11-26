@@ -2,7 +2,7 @@
 // 必须在 settings.js 之前加载（DEFAULT_SETTINGS 引用了本文件的 DEFAULT_AI）
 
 /* ============ AI 解卦 ============ */
-const AI_METHOD_LABEL = { coin: '铜钱起卦（三枚铜钱掷六次）', bazi: '生辰起卦（公历生辰换算农历，按梅花易数取数）' };
+const AI_METHOD_LABEL = Object.fromEntries(METHOD_ORDER.map(m => [m, METHODS[m].ai]));
 
 function buildAiContext(gua, change, question, readingContext = {}) {
     const changing = change.changingYaos || [];

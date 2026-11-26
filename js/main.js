@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         // 选了生辰起卦但还没存生辰：就地引到生辰那一组，免得回首页起卦时才发现
-        if (this.value === 'bazi' && !loadSettings().bazi) promptForBirth();
+        if (needsBirth(this.value) && !loadSettings().bazi) promptForBirth();
     });
     document.getElementById('settingRitual').addEventListener('change', function() {
         if (!saveSetting('ritual', this.value)) this.value = loadSettings().ritual || 'full';

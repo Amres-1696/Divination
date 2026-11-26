@@ -797,3 +797,60 @@ test('admin stats bucket by Beijing day and hour, and compare against the matchi
     assert.deepEqual(s.recent.map(r => r.at), ['03-11 08:05', '03-10 00:20']);
     assert.equal(s.today.visits, 1);
 });
+
+test('meihua methods: time casting reproduces the plum-blossom example, numbers and natal follow the same counting', () => {
+    const f = fixture();
+    const show = expr => f.run(`(()=>{const l=${expr};const b=l.map(n=>n%2?'1':'0').reverse().join('');return lookupGua(b)[0]+'/'+(l.findIndex(n=>n===6||n===9)+1)+'/'+l.filter(n=>n===6||n===9).length})()`);
+    // 观梅占：辰年十二月十七日申时，34 起兑为上、43 起离为下，43 除六余一，初爻动（甲辰年腊月十七 = 2025-01-16）
+    assert.equal(show('generateHexagramTime(new Date(2025, 0, 16, 16, 0))'), '泽火革/1/1');
+    // 23 点后的子时按第二天算；0 点是子时，22 点还是亥时
+    assert.equal(f.run('[23, 0, 22].map(h => hourIndexOf(new Date(2025, 0, 16, h, 30))).join()'), '12,0,11');
+    // 报数：5 定上卦巽、3 定下卦离，5+3 加子时 1 得 9，除六余三，三爻动
+    assert.equal(show('generateHexagramNumber(5, 3, new Date(2025, 0, 16, 0, 30))'), '风火家人/3/1');
+    assert.equal(show('generateHexagramNumber(16, 8, new Date(2025, 0, 16, 0, 30))'), '坤为地/1/1');
+    // 本命卦只看生辰，和生辰起卦不写问题时同一卦
+    const b = '{ year: 1990, month: 5, day: 1, hour: 3 }';
+    assert.equal(f.run(`generateHexagramNatal(${b}).join('')`), f.run(`generateHexagramBazi(${b}, '').join('')`));
+    assert.notEqual(f.run(`generateHexagramBazi(${b}, '这次面试能不能过').join('')`), f.run(`generateHexagramNatal(${b}).join('')`));
+});
+
+test('every casting method has a name, a one-line lead and a note, and survives settings, share links and stats', () => {
+    const f = fixture();
+    const order = JSON.parse(f.run('JSON.stringify(METHOD_ORDER)'));
+    assert.deepEqual(order, ['coin', 'time', 'number', 'bazi', 'natal']);
+    for (const m of order) assert.equal(f.run(`!!(METHODS['${m}'].name && METHODS['${m}'].lead && METHODS['${m}'].note && AI_METHOD_LABEL['${m}'])`), true);
+    // 设置里存了不认识的起法（比如以后删掉了某一种）时退回铜钱
+    f.run(`localStorage.setItem('tianyan_settings', JSON.stringify({ method: 'yarrow' }))`);
+    assert.equal(f.run('loadSettings().method'), 'coin');
+    // 分享链接带上起法，打开时认得出来
+    f.context.URLSearchParams = URLSearchParams;
+    const base = JSON.stringify('https://guashen.xyz/');
+    for (const m of order) {
+        const link = f.run(`buildShareLink([9,7,7,8,6,7], { method: '${m}', base: ${base} })`);
+        assert.equal(f.run(`parseShareLink(${JSON.stringify(link.slice(link.indexOf('?')))}).method`), m);
+    }
+    // 统计函数只收这五种，别的记成铜钱
+    const src = fs.readFileSync(path.join(ROOT, 'cloudfunctions/logReading/index.js'), 'utf8');
+    for (const m of order) assert.match(src, new RegExp(`'${m}'`));
+});
+
+test('switching to number casting shows the two number fields, and a time cast needs nothing filled in', () => {
+    const f = fixture();
+    assert.equal(f.run("saveSetting('method', 'number')"), true);
+    assert.match(f.byId('methodHint').innerHTML, /先写问题/);
+    assert.equal(f.run('numbersShown()'), false);
+    f.run('flipToNumbers(true, { quiet: true })');
+    assert.equal(f.run('numbersShown()'), true);
+    assert.equal(f.byId('baziSettings').hidden, true);
+    assert.equal(f.byId('coinRitualGroup').hidden, true);
+    assert.equal(f.byId('baziRitualGroup').hidden, false);
+    f.byId('numA').value = '0'; f.byId('numB').value = '3';
+    assert.equal(f.run('readNumberPair()'), null);
+    f.byId('numA').value = '12'; f.byId('numB').value = '7';
+    assert.equal(f.run('readNumberPair().join()'), '12,7');
+    assert.equal(f.run("saveSetting('method', 'natal')"), true);
+    assert.equal(f.run('numbersShown()'), false);
+    assert.equal(f.byId('baziSettings').hidden, false);
+    assert.equal(f.run("saveSetting('method', 'coin')"), true);
+    assert.equal(f.byId('coinRitualGroup').hidden, false);
+});

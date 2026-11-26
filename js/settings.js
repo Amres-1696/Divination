@@ -17,6 +17,7 @@ function loadSettings() {
         if (raw) {
             const parsed = JSON.parse(raw);
             const merged = { ...DEFAULT_SETTINGS, ...parsed };
+            if (!METHODS[merged.method]) merged.method = 'coin';
             // ai 子对象深合并：老配置缺字段时用默认补齐，避免 undefined
             merged.ai = { ...DEFAULT_AI, ...(parsed.ai || {}) };
             ensureAiProfiles(merged.ai);
@@ -87,23 +88,27 @@ function baziSummary(b) {
     return (lu ? formatLunar(lu) : `公历${b.year}年${b.month}月${b.day}日`) + ` ${DI_ZHI[b.hour % 12]}时` + (b.hour === 12 ? '（23点后，算作第二天）' : '');
 }
 
-// 首页起卦方式下面的一行：铜钱和生辰各说各的起法；生辰模式直接亮出已存的生辰，没存就引导去填
+// 首页起卦方式下面的一行：每种起法画一个小图标、写一句做法；用到生辰的直接亮出已存的生辰，没存就引导去填
 function renderMethodHint(settings) {
     const el = document.getElementById('methodHint');
     if (!el) return;
-    const bazi = settings.method === 'bazi';
+    const method = METHODS[settings.method] ? settings.method : 'coin';
     const coins = '<svg class="mh-ico" viewBox="0 0 30 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><rect x="4.4" y="4.4" width="3.2" height="3.2"/><circle cx="15" cy="6" r="5"/><rect x="13.4" y="4.4" width="3.2" height="3.2"/><circle cx="24" cy="6" r="5"/><rect x="22.4" y="4.4" width="3.2" height="3.2"/></svg>';
     const moon = '<svg class="mh-ico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><path class="lit" d="M6 1A5 5 0 0 1 6 11A2.6 5 0 0 0 6 1Z"/></svg>';
-    // 行尾一个小字按钮换另一种起法（首页不再单独放切换控件）
-    const swap = `<button type="button" class="mh-switch" data-to="${bazi ? 'coin' : 'bazi'}">改用${bazi ? '铜钱' : '生辰'}</button>`;
+    const clock = '<svg class="mh-ico" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5"/><path d="M6 3v3l2.2 1.6"/></svg>';
+    const rods = '<svg class="mh-ico" viewBox="0 0 14 12" aria-hidden="true"><path d="M2 1.5v9M5 1.5v9M8 6h5"/></svg>';
+    const icon = { coin: coins, time: clock, number: rods }[method] || moon;
+    const name = METHODS[method].name;
+    // 行尾一个小字按钮去设置里换一种起法（五种起法放不下一行，首页不单独放切换控件）
+    const swap = '<button type="button" class="mh-switch">换一种</button>';
     let html;
-    if (!bazi) html = `${coins}<b>铜钱起卦</b><span>三枚铜钱掷六次，从下往上定六爻</span>${swap}`;
-    else if (settings.bazi) html = `${moon}<b>生辰起卦</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>${swap}`;
-    else html = `${moon}<b>生辰起卦</b><button type="button" class="mh-edit need">还没填生辰，点这里去填</button>${swap}`;
+    if (!needsBirth(method)) html = `${icon}<b>${name}</b><span>${METHODS[method].brief || METHODS[method].lead}</span>${swap}`;
+    else if (settings.bazi) html = `${icon}<b>${name}</b><button type="button" class="mh-edit" title="去设置里修改生辰">${baziSummary(settings.bazi)}</button>${swap}`;
+    else html = `${icon}<b>${name}</b><button type="button" class="mh-edit need">还没填生辰，点这里去填</button>${swap}`;
     if (el.innerHTML === html) return;
     el.innerHTML = html;
     if (!el.classList) return;
-    el.classList.toggle('is-bazi', bazi);
+    el.classList.toggle('is-bazi', method !== 'coin');
     // 换一种起法、存了新的生辰时整行淡入一次；改动发生在设置里时首页被盖着看不见，等设置收起再放
     const settingsPanel = document.getElementById('settingsPanel');
     if (settingsPanel && settingsPanel.classList && settingsPanel.classList.contains('show')) el._swapLater = true;
@@ -117,7 +122,19 @@ function playMethodHintSwap(el) {
     el.classList.add('swap');
 }
 
-// 选了生辰起卦却还没存生辰：三处（首页换起法、设置里换起法、点起卦）都走这里，说法和去处一致。
+// 首页行尾「换一种」：打开设置，停在最上面的起卦方式那一组，焦点落在当前选中的那一项
+function openMethodSettings() {
+    toggleSettings(true);
+    const group = document.getElementById('methodGroup');
+    const scroller = group && group.closest('.settings-content');
+    if (scroller) scroller.scrollTop = 0;
+    window.setTimeout(() => {
+        const cur = group && group.querySelector('.ml-opt[aria-checked="true"]');
+        if (cur && cur.focus) cur.focus({ preventScroll: true });
+    }, 420);
+}
+
+// 选了用到生辰的起法却还没存生辰：三处（首页换起法、设置里换起法、点起卦）都走这里，说法和去处一致。
 // 生辰那一组自己会用竖线引一下、三件器具依次亮起，不再另弹一条提示
 function promptForBirth() {
     openBaziSettings();
@@ -176,23 +193,24 @@ function applySettings(settings) {
     if (typeof syncMethodPickers === 'function') syncMethodPickers();
     syncRitualGroups(settings.method);
     const birthGroup = document.getElementById('baziSettings');
-    if (birthGroup) setBaziGroupShown(birthGroup, settings.method === 'bazi');
+    if (birthGroup) setBaziGroupShown(birthGroup, needsBirth(settings.method));
+    // 换成别的起法时，翻到背面的报数格翻回问题
+    if (settings.method !== 'number' && typeof flipToNumbers === 'function') flipToNumbers(false, { quiet: true });
     // 每日启示
     const dailyEl = document.getElementById('dailyGua');
     if (dailyEl) dailyEl.style.display = settings.showDaily ? '' : 'none';
     renderMethodHint(settings);
 }
 
-// 「过程」那一项跟着起卦方式换：铜钱显示掷钱过程，生辰显示推演过程
+// 「过程」那一项跟着起卦方式换：铜钱显示掷钱过程，其余起法显示推演过程
 function syncRitualGroups(method) {
     const coin = document.getElementById('coinRitualGroup'), bazi = document.getElementById('baziRitualGroup');
-    if (coin) coin.hidden = method === 'bazi';
-    if (bazi) bazi.hidden = method !== 'bazi';
+    if (coin) coin.hidden = method !== 'coin';
+    if (bazi) bazi.hidden = method === 'coin';
 }
 
 // 设置里切换起卦方式：生辰这一组顺着展开、收起，展开后年轮顺势滚到所选的年份；面板关着时直接切
 function setBaziGroupShown(group, show) {
-    syncRitualGroups(show ? 'bazi' : 'coin');
     // 上一次展开 / 收起还没放完：记下它此刻的样子，落到它的终态（onfinish 是异步的，不能等它），
     // 新的一次从这个样子接着走，不先跳到头再折回来
     let midway = null;
