@@ -20,11 +20,11 @@
     <title>天衍 · 周易起卦</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%231A3D72'/><g fill='%23EEF2F7'><rect x='18' y='20' width='64' height='11'/><rect x='18' y='44' width='27' height='11'/><rect x='55' y='44' width='27' height='11'/><rect x='18' y='68' width='64' height='11'/></g></svg>">
     <!-- 标题字体（站酷小薇子集）随仓库走，提前取，免得「天衍」两个字先以宋体闪一下 -->
-    <link rel="preload" href="fonts/ZCOOLXiaoWei-subset.woff2?v=b62102e3" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="style.css?v=03a85398">
+    <link rel="preload" href="fonts/ZCOOLXiaoWei-subset.woff2?v=b820063d" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="style.css?v=98d7f21b">
     <!-- 正文字体（思源宋体）本站用到的字在 style.css 里；其余常用字的那一份异步挂上，只有页面上真出现这些字时才下载 -->
-    <link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=72640fd6" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=72640fd6"></noscript>
+    <link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=53e4e087" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="fonts/NotoSerifSC-ext.css?v=53e4e087"></noscript>
 </head>
 <body class="view-home intro">
 <div class="cosmos" id="cosmos" aria-hidden="true"></div>
@@ -48,13 +48,21 @@
       <div class="home-main">
         <h1 class="home-title" id="homeTitle" style="--k:0">天衍</h1>
         <form id="questionForm" class="question-area" style="--k:1">
-          <div class="q-field">
+          <!-- 报数起卦分两步：先写问题，点「起卦」后这一块翻过去，背面填上卦、下卦两个数，再点「起卦」 -->
+          <div class="q-flip" id="qFlip">
+          <div class="q-field" id="qFront">
             <input id="question" type="text" autocomplete="off" aria-label="想问什么" maxlength="80" placeholder="写下所问　或默念于心">
             <span class="q-count" id="questionCount" aria-hidden="true"></span>
             <button type="button" class="q-help term" data-tip-title="怎么问" data-tip="问一件眼下正在发生、自己拿不定主意的事，问得越具体，卦越好读，比如「这次面试能不能过」「要不要接这份工作」。&#10;「我会不会发财」这种太大的问题，任何一卦都不好回答；也别一次问好几件事，一卦只对一件事。&#10;同一件事问一次就够了，翻来覆去地问，答案就不作数了。">怎么问 ?</button>
           </div>
+          <div class="q-back" id="qBack" aria-hidden="true" inert>
+            <label><span>上卦</span><input type="number" id="numA" min="1" max="9999" inputmode="numeric" autocomplete="off" placeholder="一个数" aria-label="第一个数，定上卦"></label>
+            <label><span>下卦</span><input type="number" id="numB" min="1" max="9999" inputmode="numeric" autocomplete="off" placeholder="一个数" aria-label="第二个数，定下卦"></label>
+            <button type="button" class="q-help q-return" id="numReturn">改问题</button>
+          </div>
+          </div>
           <div class="form-row">
-            <select id="homeMethod" aria-label="起卦方式" hidden><option value="coin">铜钱起卦</option><option value="bazi">生辰起卦</option></select>
+            <select id="homeMethod" aria-label="起卦方式" hidden><option value="coin">铜钱起卦</option><option value="time">占时起卦</option><option value="number">报数起卦</option><option value="bazi">生辰起卦</option><option value="natal">本命卦</option></select>
             <button type="button" id="divineBtn" class="btn-divine"><span class="btn-text">起卦</span></button>
           </div>
           <p class="method-hint" id="methodHint" aria-live="polite"></p>
@@ -74,15 +82,16 @@
     <button class="btn-close" id="settingsCloseBtn" aria-label="关闭设置"></button>
   </div>
   <div class="settings-content">
-    <div class="settings-group" style="--k:0">
-      <div class="settings-row">
-        <span class="settings-label">起卦方式</span>
-        <select class="settings-select" id="settingMethod" aria-label="起卦方式">
-          <option value="coin">铜钱起卦</option>
-          <option value="bazi">生辰起卦</option>
-        </select>
-      </div>
-      <div class="settings-hint">铜钱起卦是把三枚铜钱掷六次，每掷一次定一爻。生辰起卦是用你的生辰加上所问的事推出一卦，取数用的是宋代梅花易数的算法；生辰按公历填，会自动换算成农历。用生辰起卦时，同一个问题不管问几次，都是同一卦；不写问题时，每次也都是同一卦。</div>
+    <div class="settings-group" id="methodGroup" style="--k:0">
+      <div class="settings-label">起卦方式</div>
+      <!-- 原生 select 是数据源，theme.js 把它换成一列单选；每行右边一个「?」，和首页「怎么问 ?」一样浮出这种起法的注解 -->
+      <select class="settings-select" id="settingMethod" aria-label="起卦方式">
+        <option value="coin">铜钱起卦</option>
+        <option value="time">占时起卦</option>
+        <option value="number">报数起卦</option>
+        <option value="bazi">生辰起卦</option>
+        <option value="natal">本命卦</option>
+      </select>
     </div>
     <div class="settings-group" id="baziSettings" style="--k:1">
       <div class="settings-label">公历生辰</div>
@@ -119,7 +128,7 @@
       </div>
       <div class="settings-hint">完整：点六次，每次掷出一爻。快掷：只点一次，六爻一口气掷完。直出：跳过掷钱，直接看结果。</div>
     </div>
-    <!-- 生辰起卦不掷钱，六爻自己一根根显出来；它的快慢单独设，不跟掷钱那一项走 -->
+    <!-- 铜钱以外的起法都不掷钱，六爻自己一根根显出来；它的快慢单独设，不跟掷钱那一项走 -->
     <div class="settings-group" id="baziRitualGroup" style="--k:2" hidden>
       <div class="settings-row">
         <span class="settings-label">推演过程</span>
@@ -229,21 +238,21 @@
 
     <script src="data.js?v=c2a963c2"></script>
     <!-- app.js 已按领域拆分；顺序即依赖顺序，main.js 必须最后 -->
-    <script src="js/core.js?v=b32355e4"></script>
-    <script src="js/lunar.js?v=6965c80a"></script>
+    <script src="js/core.js?v=3a6d03e1"></script>
+    <script src="js/lunar.js?v=60540e2d"></script>
     <script src="js/zodiac.js?v=94525679"></script>
     <script src="js/glyphs.js?v=fb175be5"></script>
     <script src="js/cosmos.js?v=3381c55a"></script>
-    <script src="js/ritual.js?v=b4f087d1"></script>
-    <script src="js/ai.js?v=03551ea0"></script>
-    <script src="js/settings.js?v=3e1f2357"></script>
-    <script src="js/share.js?v=073a81dd"></script>
+    <script src="js/ritual.js?v=4333cb1a"></script>
+    <script src="js/ai.js?v=8f5a719d"></script>
+    <script src="js/settings.js?v=d54a4a63"></script>
+    <script src="js/share.js?v=cbfa2e57"></script>
     <script src="js/history.js?v=535557db"></script>
     <script src="js/daily.js?v=13963db3"></script>
     <script src="js/track.js?v=2b4cb200"></script>
-    <script src="js/divination.js?v=fb4a5228"></script>
+    <script src="js/divination.js?v=2d775799"></script>
     <script src="js/instruments.js?v=6410e47e"></script>
-    <script src="js/theme.js?v=9546c292"></script>
-    <script src="js/main.js?v=0855fd5f"></script>
+    <script src="js/theme.js?v=d9303705"></script>
+    <script src="js/main.js?v=5baa9d80"></script>
 </body>
 </html>

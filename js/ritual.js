@@ -5,12 +5,16 @@
 
 class HexRitual {
     // mode：'full' 一爻一爻掷；'quick' 点一次六爻连掷，各处停顿也短一些
-    constructor(stage, finalGua, hexLines, change, method, mode) {
+    // note：推演类起法开头那一行小字（铜钱起卦不用）
+    constructor(stage, finalGua, hexLines, change, method, mode, note) {
         this.stage = stage;
         this.finalGua = finalGua;
         this.hexLines = hexLines;
         this.change = change;
-        this.method = method === 'bazi' ? 'bazi' : 'coin';
+        // 铜钱之外的起法都是取数推演：不掷钱，六爻一根根显出来
+        this.method = METHODS[method] ? method : 'coin';
+        this.derived = this.method !== 'coin';
+        this.note = note || '';
         this.quick = mode === 'quick';
         this.cast = 0;
         const bits = hexLines.map(n => (n === 7 || n === 9) ? '1' : '0');
@@ -48,7 +52,7 @@ class HexRitual {
         this.actionsEl = this.stage.querySelector('#castActions');
         if (this.stage.classList) {
             this.stage.classList.add('pre');
-            if (this.method === 'bazi') this.stage.classList.add('by-birth');
+            if (this.derived) this.stage.classList.add('by-birth');
         }
         const skipBtn = this.stage.querySelector('#ritualSkip');
         if (skipBtn) skipBtn.addEventListener('click', () => { if (this._onSkip) this._onSkip(); });
@@ -67,8 +71,9 @@ class HexRitual {
         await sleep(this.quick ? 500 : 900);
     }
     async actCast() {
-        if (this.method === 'bazi') {
-            this.setStatus('按生辰取数', '生辰起卦不用掷钱，六爻由你的生辰和所问推出');
+        if (this.derived) {
+            const head = { time: '按此刻取数', number: '按所报的数取数' }[this.method] || '按生辰取数';
+            this.setStatus(head, this.note);
             await sleep(this.quick ? 350 : 700);
             for (let i = 0; i < 6; i++) await this.revealLine(i, false);
             return;

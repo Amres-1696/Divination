@@ -131,6 +131,41 @@ function trigramOfNumber(sum) {
     return TRIGRAM_TO_BINARY['☰☱☲☳☴☵☶☷'[((sum - 1) % 8 + 8) % 8]];
 }
 
+// ---------- 梅花易数取数 ----------
+// 上卦数、下卦数各按先天八卦数取卦，动爻数除以六取余（余 0 为上爻）。返回自下而上的六爻（6/7/8/9），只有一根动爻
+function meihuaLines(upperSum, lowerSum, moveSum) {
+    const upperBin = trigramOfNumber(upperSum), lowerBin = trigramOfNumber(lowerSum);
+    const lines = [];
+    for (let i = 0; i < 3; i++) lines.push(lowerBin[2 - i] === '1' ? 7 : 8);
+    for (let i = 0; i < 3; i++) lines.push(upperBin[2 - i] === '1' ? 7 : 8);
+    const k = ((moveSum - 1) % 6 + 6) % 6;
+    lines[k] = lines[k] === 7 ? 9 : 6;
+    return lines;
+}
+// 某一刻是哪个时辰，编号和生辰的时辰一样：0 子（0–1 点）… 11 亥，12 是 23 点后的子时（算作第二天）
+function hourIndexOf(date) {
+    const h = date.getHours();
+    return h === 23 ? 12 : Math.floor((h + 1) / 2);
+}
+// 占时起卦：起卦这一刻的农历年支数 + 月 + 日定上卦，再加时辰数定下卦，总数定动爻
+function timeNumbers(date) {
+    return birthNumbers({ year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate(), hour: hourIndexOf(date) });
+}
+function generateHexagramTime(date) {
+    const n = timeNumbers(date || new Date());
+    return meihuaLines(n.upper, n.lower, n.lower);
+}
+// 报数起卦：第一个数定上卦，第二个数定下卦，两数之和加起卦时辰数定动爻
+function generateHexagramNumber(a, b, date) {
+    const hourNum = hourIndexOf(date || new Date()) % 12 + 1;
+    return meihuaLines(a, b, a + b + hourNum);
+}
+// 本命卦：只用生辰，和生辰起卦不写问题时一样
+function generateHexagramNatal(bazi) {
+    const n = birthNumbers(bazi);
+    return meihuaLines(n.upper, n.lower, n.lower);
+}
+
 // 农历月名：正月、二月…冬月、腊月；闰月前缀「闰」
 function lunarMonthName(month, isLeap) {
     const names = ['正','二','三','四','五','六','七','八','九','十','冬','腊'];

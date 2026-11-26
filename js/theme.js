@@ -52,6 +52,7 @@ async function returnToInquiry(opts) {
     setPageView('home');
     if (typeof Cosmos !== 'undefined') Cosmos.toCircle();
     playHomeEnter(lifted ? 650 : 150);
+    flipToNumbers(false, { quiet: true });
     const q = document.getElementById('question');
     if (q) {
         if (opts.clear) { q.value = ''; q.dispatchEvent(new Event('input')); }
@@ -451,7 +452,72 @@ function archiveFlight(panel, tag, open) {
     Promise.all(anims.map(a => a.finished)).then(settle, settle);
 }
 
-// ---------- 起卦方式：两段式切换（保留原生 select 作为数据源） ----------
+// ---------- 起卦方式：一列单选，每行只写名字，右边一个「?」浮出做法和出处（保留原生 select 作为数据源） ----------
+function enhanceMethodList(select) {
+    if (!select) return;
+    const root = document.createElement('div');
+    root.className = 'method-list';
+    root.setAttribute('role', 'radiogroup');
+    root.setAttribute('aria-label', select.getAttribute('aria-label') || '');
+    const opts = Array.from(select.options);
+    const rows = [];
+    const buttons = opts.map((option, i) => {
+        const row = document.createElement('div');
+        row.className = 'ml-row';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'ml-opt';
+        b.setAttribute('role', 'radio');
+        b.dataset.value = option.value;
+        const m = METHODS[option.value];
+        b.innerHTML = `<b>${escHtml(m ? m.name : option.textContent)}</b>`;
+        b.addEventListener('click', () => choose(i));
+        row.appendChild(b);
+        // 「?」借用术语浮窗：悬停、聚焦或点一下浮出注解，和首页「怎么问 ?」同一套；点它不会选中这一行
+        if (m && m.note) {
+            const help = document.createElement('button');
+            help.type = 'button';
+            help.className = 'ml-help term';
+            help.dataset.tipTitle = m.name;
+            help.dataset.tip = m.note;
+            help.setAttribute('aria-label', m.name + '的出处和做法');
+            help.textContent = '?';
+            row.appendChild(help);
+        }
+        rows.push(row);
+        return b;
+    });
+    function choose(i) {
+        const value = opts[i].value;
+        if (select.value === value) return;
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        syncMethodPickers();
+    }
+    function sync() {
+        const idx = Math.max(0, select.selectedIndex);
+        buttons.forEach((b, i) => {
+            b.setAttribute('aria-checked', String(i === idx));
+            b.tabIndex = i === idx ? 0 : -1;
+        });
+    }
+    root.addEventListener('keydown', e => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
+        e.preventDefault();
+        const step = (e.key === 'ArrowLeft' || e.key === 'ArrowUp') ? -1 : 1;
+        const next = (select.selectedIndex + step + opts.length) % opts.length;
+        choose(next);
+        buttons[next].focus();
+    });
+    root.append(...rows);
+    select.after(root);
+    select.hidden = true;
+    select.addEventListener('change', sync);
+    methodPickers.push({ sync, close() {} });
+    sync();
+}
+
+// ---------- 过程快慢：分段切换（保留原生 select 作为数据源） ----------
 const methodPickers = [];
 const METHOD_SHORT = { coin: '铜钱', bazi: '生辰' };
 function syncMethodPickers() {
@@ -586,7 +652,10 @@ function initTermTips() {
         tip.firstChild.textContent = el.dataset.tipTitle || el.textContent.trim();
         tip.appendChild(document.createTextNode(body));
         el.setAttribute('aria-describedby', 'termTip');
-        // 摆在词的上方居中，贴边就往里收；上面放不下就放到下面
+        // 摆在词的上方居中，贴边就往里收；上面放不下就放到下面。
+        // 先挪回左上角再量：留在上次的位置（比如贴着右边）量，宽度会被右边挤窄
+        tip.style.left = '0px';
+        tip.style.top = '0px';
         const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
         const left = Math.min(Math.max(16, r.left + r.width / 2 - w / 2), window.innerWidth - w - 16);
         const top = r.top - h - 10 < 12 ? r.bottom + 10 : r.top - h - 10;
@@ -634,24 +703,30 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => document.body.classList.remove('intro'), 2200);
     document.getElementById('homeBtn').addEventListener('click', () => returnToInquiry());
     document.getElementById('questionForm').addEventListener('submit', e => { e.preventDefault(); divine(); });
+    // 报数那两格：回车起卦，Esc 翻回问题（不让 Esc 冒到外面去关别的弹层）。
+    // 问题框自己的回车在 main.js 里接（那里还处理了输入法上屏），这里不重复接
+    ['numA', 'numB'].forEach(id => document.getElementById(id).addEventListener('keydown', e => {
+        if (e.isComposing || e.keyCode === 229) return;
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); flipToNumbers(false); return; }
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        divine();
+    }));
+    document.getElementById('numReturn').addEventListener('click', () => flipToNumbers(false));
     const method = document.getElementById('homeMethod');
     method.addEventListener('change', () => {
         if (!saveSetting('method', method.value)) { method.value = loadSettings().method; return; }
-        if (method.value === 'bazi' && !loadSettings().bazi) promptForBirth();
+        if (needsBirth(method.value) && !loadSettings().bazi) promptForBirth();
     });
-    // 首页起卦方式那一行：点已存的生辰或「还没有保存」去设置里填写；点行尾的「换成…」换一种起法
+    // 首页起卦方式那一行：点已存的生辰或「还没有保存」去设置里填写；点行尾的「换一种」去设置里挑起法
     document.getElementById('methodHint').addEventListener('click', e => {
         if (e.target.closest('.mh-edit')) { openBaziSettings(); return; }
-        const sw = e.target.closest('.mh-switch');
-        if (sw && method.value !== sw.dataset.to) {
-            method.value = sw.dataset.to;
-            method.dispatchEvent(new Event('change', { bubbles: true }));
-        }
+        if (e.target.closest('.mh-switch')) openMethodSettings();
     });
     const daily = document.getElementById('dailyGua');
     daily.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); daily.click(); } });
     // 首页的起卦方式只留 methodHint 那一行文字，分段切换控件放在设置里
-    enhanceMethodSelect(document.getElementById('settingMethod'));
+    enhanceMethodList(document.getElementById('settingMethod'));
     enhanceMethodSelect(document.getElementById('settingRitual'));
     enhanceMethodSelect(document.getElementById('settingRitualBazi'));
 
