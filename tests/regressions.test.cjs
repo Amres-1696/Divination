@@ -854,3 +854,15 @@ test('switching to number casting shows the two number fields, and a time cast n
     assert.equal(f.run("saveSetting('method', 'coin')"), true);
     assert.equal(f.byId('coinRitualGroup').hidden, false);
 });
+
+test('number casting validates each field the same way and ignores a second press while the fields are still turning over', () => {
+    const f = fixture();
+    for (const [v, ok] of [['1', true], ['9999', true], [' 42 ', true], ['0', false], ['12345', false], ['3.5', false], ['', false]])
+        assert.equal(f.run(`isValidNumber(${JSON.stringify(v)})`), ok, v);
+    const src = fs.readFileSync(path.join(__dirname, '..', 'js/divination.js'), 'utf8');
+    // 占时、报数按点「起卦」那一刻取数，和牌册记的时间一致
+    assert.match(src, /const now = startedAt;/);
+    // 刚翻过去时再按一次不弹提示；两个数等卦出来后才清
+    assert.match(src, /Date\.now\(\) - _numbersFlippedAt < NUMBER_FLIP_MS/);
+    assert.match(src, /renderResult\([^\n]*\);\n\s*if \(nums\) \['numA', 'numB'\]/);
+});

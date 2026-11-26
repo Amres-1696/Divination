@@ -33,18 +33,23 @@ async function divine() {
             _divineRunning = false;
             return;
         }
-        nums = readNumberPair();
-        if (!nums) {
-            showToast('两格各填一个数，凭直觉想到什么写什么');
-            const a = document.getElementById('numA'), b = document.getElementById('numB');
-            const empty = a && !/^\d+$/.test(String(a.value).trim()) ? a : b;
-            if (empty && empty.focus) empty.focus();
+        // 刚翻过去、两格还没露出来时又点了一下（连点、连按回车）：不算数，也不弹提示
+        if (Date.now() - _numbersFlippedAt < NUMBER_FLIP_MS) {
             _divineRunning = false;
             return;
         }
-        // 翻回问题那一面再起卦：问题从输入框升到顶栏时，起点是看得见的那一行字
+        nums = readNumberPair();
+        if (!nums) {
+            showToast('两格各填一个 1 到 9999 的数，凭直觉想到什么写什么');
+            const a = document.getElementById('numA'), b = document.getElementById('numB');
+            const bad = a && !isValidNumber(a.value) ? a : b;
+            if (bad && bad.focus) bad.focus();
+            _divineRunning = false;
+            return;
+        }
+        // 翻回问题那一面再起卦：问题从输入框升到顶栏时，起点是看得见的那一行字。
+        // 两个数等这一卦出来了再清，中途出错回到首页时还在，不用重填
         flipToNumbers(false, { quiet: true });
-        ['numA', 'numB'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
 
     btn.disabled = true;
@@ -61,7 +66,8 @@ async function divine() {
         const stage = document.getElementById('ritualStage');
         if (window.scrollTo) window.scrollTo({ top: 0 });
 
-        const now = new Date();
+        // 占时、报数按点「起卦」那一刻取数（和牌册记的时间一致），不是开场动画播完的那一刻
+        const now = startedAt;
         const hexLines = settings.method === 'bazi' ? generateHexagramBazi(settings.bazi, question)
             : settings.method === 'natal' ? generateHexagramNatal(settings.bazi)
             : settings.method === 'time' ? generateHexagramTime(now)
@@ -95,6 +101,7 @@ async function divine() {
         readingContext.fresh = !!readingContext.historyId;   // 刚收进牌册：结果页的卦落定后，牌册挂签盖上新的数
         if (typeof reportReading === 'function') reportReading({ method: settings.method, gua, fullBin, change });
         renderResult(gua, hexLines, change, question, fullBin, chosenCard, null, readingContext);
+        if (nums) ['numA', 'numB'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     } catch (error) {
         if (typeof dropQuestionCarry === 'function') dropQuestionCarry();
         if (typeof setPageView === 'function') setPageView('home');
@@ -502,6 +509,9 @@ function renderResult(gua, hexLines, change, question, fullBin, sourceCard, save
     setTimeout(() => { if (page && page.classList) page.classList.remove('entering'); }, 2200);
 }
 
+// 翻到报数那一面的时刻；翻面动画（.26s 转走 + .32s 转正）走到一半以前，两格还看不见
+let _numbersFlippedAt = 0;
+const NUMBER_FLIP_MS = 400;
 // 报数的两格是不是正翻在外面
 function numbersShown() {
     const flip = document.getElementById('qFlip');
@@ -512,6 +522,7 @@ function flipToNumbers(on, opts) {
     const flip = document.getElementById('qFlip');
     if (!flip || flip.classList.contains('flipped') === on) return;
     flip.classList.toggle('flipped', on);
+    if (on) _numbersFlippedAt = Date.now();
     const front = document.getElementById('qFront'), back = document.getElementById('qBack');
     if (front) front.inert = on;
     if (back) { back.inert = !on; back.setAttribute('aria-hidden', String(!on)); }
@@ -522,10 +533,15 @@ function flipToNumbers(on, opts) {
 }
 
 // 报数起卦的两个数：都要是 1–9999 的整数，否则返回 null
+// 报数的一格填得对不对：1–9999 的整数。readNumberPair 和「光标落到哪一格」共用这一条
+function isValidNumber(v) {
+    const s = String(v == null ? '' : v).trim();
+    return /^\d{1,4}$/.test(s) && +s >= 1;
+}
 function readNumberPair() {
     const read = id => { const el = document.getElementById(id); return el ? String(el.value).trim() : ''; };
     const a = read('numA'), b = read('numB');
-    if (!/^\d{1,4}$/.test(a) || !/^\d{1,4}$/.test(b) || +a < 1 || +b < 1) return null;
+    if (!isValidNumber(a) || !isValidNumber(b)) return null;
     return [+a, +b];
 }
 // 推演开头那一行小字：说清这一卦是拿什么数推出来的
