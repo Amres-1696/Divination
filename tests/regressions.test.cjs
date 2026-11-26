@@ -759,6 +759,7 @@ test('the paper share card keeps only the question, the hexagram and the main re
     // 主断按小句包块，换行只落在标点后
     assert.match(card, /<span class="cl">不恒其德<span class="pu">，<\/span><\/span><span class="cl">或承之羞/);
     assert.doesNotMatch(card, /sc-reading|sc-seal|sc-ring/);
+    assert.match(card, /<div class="sc-site">guashen\.xyz<\/div>/);
     const blank = f.run(`(() => { const lines = [8,8,8,8,8,8]; const gua = lookupGua('000000'), change = calculateChangeGua(lines, '000000');
         return createShareCard({ gua, change, main: getMainReading(gua, change), hexagramLines: lines, question: '', date: '', createdAt: '' }); })()`);
     assert.match(blank, /sc-ask-q blank">心中所念/);
