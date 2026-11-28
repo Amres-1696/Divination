@@ -26,6 +26,7 @@ class HexRitual {
     // 跳过后停止一切后续动作，避免旧仪式继续改动图层或监听按键
     abort() {
         this.dead = true;
+        this._ended = true;
         if (this._offKey) this._offKey();
         if (this._coins3d) this._coins3d.destroy();
     }
@@ -55,8 +56,11 @@ class HexRitual {
             this.stage.classList.add('pre');
             if (this.derived) this.stage.classList.add('by-birth');
         }
-        // 立体铜钱的 three.js 平时在首页闲下来时就取了；还没取的这时补一下，第一次掷的时候取到了就用
-        if (!this.derived && typeof Coins3D !== 'undefined') Coins3D.preload();
+        // 立体铜钱：素材在首页就开始取了。到了这里已经取到的，趁圆图展开先把画布搭好、预热；还在取的，取到了再搭
+        if (!this.derived && typeof Coins3D !== 'undefined') {
+            this.ensure3d();
+            Coins3D.preload().then(() => this.ensure3d());
+        }
         const skipBtn = this.stage.querySelector('#ritualSkip');
         if (skipBtn) skipBtn.addEventListener('click', () => { if (this._onSkip) this._onSkip(); });
     }
@@ -128,13 +132,17 @@ class HexRitual {
             this._offKey = () => { if (document.removeEventListener) document.removeEventListener('keydown', onKey); };
         });
     }
+    // 搭立体铜钱的画布（素材取到了才搭；搭不成就一直用平面铜钱）。中途才取到的，从下一掷起换成立体的
+    ensure3d() {
+        if (this._coins3d || this._3dFailed || this._ended || this.dead || this.derived || typeof Coins3D === 'undefined' || !Coins3D.ready()) return;
+        const first = this.coinsEl.querySelector && this.coinsEl.querySelector('.coin');
+        const px = (first && first.offsetWidth) || 48;
+        this._coins3d = Coins3D.attach(this.coinsEl, px);
+        if (!this._coins3d) this._3dFailed = true;
+    }
     // 立体铜钱：返回最后一枚着地还要多少毫秒；用不了就照旧翻平面铜钱（不返回）
     tossCoins(line) {
-        if (this._coins3d === undefined) {
-            const first = this.coinsEl.querySelector && this.coinsEl.querySelector('.coin');
-            const px = (first && first.offsetWidth) || 48;
-            this._coins3d = (typeof Coins3D !== 'undefined' && Coins3D.ready()) ? Coins3D.attach(this.coinsEl, px) : null;
-        }
+        this.ensure3d();
         if (this._coins3d) return this._coins3d.toss(line, this.quick);
         const bei = LINE_TO_BEI[line];
         const coins = Array.from(this.coinsEl.querySelectorAll ? this.coinsEl.querySelectorAll('.coin') : []);
@@ -153,6 +161,11 @@ class HexRitual {
         const line = this.hexLines[i];
         const moving = this.change.changingYaos.includes(i);
         if (withCoins) {
+            // 素材还在路上的话稍等一下（最多 1.5 秒），尽量让第一把就是立体铜钱
+            if (!this._coins3d && typeof Coins3D !== 'undefined' && Coins3D.pending && Coins3D.pending()) {
+                await Promise.race([Coins3D.preload(), sleep(1500)]);
+                if (this.dead) return;
+            }
             haptic(10);
             const land = this.tossCoins(line);
             await sleep(typeof land === 'number' ? land + (this.quick ? 60 : 160) : (this.quick ? 430 : 880));
@@ -187,6 +200,7 @@ class HexRitual {
         await sleep(this.quick ? 700 : 1200);
         if (this.stage.classList) this.stage.classList.add('settling');
         await sleep(320);
+        this._ended = true;
         if (this._coins3d) this._coins3d.destroy();
     }
 }

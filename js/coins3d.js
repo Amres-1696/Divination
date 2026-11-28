@@ -1,7 +1,7 @@
 // coins3d —— 起卦时的三枚黄铜钱（three.js 实时渲染）
 // 质感、动作都照宣传片：同一套高度图烘的贴图、同一个场景拍的环境图、同一套下落公式（往下丢、约一圈翻转、落地一跳、转着停稳）。
-// three.js 和贴图不进首屏：页面闲下来再悄悄取（约 400 KB），掷钱时没取到、浏览器不支持 WebGL、或者系统设了「减少动态效果」，
-// 就还用原来的平面铜钱（ritual.js 的 tossCoins）。卦象在掷之前就定好了，这里只负责把它掷出来：每枚落成哪一面由传进来的爻决定。
+// three.js 和贴图不进首屏：页面一加载完就在后台取（约 400 KB；大多数人进来就先掷一把，不能等「闲下来」）。
+// 掷钱时还没取到、浏览器不支持 WebGL、或者系统设了「减少动态效果」，就还用原来的平面铜钱（ritual.js 的 tossCoins）。卦象在掷之前就定好了，这里只负责把它掷出来：每枚落成哪一面由传进来的爻决定。
 const Coins3D = (() => {
     const FPS = 30, G = 9.81;
     const R = 118 / 2 * 0.40 / 1920;           // 铜钱半径（米）：和宣传片同一个尺寸，镜头按网页上的像素换算
@@ -51,6 +51,7 @@ const Coins3D = (() => {
         return loading;
     }
     const ready = () => !!assets;
+    const pending = () => !!loading && !assets;   // 正在取
 
     function coinGeometry() {
         const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -257,6 +258,18 @@ const Coins3D = (() => {
         const quadScene = new THREE.Scene(); quadScene.add(new THREE.Mesh(quadGeo, avg));
         const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
         const tmp = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+        // 预热：着色器编译、贴图上传、环境图和阴影都在搭台时做完（这时圆图正在展开，没人在掷），
+        // 不然第一次掷钱的头几帧会卡一下
+        try {
+            meshes.slice(0, 3).forEach((m, j) => { m.visible = true; m.position.set((j - 1) * 1.5 * DIAM, 0, T / 2); });
+            renderer.compile(scene, cam);
+            renderer.compile(quadScene, quadCam);
+            assets.mats.forEach(m => ['map', 'roughnessMap', 'normalMap'].forEach(k => m[k] && renderer.initTexture(m[k])));
+            renderer.setRenderTarget(rts[0]); renderer.render(scene, cam);
+            renderer.setRenderTarget(null); renderer.render(quadScene, quadCam);
+            meshes.forEach(m => { m.visible = false; });
+            renderer.render(scene, cam);
+        } catch (e) { meshes.forEach(m => { m.visible = false; }); }
         function setMesh(j, show) {
             const m = meshes[j], b = blobs[j];
             m.visible = b.visible = show;
@@ -334,14 +347,14 @@ const Coins3D = (() => {
         };
     }
 
-    // 首页闲下来再取：起卦时多半已经在了
+    // 页面一加载完就取（开了省流量的除外：等到开始起卦再取）
     if (typeof window !== 'undefined' && typeof document !== 'undefined' && window.addEventListener) {
         const later = () => {
             const save = navigator.connection && navigator.connection.saveData;
             if (save) return;
-            (window.requestIdleCallback || (fn => setTimeout(fn, 1500)))(() => preload(), { timeout: 5000 });
+            setTimeout(() => preload(), 200);
         };
         if (document.readyState === 'complete') later(); else window.addEventListener('load', later);
     }
-    return { preload, ready, attach, usable };
+    return { preload, ready, pending, attach, usable };
 })();
