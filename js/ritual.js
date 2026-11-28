@@ -27,6 +27,7 @@ class HexRitual {
     abort() {
         this.dead = true;
         if (this._offKey) this._offKey();
+        if (this._coins3d) this._coins3d.destroy();
     }
     async run() {
         this.buildStage();
@@ -54,6 +55,8 @@ class HexRitual {
             this.stage.classList.add('pre');
             if (this.derived) this.stage.classList.add('by-birth');
         }
+        // 立体铜钱的 three.js 平时在首页闲下来时就取了；还没取的这时补一下，第一次掷的时候取到了就用
+        if (!this.derived && typeof Coins3D !== 'undefined') Coins3D.preload();
         const skipBtn = this.stage.querySelector('#ritualSkip');
         if (skipBtn) skipBtn.addEventListener('click', () => { if (this._onSkip) this._onSkip(); });
     }
@@ -125,7 +128,14 @@ class HexRitual {
             this._offKey = () => { if (document.removeEventListener) document.removeEventListener('keydown', onKey); };
         });
     }
+    // 立体铜钱：返回最后一枚着地还要多少毫秒；用不了就照旧翻平面铜钱（不返回）
     tossCoins(line) {
+        if (this._coins3d === undefined) {
+            const first = this.coinsEl.querySelector && this.coinsEl.querySelector('.coin');
+            const px = (first && first.offsetWidth) || 48;
+            this._coins3d = (typeof Coins3D !== 'undefined' && Coins3D.ready()) ? Coins3D.attach(this.coinsEl, px) : null;
+        }
+        if (this._coins3d) return this._coins3d.toss(line, this.quick);
         const bei = LINE_TO_BEI[line];
         const coins = Array.from(this.coinsEl.querySelectorAll ? this.coinsEl.querySelectorAll('.coin') : []);
         const order = [0, 1, 2].sort(() => Math.random() - 0.5);
@@ -144,8 +154,8 @@ class HexRitual {
         const moving = this.change.changingYaos.includes(i);
         if (withCoins) {
             haptic(10);
-            this.tossCoins(line);
-            await sleep(this.quick ? 430 : 880);
+            const land = this.tossCoins(line);
+            await sleep(typeof land === 'number' ? land + (this.quick ? 60 : 160) : (this.quick ? 430 : 880));
         }
         if (this.dead) return;
         const bar = this.buildEl.querySelector(`[data-i="${i}"]`);
@@ -177,6 +187,7 @@ class HexRitual {
         await sleep(this.quick ? 700 : 1200);
         if (this.stage.classList) this.stage.classList.add('settling');
         await sleep(320);
+        if (this._coins3d) this._coins3d.destroy();
     }
 }
 

@@ -699,6 +699,11 @@ body.view-ritual .site { min-height: 0; height: 100svh; }
 .cast-build { width: 112px; height: 100px; }
 .cast-actions { min-height: 54px; display: grid; align-items: center; }
 .ritual-stage.by-birth .coins { display: none; }
+/* 立体铜钱：一张透明画布盖在这一格上，约 10 × 7 枚铜钱大，四边淡出（铜钱从画框外砸进来）；三枚散落比一行高，格子跟着高一点 */
+.coins.coins-3d { position: relative; height: 72px; align-items: center; }
+.coins.coins-3d .coin { visibility: hidden; }
+.coins-3d-canvas { position: absolute; left: 50%; top: 50%; z-index: 1; transform: translate(-50%, -50%); pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent); mask-image: radial-gradient(closest-side, #000 72%, transparent); }
 @media (max-height: 640px) {
   .dial-core { height: 290px; gap: 11px; }
   .ritual-status { min-height: 62px; }
