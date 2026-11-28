@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS = {
     ritual: 'full',       // 铜钱起卦的过程：full 完整 / quick 快掷 / none 直出
     ritualBazi: 'full',   // 生辰起卦的过程：full 完整 / quick 加快 / none 直出（和上一项各管各的）
     showDaily: true,
+    coinSound: true,      // 掷铜钱时放落地的声音
     bazi: null,
     ai: DEFAULT_AI
 };
@@ -260,6 +261,8 @@ function restoreSettingsUI() {
 
     const dailyEl = document.getElementById('settingDaily');
     if (dailyEl) dailyEl.checked = settings.showDaily;
+    const soundEl = document.getElementById('settingCoinSound');
+    if (soundEl) soundEl.checked = settings.coinSound !== false;
 
     // AI 解卦回填
     const ai = settings.ai || {};

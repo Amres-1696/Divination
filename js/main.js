@@ -49,6 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingDaily').addEventListener('change', function() {
         if (!saveSetting('showDaily', this.checked)) this.checked = loadSettings().showDaily;
     });
+    document.getElementById('settingCoinSound').addEventListener('change', function() {
+        if (!saveSetting('coinSound', this.checked)) this.checked = loadSettings().coinSound !== false;
+    });
 
     // AI 解卦设置
     const aiEnabledEl = document.getElementById('settingAiEnabled');
